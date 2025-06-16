@@ -1,0 +1,177 @@
+# pictocode/ui/main_window.py
+import os, json
+from PyQt5.QtWidgets import (
+    QMainWindow, QDockWidget, QStackedWidget, QWidget,
+    QAction, QFileDialog, QMessageBox
+)
+from PyQt5.QtCore import Qt
+from ..canvas import CanvasWidget
+from .toolbar import Toolbar
+from .inspector import Inspector
+from .home_page import HomePage
+from .new_project_dialog import NewProjectDialog
+
+PROJECTS_DIR = os.path.join(os.getcwd(), "Projects")
+
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle('Pictocode')
+        self.resize(1024, 768)
+
+        # crée dossier projects
+        os.makedirs(PROJECTS_DIR, exist_ok=True)
+
+        # Stack home ↔ document
+        self.stack = QStackedWidget()
+        self.setCentralWidget(self.stack)
+
+        # Page accueil
+        self.home = HomePage(self)
+        self.stack.addWidget(self.home)
+
+        # Page canvas
+        self.canvas = CanvasWidget(self)
+        container = self.canvas
+        self.stack.addWidget(container)
+
+        # Toolbar & inspecteur (cachés par défaut)
+        self.toolbar = Toolbar(self)
+        self.addToolBar(Qt.TopToolBarArea, self.toolbar)
+        self.toolbar.setVisible(False)
+
+        self.inspector = Inspector(self)
+        dock = QDockWidget("Inspecteur", self)
+        dock.setWidget(self.inspector)
+        dock.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
+        self.addDockWidget(Qt.RightDockWidgetArea, dock)
+        dock.setVisible(False)
+        self.inspector_dock = dock
+
+        # Dialog nouveau projet
+        self.new_proj_dlg = NewProjectDialog(self)
+        self.new_proj_dlg.accepted.connect(self._on_new_project_accepted)
+
+        # Barre de menu
+        self._build_menu()
+
+        # Connexions
+        self.home.new_btn.clicked.connect(self.open_new_project_dialog)
+
+        # état courant
+        self.current_project_path = None
+
+    def _build_menu(self):
+        mb = self.menuBar()
+        filem = mb.addMenu("Fichier")
+
+        new_act = QAction("Nouveau…", self)
+        new_act.triggered.connect(self.open_new_project_dialog)
+        filem.addAction(new_act)
+
+        open_act = QAction("Ouvrir…", self)
+        open_act.triggered.connect(self._on_file_open)
+        filem.addAction(open_act)
+
+        filem.addSeparator()
+
+        save_act = QAction("Enregistrer", self)
+        save_act.triggered.connect(self.save_project)
+        filem.addAction(save_act)
+
+        saveas_act = QAction("Enregistrer sous…", self)
+        saveas_act.triggered.connect(self.save_as_project)
+        filem.addAction(saveas_act)
+
+        filem.addSeparator()
+
+        home_act = QAction("Accueil", self)
+        home_act.triggered.connect(self.back_to_home)
+        filem.addAction(home_act)
+
+        exit_act = QAction("Quitter", self)
+        exit_act.triggered.connect(self.close)
+        filem.addAction(exit_act)
+
+    def open_new_project_dialog(self):
+        self.new_proj_dlg.open()
+
+    def _on_new_project_accepted(self):
+        """Récupère les paramètres, crée le document et bascule sur canvas."""
+        params = self._new_project_dialog.get_parameters()
+        project_name = params.get('name') or "Sans titre"
+        # exemple : changer le titre de la fenêtre
+        self.setWindowTitle(f'Pictocode — {project_name}')
+
+        # crée le document dans le canvas
+        self.canvas.new_document(
+            width=params['width'],
+            height=params['height'],
+            unit=params['unit'],
+            orientation=params['orientation'],
+            color_mode=params['color_mode'],
+            dpi=params['dpi']
+        )
+
+        # affiche toolbar & inspector
+        self.toolbar.setVisible(True)
+        self.inspector_dock.setVisible(True)
+        # bascule sur le canvas
+        self.stack.setCurrentWidget(self.canvas)
+
+    def _on_file_open(self):
+        path, _ = QFileDialog.getOpenFileName(
+            self, "Ouvrir un projet", PROJECTS_DIR, "Pictocode (*.json)"
+        )
+        if path:
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                params = {k: data[k] for k in ("name","width","height","unit","orientation","color_mode","dpi")}
+                self.open_project(path, params, data.get("shapes", []))
+            except Exception as e:
+                QMessageBox.critical(self, "Erreur", f"Impossible d'ouvrir : {e}")
+
+    def open_project(self, path, params, shapes=None):
+        """Charge un projet existant (optionnellement avec formes)."""
+        self.current_project_path = path
+        # crée document
+        self.canvas.new_document(**params)
+        # charge formes
+        self.canvas.load_shapes(shapes or [])
+        # bascule UI
+        self.toolbar.setVisible(True)
+        self.inspector_dock.setVisible(True)
+        self.stack.setCurrentWidget(self.canvas)
+
+    def save_project(self):
+        if not self.current_project_path:
+            return self.save_as_project()
+        data = self.canvas.export_project()
+        try:
+            with open(self.current_project_path, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2, ensure_ascii=False)
+        except Exception as e:
+            QMessageBox.critical(self, "Erreur", f"Impossible d'enregistrer : {e}")
+
+    def save_as_project(self):
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Enregistrer sous", PROJECTS_DIR, "Pictocode (*.json)"
+        )
+        if path:
+            if not path.endswith(".json"):
+                path += ".json"
+            self.current_project_path = path
+            self.save_project()
+
+    def back_to_home(self):
+        # confirmation si non sauvegardé ?
+        self.stack.setCurrentWidget(self.home)
+        self.toolbar.setVisible(False)
+        self.inspector_dock.setVisible(False)
+
+
+def main(app, argv):
+    win = MainWindow()
+    win.show()
+    return app.exec_()

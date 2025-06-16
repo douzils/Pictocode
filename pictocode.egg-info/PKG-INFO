@@ -1,0 +1,14 @@
+Metadata-Version: 2.4
+Name: pictocode
+Version: 0.1.0
+Summary: Un mini-éditeur graphique façon Canvas en PyQt5
+Author: Vous
+Classifier: Programming Language :: Python :: 3
+Classifier: Framework :: PyQt5
+License-File: LICENSE
+Requires-Dist: PyQt5>=5.15
+Dynamic: author
+Dynamic: classifier
+Dynamic: license-file
+Dynamic: requires-dist
+Dynamic: summary
