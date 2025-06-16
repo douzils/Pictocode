@@ -37,8 +37,6 @@ class CanvasWidget(QGraphicsView):
 
         # sélection -> inspecteur
         self.scene.selectionChanged.connect(self._on_selection_changed)
-        # changement -> fenêtre principale (marque modifié)
-        self.scene.changed.connect(self._on_scene_changed)
 
     def _draw_doc_frame(self):
         """Dessine le contour en pointillés de la zone de travail."""
@@ -277,9 +275,4 @@ class CanvasWidget(QGraphicsView):
             items = self.scene.selectedItems()
             if items:
                 parent.inspector.set_target(items[0])
-
-    def _on_scene_changed(self, *_):
-        parent = self.parent()
-        if hasattr(parent, "set_dirty"):
-            parent.set_dirty(True)
 
