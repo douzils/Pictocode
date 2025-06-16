@@ -2,7 +2,7 @@
 import os, json
 from PyQt5.QtWidgets import (
     QMainWindow, QDockWidget, QStackedWidget, QWidget,
-    QAction, QFileDialog, QMessageBox
+    QAction, QFileDialog, QMessageBox, QDialog
 )
 from PyQt5.QtCore import Qt
 from ..canvas import CanvasWidget
@@ -60,6 +60,7 @@ class MainWindow(QMainWindow):
 
         # état courant
         self.current_project_path = None
+        self.unsaved_changes = False
 
     def _build_menu(self):
         mb = self.menuBar()
@@ -93,12 +94,50 @@ class MainWindow(QMainWindow):
         exit_act.triggered.connect(self.close)
         filem.addAction(exit_act)
 
+        projectm = mb.addMenu("Projet")
+        props_act = QAction("Paramètres…", self)
+        props_act.triggered.connect(self.open_project_settings)
+        projectm.addAction(props_act)
+
+    # ─── Gestion de l'état modifié ─────────────────────────────
+    def set_dirty(self, value: bool = True):
+        self.unsaved_changes = value
+        title = self.windowTitle().lstrip('* ').strip()
+        if value:
+            self.setWindowTitle('* ' + title)
+        else:
+            self.setWindowTitle(title)
+
+    def maybe_save(self) -> bool:
+        if not self.unsaved_changes:
+            return True
+        resp = QMessageBox.question(
+            self, 'Projet non enregistré',
+            'Voulez-vous enregistrer les modifications ?',
+            QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel
+        )
+        if resp == QMessageBox.Save:
+            self.save_project()
+            return not self.unsaved_changes
+        return resp == QMessageBox.Discard
+
     def open_new_project_dialog(self):
-        self.new_proj_dlg.open()
+        if self.maybe_save():
+            self.new_proj_dlg.open()
+
+    def open_project_settings(self):
+        if not hasattr(self.canvas, 'current_meta'):
+            return
+        from .project_settings_dialog import ProjectSettingsDialog
+        dlg = ProjectSettingsDialog(self.canvas.current_meta, self)
+        if dlg.exec_() == QDialog.Accepted:
+            params = dlg.get_parameters()
+            self.canvas.update_document_properties(**params)
+            self.set_dirty(True)
 
     def _on_new_project_accepted(self):
         """Récupère les paramètres, crée le document et bascule sur canvas."""
-        params = self._new_project_dialog.get_parameters()
+        params = self.new_proj_dlg.get_parameters()
         project_name = params.get('name') or "Sans titre"
         # exemple : changer le titre de la fenêtre
         self.setWindowTitle(f'Pictocode — {project_name}')
@@ -110,16 +149,21 @@ class MainWindow(QMainWindow):
             unit=params['unit'],
             orientation=params['orientation'],
             color_mode=params['color_mode'],
-            dpi=params['dpi']
+            dpi=params['dpi'],
+            name=params.get('name', '')
         )
-
+        
         # affiche toolbar & inspector
         self.toolbar.setVisible(True)
         self.inspector_dock.setVisible(True)
         # bascule sur le canvas
         self.stack.setCurrentWidget(self.canvas)
+        self.current_project_path = None
+        self.set_dirty(False)
 
     def _on_file_open(self):
+        if not self.maybe_save():
+            return
         path, _ = QFileDialog.getOpenFileName(
             self, "Ouvrir un projet", PROJECTS_DIR, "Pictocode (*.json)"
         )
@@ -134,6 +178,8 @@ class MainWindow(QMainWindow):
 
     def open_project(self, path, params, shapes=None):
         """Charge un projet existant (optionnellement avec formes)."""
+        if not self.maybe_save():
+            return
         self.current_project_path = path
         # crée document
         self.canvas.new_document(**params)
@@ -143,6 +189,8 @@ class MainWindow(QMainWindow):
         self.toolbar.setVisible(True)
         self.inspector_dock.setVisible(True)
         self.stack.setCurrentWidget(self.canvas)
+        self.setWindowTitle(f"Pictocode — {params.get('name','')}")
+        self.set_dirty(False)
 
     def save_project(self):
         if not self.current_project_path:
@@ -151,6 +199,7 @@ class MainWindow(QMainWindow):
         try:
             with open(self.current_project_path, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
+            self.set_dirty(False)
         except Exception as e:
             QMessageBox.critical(self, "Erreur", f"Impossible d'enregistrer : {e}")
 
@@ -163,12 +212,21 @@ class MainWindow(QMainWindow):
                 path += ".json"
             self.current_project_path = path
             self.save_project()
+            self.setWindowTitle(f"Pictocode — {os.path.basename(path)[:-5]}")
 
     def back_to_home(self):
-        # confirmation si non sauvegardé ?
+        if not self.maybe_save():
+            return
         self.stack.setCurrentWidget(self.home)
         self.toolbar.setVisible(False)
         self.inspector_dock.setVisible(False)
+
+    # ------------------------------------------------------------------
+    def closeEvent(self, event):
+        if self.maybe_save():
+            event.accept()
+        else:
+            event.ignore()
 
 
 def main(app, argv):
