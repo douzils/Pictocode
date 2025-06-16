@@ -19,6 +19,7 @@ class CanvasWidget(QGraphicsView):
         self.current_tool = None
         self._start_pos = None
         self._freehand_points = None
+
         self.pen_color = QColor("black")
 
         # Grille et magnétisme
@@ -39,6 +40,7 @@ class CanvasWidget(QGraphicsView):
 
         # sélection -> inspecteur
         self.scene.selectionChanged.connect(self._on_selection_changed)
+        self.scene.changed.connect(lambda _: self._mark_dirty())
 
     def _draw_doc_frame(self):
         """Dessine le contour en pointillés de la zone de travail."""
@@ -57,6 +59,7 @@ class CanvasWidget(QGraphicsView):
             self.setDragMode(QGraphicsView.NoDrag)
         if tool_name != "freehand":
             self._freehand_points = None
+
 
     def new_document(self, width, height, unit, orientation, color_mode, dpi, name=""):
         """
@@ -194,8 +197,6 @@ class CanvasWidget(QGraphicsView):
                 scene_pos.setY(round(scene_pos.y() / grid) * grid)
             if self.current_tool in ("rect", "ellipse", "line"):
                 self._start_pos = scene_pos
-            elif self.current_tool == "freehand":
-                self._freehand_points = [scene_pos]
         elif event.button() == Qt.RightButton:
             self._show_context_menu(event)
             return
@@ -203,42 +204,20 @@ class CanvasWidget(QGraphicsView):
 
     def mouseMoveEvent(self, event):
         scene_pos = self.mapToScene(event.pos())
-        if self.current_tool == "freehand" and self._freehand_points is not None:
-            if self.snap_to_grid:
-                grid = self.grid_size
-                scene_pos.setX(round(scene_pos.x() / grid) * grid)
-                scene_pos.setY(round(scene_pos.y() / grid) * grid)
-            self._freehand_points.append(scene_pos)
+
         super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event):
         scene_pos = self.mapToScene(event.pos())
-        if self.current_tool == "freehand" and self._freehand_points:
-            if self.snap_to_grid:
-                grid = self.grid_size
-                scene_pos.setX(round(scene_pos.x() / grid) * grid)
-                scene_pos.setY(round(scene_pos.y() / grid) * grid)
-            self._freehand_points.append(scene_pos)
-            path = FreehandPath.from_points(self._freehand_points, self.pen_color, 2)
-            self.scene.addItem(path)
-            self._freehand_points = None
-        elif self._start_pos and self.current_tool:
+
             x0, y0 = self._start_pos.x(), self._start_pos.y()
-            x1, y1 = scene_pos.x(), scene_pos.y()
-            if self.snap_to_grid:
-                grid = self.grid_size
-                x1 = round(x1 / grid) * grid
-                y1 = round(y1 / grid) * grid
-            if self.current_tool == "rect":
-                item = Rect(x0, y0, x1 - x0, y1 - y0, self.pen_color)
-            elif self.current_tool == "ellipse":
-                item = Ellipse(x0, y0, x1 - x0, y1 - y0, self.pen_color)
+            if self.current_tool in ("rect", "ellipse"):
+                self._temp_item.setRect(x0, y0, scene_pos.x() - x0, scene_pos.y() - y0)
             elif self.current_tool == "line":
-                item = Line(x0, y0, x1, y1, self.pen_color)
-            else:
-                item = None
-            if item:
-                self.scene.addItem(item)
+                self._temp_item.setLine(x0, y0, scene_pos.x(), scene_pos.y())
+            self._temp_item.setOpacity(1.0)
+            self._temp_item = None
+            self._mark_dirty()
         self._start_pos = None
         super().mouseReleaseEvent(event)
 
@@ -259,6 +238,7 @@ class CanvasWidget(QGraphicsView):
             ti.setTextInteractionFlags(Qt.TextEditorInteraction)
             self.scene.addItem(ti)
             ti.setFocus()
+            self._mark_dirty()
         else:
             super().mouseDoubleClickEvent(event)
 
@@ -291,7 +271,7 @@ class CanvasWidget(QGraphicsView):
         if items:
             item = items[0]
             act_delete = QAction("Supprimer", self)
-            act_delete.triggered.connect(lambda: self.scene.removeItem(item))
+            act_delete.triggered.connect(lambda: (self.scene.removeItem(item), self._mark_dirty()))
             menu.addAction(act_delete)
             act_props = QAction("Propriétés…", self)
             menu.addAction(act_props)
@@ -322,4 +302,10 @@ class CanvasWidget(QGraphicsView):
             items = self.scene.selectedItems()
             if items:
                 parent.inspector.set_target(items[0])
+
+    def _mark_dirty(self):
+        parent = self.parent()
+        if hasattr(parent, "set_dirty"):
+            parent.set_dirty(True)
+
 
