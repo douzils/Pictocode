@@ -32,6 +32,7 @@ class CanvasWidget(QGraphicsView):
 
         # Cadre de la zone de travail (sera redessiné par new_document)
         self._doc_rect = QRectF(0, 0, 800, 800)
+        self._frame_item = None
         self._draw_doc_frame()
 
         # sélection -> inspecteur
@@ -39,9 +40,11 @@ class CanvasWidget(QGraphicsView):
 
     def _draw_doc_frame(self):
         """Dessine le contour en pointillés de la zone de travail."""
-        self.scene.clear()
+        if self._frame_item:
+            self.scene.removeItem(self._frame_item)
         pen = QPen(QColor(200, 200, 200), 2, Qt.DashLine)
-        self.scene.addRect(self._doc_rect, pen)
+        self._frame_item = self.scene.addRect(self._doc_rect, pen)
+        self._frame_item.setZValue(-1)
 
     def set_tool(self, tool_name: str):
         """Définit l’outil courant depuis la toolbar."""
@@ -51,7 +54,7 @@ class CanvasWidget(QGraphicsView):
         else:
             self.setDragMode(QGraphicsView.NoDrag)
 
-    def new_document(self, width, height, unit, orientation, color_mode, dpi):
+    def new_document(self, width, height, unit, orientation, color_mode, dpi, name=""):
         """
         Initialise un nouveau document selon les paramètres donnés.
         width/height en unité choisie, orientation et dpi sont pris en compte ici.
@@ -59,11 +62,43 @@ class CanvasWidget(QGraphicsView):
         w = float(width)
         h = float(height)
         # TODO: convertir selon unit (px, mm, cm…)
+        self.scene.clear()
+        self._frame_item = None
         self._doc_rect = QRectF(0, 0, w, h)
         self._draw_doc_frame()
+        self.setSceneRect(self._doc_rect)
+        self.current_meta = {
+            'name': name,
+            'width': width,
+            'height': height,
+            'unit': unit,
+            'orientation': orientation,
+            'color_mode': color_mode,
+            'dpi': dpi,
+        }
+
+    def update_document_properties(self, width, height, unit, orientation, color_mode, dpi, name=""):
+        """Met à jour les paramètres du document sans toucher aux formes."""
+        w = float(width)
+        h = float(height)
+        self._doc_rect = QRectF(0, 0, w, h)
+        self._draw_doc_frame()
+        self.setSceneRect(self._doc_rect)
+        if not hasattr(self, 'current_meta'):
+            self.current_meta = {}
+        self.current_meta.update({
+            'name': name or self.current_meta.get('name', ''),
+            'width': width,
+            'height': height,
+            'unit': unit,
+            'orientation': orientation,
+            'color_mode': color_mode,
+            'dpi': dpi,
+        })
 
     def load_shapes(self, shapes):
         """Charge depuis une liste de dicts (issue de export_project)."""
+        self.scene.blockSignals(True)
         for s in shapes:
             t = s["type"]
             if t == "rect":
@@ -77,6 +112,7 @@ class CanvasWidget(QGraphicsView):
             else:
                 continue
             self.scene.addItem(item)
+        self.scene.blockSignals(False)
 
     def export_project(self):
         """
