@@ -24,3 +24,20 @@ def generate_pycode(shapes):
             lines.append(f'scene.addItem(rect{i})')
             lines.append('')
     return '\n'.join(lines)
+
+# ---------------------------------------------------------------------------
+def to_pixels(value: float, unit: str, dpi: float = 72) -> float:
+    """Convertit une longueur dans l'unité donnée vers des pixels."""
+    unit = unit.lower()
+    if unit == 'px':
+        return float(value)
+    if unit == 'pt':
+        return float(value) * dpi / 72.0
+    if unit == 'mm':
+        return float(value) * dpi / 25.4
+    if unit == 'cm':
+        return float(value) * dpi / 2.54
+    if unit == 'in':
+        return float(value) * dpi
+    return float(value)
+
