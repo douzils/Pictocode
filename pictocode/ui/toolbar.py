@@ -50,3 +50,9 @@ class Toolbar(QToolBar):
         if color.isValid():
             self.currentColor = color
             self.canvas.set_pen_color(color)
+
+    def set_color(self, color: QColor):
+        """Met à jour la couleur actuelle sans dialog."""
+        if isinstance(color, QColor):
+            self.currentColor = color
+            self.canvas.set_pen_color(color)
