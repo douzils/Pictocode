@@ -17,6 +17,12 @@ class CanvasWidget(QGraphicsView):
         # Outil actif
         self.current_tool = None
         self._start_pos = None
+        self.pen_color = QColor("black")
+
+        # Couleurs générales
+        self.background_color = QColor("white")
+        self.grid_color = QColor(220, 220, 220)
+        self.setBackgroundBrush(self.background_color)
 
         # Grille et magnétisme
         self.grid_size = 50
@@ -31,13 +37,21 @@ class CanvasWidget(QGraphicsView):
 
         # Cadre de la zone de travail (sera redessiné par new_document)
         self._doc_rect = QRectF(0, 0, 800, 800)
+        self._frame_item = None
         self._draw_doc_frame()
+
+        # sélection -> inspecteur
+        self.scene.selectionChanged.connect(self._on_selection_changed)
+        # changement -> fenêtre principale (marque modifié)
+        self.scene.changed.connect(self._on_scene_changed)
 
     def _draw_doc_frame(self):
         """Dessine le contour en pointillés de la zone de travail."""
-        self.scene.clear()
+        if self._frame_item:
+            self.scene.removeItem(self._frame_item)
         pen = QPen(QColor(200, 200, 200), 2, Qt.DashLine)
-        self.scene.addRect(self._doc_rect, pen)
+        self._frame_item = self.scene.addRect(self._doc_rect, pen)
+        self._frame_item.setZValue(-1)
 
     def set_tool(self, tool_name: str):
         """Définit l’outil courant depuis la toolbar."""
@@ -47,7 +61,7 @@ class CanvasWidget(QGraphicsView):
         else:
             self.setDragMode(QGraphicsView.NoDrag)
 
-    def new_document(self, width, height, unit, orientation, color_mode, dpi):
+    def new_document(self, width, height, unit, orientation, color_mode, dpi, name=""):
         """
         Initialise un nouveau document selon les paramètres donnés.
         width/height en unité choisie, orientation et dpi sont pris en compte ici.
@@ -55,11 +69,43 @@ class CanvasWidget(QGraphicsView):
         w = float(width)
         h = float(height)
         # TODO: convertir selon unit (px, mm, cm…)
+        self.scene.clear()
+        self._frame_item = None
         self._doc_rect = QRectF(0, 0, w, h)
         self._draw_doc_frame()
+        self.setSceneRect(self._doc_rect)
+        self.current_meta = {
+            'name': name,
+            'width': width,
+            'height': height,
+            'unit': unit,
+            'orientation': orientation,
+            'color_mode': color_mode,
+            'dpi': dpi,
+        }
+
+    def update_document_properties(self, width, height, unit, orientation, color_mode, dpi, name=""):
+        """Met à jour les paramètres du document sans toucher aux formes."""
+        w = float(width)
+        h = float(height)
+        self._doc_rect = QRectF(0, 0, w, h)
+        self._draw_doc_frame()
+        self.setSceneRect(self._doc_rect)
+        if not hasattr(self, 'current_meta'):
+            self.current_meta = {}
+        self.current_meta.update({
+            'name': name or self.current_meta.get('name', ''),
+            'width': width,
+            'height': height,
+            'unit': unit,
+            'orientation': orientation,
+            'color_mode': color_mode,
+            'dpi': dpi,
+        })
 
     def load_shapes(self, shapes):
         """Charge depuis une liste de dicts (issue de export_project)."""
+        self.scene.blockSignals(True)
         for s in shapes:
             t = s["type"]
             if t == "rect":
@@ -73,6 +119,7 @@ class CanvasWidget(QGraphicsView):
             else:
                 continue
             self.scene.addItem(item)
+        self.scene.blockSignals(False)
 
     def export_project(self):
         """
@@ -123,6 +170,10 @@ class CanvasWidget(QGraphicsView):
     def mousePressEvent(self, event):
         scene_pos = self.mapToScene(event.pos())
         if event.button() == Qt.LeftButton and self.current_tool in ("rect", "ellipse", "line"):
+            if self.snap_to_grid:
+                grid = self.grid_size
+                scene_pos.setX(round(scene_pos.x() / grid) * grid)
+                scene_pos.setY(round(scene_pos.y() / grid) * grid)
             self._start_pos = scene_pos
         elif event.button() == Qt.RightButton:
             self._show_context_menu(event)
@@ -134,12 +185,16 @@ class CanvasWidget(QGraphicsView):
         if self._start_pos and self.current_tool:
             x0, y0 = self._start_pos.x(), self._start_pos.y()
             x1, y1 = scene_pos.x(), scene_pos.y()
+            if self.snap_to_grid:
+                grid = self.grid_size
+                x1 = round(x1 / grid) * grid
+                y1 = round(y1 / grid) * grid
             if self.current_tool == "rect":
-                item = Rect(x0, y0, x1 - x0, y1 - y0)
+                item = Rect(x0, y0, x1 - x0, y1 - y0, self.pen_color)
             elif self.current_tool == "ellipse":
-                item = Ellipse(x0, y0, x1 - x0, y1 - y0)
+                item = Ellipse(x0, y0, x1 - x0, y1 - y0, self.pen_color)
             elif self.current_tool == "line":
-                item = Line(x0, y0, x1, y1)
+                item = Line(x0, y0, x1, y1, self.pen_color)
             else:
                 item = None
             if item:
@@ -149,6 +204,10 @@ class CanvasWidget(QGraphicsView):
 
     def mouseDoubleClickEvent(self, event):
         scene_pos = self.mapToScene(event.pos())
+        if self.snap_to_grid:
+            grid = self.grid_size
+            scene_pos.setX(round(scene_pos.x() / grid) * grid)
+            scene_pos.setY(round(scene_pos.y() / grid) * grid)
         items = self.scene.items(scene_pos)
         if items and isinstance(items[0], TextItem):
             ti = items[0]
@@ -156,7 +215,7 @@ class CanvasWidget(QGraphicsView):
             ti.setFocus()
         elif items:
             x, y = scene_pos.x(), scene_pos.y()
-            ti = TextItem(x, y, text="Texte")
+            ti = TextItem(x, y, text="Texte", color=self.pen_color)
             ti.setTextInteractionFlags(Qt.TextEditorInteraction)
             self.scene.addItem(ti)
             ti.setFocus()
@@ -167,7 +226,7 @@ class CanvasWidget(QGraphicsView):
         super().drawBackground(painter, rect)
         if not self.show_grid:
             return
-        pen = QPen(QColor(220, 220, 220), 0)
+        pen = QPen(self.grid_color, 0)
         painter.setPen(pen)
         gs = self.grid_size
         left = int(math.floor(rect.left()))
@@ -211,3 +270,32 @@ class CanvasWidget(QGraphicsView):
 
     def _toggle_snap(self):
         self.snap_to_grid = not self.snap_to_grid
+
+    # ─── Couleur et sélection ─────────────────────────────────────────
+    def set_pen_color(self, color: QColor):
+        """Définit la couleur utilisée pour les prochains objets."""
+        self.pen_color = color
+
+    def set_background_color(self, color: QColor):
+        """Change la couleur de fond du canevas."""
+        self.background_color = color
+        self.setBackgroundBrush(color)
+        self.viewport().update()
+
+    def set_grid_color(self, color: QColor):
+        """Définit la couleur des lignes de la grille."""
+        self.grid_color = color
+        self.viewport().update()
+
+    def _on_selection_changed(self):
+        parent = self.parent()
+        if hasattr(parent, "inspector"):
+            items = self.scene.selectedItems()
+            if items:
+                parent.inspector.set_target(items[0])
+
+    def _on_scene_changed(self, *_):
+        parent = self.parent()
+        if hasattr(parent, "set_dirty"):
+            parent.set_dirty(True)
+
