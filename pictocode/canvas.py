@@ -2,9 +2,10 @@
 
 import math
 from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QMenu, QAction
-from PyQt5.QtCore import Qt, QRectF
+from PyQt5.QtCore import Qt, QRectF, QPointF
 from PyQt5.QtGui import QPainter, QColor, QPen
-from .shapes import Rect, Ellipse, Line, TextItem
+from .shapes import Rect, Ellipse, Line, FreehandPath, TextItem
+from .utils import to_pixels
 
 class CanvasWidget(QGraphicsView):
     def __init__(self, parent=None):
@@ -17,6 +18,7 @@ class CanvasWidget(QGraphicsView):
         # Outil actif
         self.current_tool = None
         self._start_pos = None
+        self._freehand_points = None
         self.pen_color = QColor("black")
 
         # Grille et magnétisme
@@ -53,15 +55,20 @@ class CanvasWidget(QGraphicsView):
             self.setDragMode(QGraphicsView.ScrollHandDrag)
         else:
             self.setDragMode(QGraphicsView.NoDrag)
+        if tool_name != "freehand":
+            self._freehand_points = None
 
     def new_document(self, width, height, unit, orientation, color_mode, dpi, name=""):
         """
         Initialise un nouveau document selon les paramètres donnés.
         width/height en unité choisie, orientation et dpi sont pris en compte ici.
         """
-        w = float(width)
-        h = float(height)
-        # TODO: convertir selon unit (px, mm, cm…)
+        w = to_pixels(width, unit, dpi)
+        h = to_pixels(height, unit, dpi)
+        if orientation == 'landscape' and h > w:
+            w, h = h, w
+        elif orientation == 'portrait' and w > h:
+            w, h = h, w
         self.scene.clear()
         self._frame_item = None
         self._doc_rect = QRectF(0, 0, w, h)
@@ -79,8 +86,12 @@ class CanvasWidget(QGraphicsView):
 
     def update_document_properties(self, width, height, unit, orientation, color_mode, dpi, name=""):
         """Met à jour les paramètres du document sans toucher aux formes."""
-        w = float(width)
-        h = float(height)
+        w = to_pixels(width, unit, dpi)
+        h = to_pixels(height, unit, dpi)
+        if orientation == 'landscape' and h > w:
+            w, h = h, w
+        elif orientation == 'portrait' and w > h:
+            w, h = h, w
         self._doc_rect = QRectF(0, 0, w, h)
         self._draw_doc_frame()
         self.setSceneRect(self._doc_rect)
@@ -107,6 +118,9 @@ class CanvasWidget(QGraphicsView):
                 item = Ellipse(s["x"], s["y"], s["w"], s["h"], QColor(s["color"]))
             elif t == "line":
                 item = Line(s["x1"], s["y1"], s["x2"], s["y2"], QColor(s["color"]))
+            elif t == "path":
+                pts = [QPointF(p[0], p[1]) for p in s.get("points", [])]
+                item = FreehandPath.from_points(pts, QColor(s.get("color", "black")))
             elif t == "text":
                 item = TextItem(s["x"], s["y"], s["text"], s["font_size"], QColor(s["color"]))
             else:
@@ -144,6 +158,17 @@ class CanvasWidget(QGraphicsView):
                     "x2": line.x2(), "y2": line.y2(),
                     "color": item.pen().color().name()
                 })
+            elif cls == "FreehandPath":
+                path = item.path()
+                pts = [
+                    (path.elementAt(i).x, path.elementAt(i).y)
+                    for i in range(path.elementCount())
+                ]
+                shapes.append({
+                    "type": "path",
+                    "points": pts,
+                    "color": item.pen().color().name()
+                })
             elif cls == "TextItem":
                 shapes.append({
                     "type": "text",
@@ -162,20 +187,42 @@ class CanvasWidget(QGraphicsView):
 
     def mousePressEvent(self, event):
         scene_pos = self.mapToScene(event.pos())
-        if event.button() == Qt.LeftButton and self.current_tool in ("rect", "ellipse", "line"):
+        if event.button() == Qt.LeftButton:
             if self.snap_to_grid:
                 grid = self.grid_size
                 scene_pos.setX(round(scene_pos.x() / grid) * grid)
                 scene_pos.setY(round(scene_pos.y() / grid) * grid)
-            self._start_pos = scene_pos
+            if self.current_tool in ("rect", "ellipse", "line"):
+                self._start_pos = scene_pos
+            elif self.current_tool == "freehand":
+                self._freehand_points = [scene_pos]
         elif event.button() == Qt.RightButton:
             self._show_context_menu(event)
             return
         super().mousePressEvent(event)
 
+    def mouseMoveEvent(self, event):
+        scene_pos = self.mapToScene(event.pos())
+        if self.current_tool == "freehand" and self._freehand_points is not None:
+            if self.snap_to_grid:
+                grid = self.grid_size
+                scene_pos.setX(round(scene_pos.x() / grid) * grid)
+                scene_pos.setY(round(scene_pos.y() / grid) * grid)
+            self._freehand_points.append(scene_pos)
+        super().mouseMoveEvent(event)
+
     def mouseReleaseEvent(self, event):
         scene_pos = self.mapToScene(event.pos())
-        if self._start_pos and self.current_tool:
+        if self.current_tool == "freehand" and self._freehand_points:
+            if self.snap_to_grid:
+                grid = self.grid_size
+                scene_pos.setX(round(scene_pos.x() / grid) * grid)
+                scene_pos.setY(round(scene_pos.y() / grid) * grid)
+            self._freehand_points.append(scene_pos)
+            path = FreehandPath.from_points(self._freehand_points, self.pen_color, 2)
+            self.scene.addItem(path)
+            self._freehand_points = None
+        elif self._start_pos and self.current_tool:
             x0, y0 = self._start_pos.x(), self._start_pos.y()
             x1, y1 = scene_pos.x(), scene_pos.y()
             if self.snap_to_grid:
