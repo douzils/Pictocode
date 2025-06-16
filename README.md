@@ -8,3 +8,5 @@ Pictocode est un éditeur de mise en page visuel qui génère du code pour vos c
 pip install -r requirements.txt
 python setup.py install
 ```
+
+# pictocode
