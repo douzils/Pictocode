@@ -98,7 +98,7 @@ class MainWindow(QMainWindow):
 
     def _on_new_project_accepted(self):
         """Récupère les paramètres, crée le document et bascule sur canvas."""
-        params = self._new_project_dialog.get_parameters()
+        params = self.new_proj_dlg.get_parameters()
         project_name = params.get('name') or "Sans titre"
         # exemple : changer le titre de la fenêtre
         self.setWindowTitle(f'Pictocode — {project_name}')

@@ -17,6 +17,7 @@ class CanvasWidget(QGraphicsView):
         # Outil actif
         self.current_tool = None
         self._start_pos = None
+        self.pen_color = QColor("black")
 
         # Grille et magnétisme
         self.grid_size = 50
@@ -32,6 +33,9 @@ class CanvasWidget(QGraphicsView):
         # Cadre de la zone de travail (sera redessiné par new_document)
         self._doc_rect = QRectF(0, 0, 800, 800)
         self._draw_doc_frame()
+
+        # sélection -> inspecteur
+        self.scene.selectionChanged.connect(self._on_selection_changed)
 
     def _draw_doc_frame(self):
         """Dessine le contour en pointillés de la zone de travail."""
@@ -123,6 +127,10 @@ class CanvasWidget(QGraphicsView):
     def mousePressEvent(self, event):
         scene_pos = self.mapToScene(event.pos())
         if event.button() == Qt.LeftButton and self.current_tool in ("rect", "ellipse", "line"):
+            if self.snap_to_grid:
+                grid = self.grid_size
+                scene_pos.setX(round(scene_pos.x() / grid) * grid)
+                scene_pos.setY(round(scene_pos.y() / grid) * grid)
             self._start_pos = scene_pos
         elif event.button() == Qt.RightButton:
             self._show_context_menu(event)
@@ -134,12 +142,16 @@ class CanvasWidget(QGraphicsView):
         if self._start_pos and self.current_tool:
             x0, y0 = self._start_pos.x(), self._start_pos.y()
             x1, y1 = scene_pos.x(), scene_pos.y()
+            if self.snap_to_grid:
+                grid = self.grid_size
+                x1 = round(x1 / grid) * grid
+                y1 = round(y1 / grid) * grid
             if self.current_tool == "rect":
-                item = Rect(x0, y0, x1 - x0, y1 - y0)
+                item = Rect(x0, y0, x1 - x0, y1 - y0, self.pen_color)
             elif self.current_tool == "ellipse":
-                item = Ellipse(x0, y0, x1 - x0, y1 - y0)
+                item = Ellipse(x0, y0, x1 - x0, y1 - y0, self.pen_color)
             elif self.current_tool == "line":
-                item = Line(x0, y0, x1, y1)
+                item = Line(x0, y0, x1, y1, self.pen_color)
             else:
                 item = None
             if item:
@@ -149,6 +161,10 @@ class CanvasWidget(QGraphicsView):
 
     def mouseDoubleClickEvent(self, event):
         scene_pos = self.mapToScene(event.pos())
+        if self.snap_to_grid:
+            grid = self.grid_size
+            scene_pos.setX(round(scene_pos.x() / grid) * grid)
+            scene_pos.setY(round(scene_pos.y() / grid) * grid)
         items = self.scene.items(scene_pos)
         if items and isinstance(items[0], TextItem):
             ti = items[0]
@@ -156,7 +172,7 @@ class CanvasWidget(QGraphicsView):
             ti.setFocus()
         elif items:
             x, y = scene_pos.x(), scene_pos.y()
-            ti = TextItem(x, y, text="Texte")
+            ti = TextItem(x, y, text="Texte", color=self.pen_color)
             ti.setTextInteractionFlags(Qt.TextEditorInteraction)
             self.scene.addItem(ti)
             ti.setFocus()
@@ -211,3 +227,16 @@ class CanvasWidget(QGraphicsView):
 
     def _toggle_snap(self):
         self.snap_to_grid = not self.snap_to_grid
+
+    # ─── Couleur et sélection ─────────────────────────────────────────
+    def set_pen_color(self, color: QColor):
+        """Définit la couleur utilisée pour les prochains objets."""
+        self.pen_color = color
+
+    def _on_selection_changed(self):
+        parent = self.parent()
+        if hasattr(parent, "inspector"):
+            items = self.scene.selectedItems()
+            if items:
+                parent.inspector.set_target(items[0])
+
