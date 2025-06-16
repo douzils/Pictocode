@@ -19,8 +19,7 @@ class CanvasWidget(QGraphicsView):
         self.current_tool = None
         self._start_pos = None
         self._freehand_points = None
-        self._temp_item = None
-        self._current_path_item = None
+
         self.pen_color = QColor("black")
 
         # Grille et magnétisme
@@ -60,12 +59,7 @@ class CanvasWidget(QGraphicsView):
             self.setDragMode(QGraphicsView.NoDrag)
         if tool_name != "freehand":
             self._freehand_points = None
-            if self._current_path_item:
-                self.scene.removeItem(self._current_path_item)
-                self._current_path_item = None
-        if self._temp_item:
-            self.scene.removeItem(self._temp_item)
-            self._temp_item = None
+
 
     def new_document(self, width, height, unit, orientation, color_mode, dpi, name=""):
         """
@@ -203,20 +197,6 @@ class CanvasWidget(QGraphicsView):
                 scene_pos.setY(round(scene_pos.y() / grid) * grid)
             if self.current_tool in ("rect", "ellipse", "line"):
                 self._start_pos = scene_pos
-                if self.current_tool == "rect":
-                    self._temp_item = Rect(scene_pos.x(), scene_pos.y(), 0, 0, self.pen_color)
-                elif self.current_tool == "ellipse":
-                    self._temp_item = Ellipse(scene_pos.x(), scene_pos.y(), 0, 0, self.pen_color)
-                elif self.current_tool == "line":
-                    self._temp_item = Line(scene_pos.x(), scene_pos.y(), scene_pos.x(), scene_pos.y(), self.pen_color)
-                if self._temp_item:
-                    self._temp_item.setOpacity(0.6)
-                    self.scene.addItem(self._temp_item)
-            elif self.current_tool == "freehand":
-                self._freehand_points = [scene_pos]
-                self._current_path_item = FreehandPath.from_points(self._freehand_points, self.pen_color, 2)
-                self._current_path_item.setOpacity(0.6)
-                self.scene.addItem(self._current_path_item)
         elif event.button() == Qt.RightButton:
             self._show_context_menu(event)
             return
@@ -224,45 +204,12 @@ class CanvasWidget(QGraphicsView):
 
     def mouseMoveEvent(self, event):
         scene_pos = self.mapToScene(event.pos())
-        if self.snap_to_grid:
-            grid = self.grid_size
-            scene_pos.setX(round(scene_pos.x() / grid) * grid)
-            scene_pos.setY(round(scene_pos.y() / grid) * grid)
-        if self.current_tool == "freehand" and self._freehand_points is not None:
-            self._freehand_points.append(scene_pos)
-            if self._current_path_item:
-                path = self._current_path_item.path()
-                if path.elementCount() == 0:
-                    path.moveTo(self._freehand_points[0])
-                path.lineTo(scene_pos)
-                self._current_path_item.setPath(path)
-        elif self._temp_item and self._start_pos:
-            x0, y0 = self._start_pos.x(), self._start_pos.y()
-            if self.current_tool in ("rect", "ellipse"):
-                self._temp_item.setRect(x0, y0, scene_pos.x() - x0, scene_pos.y() - y0)
-            elif self.current_tool == "line":
-                self._temp_item.setLine(x0, y0, scene_pos.x(), scene_pos.y())
+
         super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event):
         scene_pos = self.mapToScene(event.pos())
-        if self.snap_to_grid:
-            grid = self.grid_size
-            scene_pos.setX(round(scene_pos.x() / grid) * grid)
-            scene_pos.setY(round(scene_pos.y() / grid) * grid)
-        if self.current_tool == "freehand" and self._freehand_points:
-            self._freehand_points.append(scene_pos)
-            if self._current_path_item:
-                path = self._current_path_item.path()
-                if path.elementCount() == 0:
-                    path.moveTo(self._freehand_points[0])
-                path.lineTo(scene_pos)
-                self._current_path_item.setPath(path)
-                self._current_path_item.setOpacity(1.0)
-            self._current_path_item = None
-            self._freehand_points = None
-            self._mark_dirty()
-        elif self._temp_item and self._start_pos:
+
             x0, y0 = self._start_pos.x(), self._start_pos.y()
             if self.current_tool in ("rect", "ellipse"):
                 self._temp_item.setRect(x0, y0, scene_pos.x() - x0, scene_pos.y() - y0)
