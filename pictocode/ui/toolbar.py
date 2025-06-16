@@ -21,6 +21,11 @@ class Toolbar(QToolBar):
         line_act.triggered.connect(lambda: self.canvas.set_tool("line"))
         self.addAction(line_act)
 
+        # Tracé libre
+        free_act = QAction("Tracer libre", self)
+        free_act.triggered.connect(lambda: self.canvas.set_tool("freehand"))
+        self.addAction(free_act)
+
         # Texte
         text_act = QAction("Texte", self)
         text_act.triggered.connect(lambda: self.canvas.set_tool("text"))

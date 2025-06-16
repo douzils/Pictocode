@@ -4,7 +4,9 @@ from PyQt5.QtWidgets import (
     QMainWindow, QDockWidget, QStackedWidget, QWidget,
     QAction, QFileDialog, QMessageBox, QDialog
 )
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QSettings
+from PyQt5.QtGui import QPalette, QColor
+from PyQt5.QtWidgets import QApplication
 from ..canvas import CanvasWidget
 from .toolbar import Toolbar
 from .inspector import Inspector
@@ -62,6 +64,11 @@ class MainWindow(QMainWindow):
         self.current_project_path = None
         self.unsaved_changes = False
 
+        # Paramètres de l'application
+        self.settings = QSettings("pictocode", "pictocode")
+        self.current_theme = self.settings.value("theme", "Light")
+        self.apply_theme(self.current_theme)
+
     def _build_menu(self):
         mb = self.menuBar()
         filem = mb.addMenu("Fichier")
@@ -98,6 +105,11 @@ class MainWindow(QMainWindow):
         props_act = QAction("Paramètres…", self)
         props_act.triggered.connect(self.open_project_settings)
         projectm.addAction(props_act)
+
+        prefm = mb.addMenu("Préférences")
+        app_act = QAction("Apparence…", self)
+        app_act.triggered.connect(self.open_app_settings)
+        prefm.addAction(app_act)
 
     # ─── Gestion de l'état modifié ─────────────────────────────
     def set_dirty(self, value: bool = True):
@@ -227,6 +239,38 @@ class MainWindow(QMainWindow):
             event.accept()
         else:
             event.ignore()
+
+    # ------------------------------------------------------------------
+    def open_app_settings(self):
+        from .app_settings_dialog import AppSettingsDialog
+        dlg = AppSettingsDialog(self.current_theme, self)
+        if dlg.exec_() == QDialog.Accepted:
+            theme = dlg.get_theme()
+            self.apply_theme(theme)
+
+    def apply_theme(self, theme: str):
+        """Applique un th\u00e8me clair ou sombre."""
+        app = QApplication.instance()
+        if theme.lower() == "dark":
+            pal = QPalette()
+            pal.setColor(QPalette.Window, QColor(53, 53, 53))
+            pal.setColor(QPalette.WindowText, Qt.white)
+            pal.setColor(QPalette.Base, QColor(35, 35, 35))
+            pal.setColor(QPalette.AlternateBase, QColor(53, 53, 53))
+            pal.setColor(QPalette.ToolTipBase, Qt.white)
+            pal.setColor(QPalette.ToolTipText, Qt.white)
+            pal.setColor(QPalette.Text, Qt.white)
+            pal.setColor(QPalette.Button, QColor(53, 53, 53))
+            pal.setColor(QPalette.ButtonText, Qt.white)
+            pal.setColor(QPalette.Highlight, QColor(42, 130, 218))
+            pal.setColor(QPalette.HighlightedText, Qt.black)
+            app.setPalette(pal)
+            app.setStyle("Fusion")
+        else:
+            app.setPalette(app.style().standardPalette())
+            app.setStyle("Fusion")
+        self.current_theme = theme
+        self.settings.setValue("theme", theme)
 
 
 def main(app, argv):
