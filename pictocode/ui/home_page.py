@@ -79,10 +79,17 @@ class HomePage(QWidget):
         # Charge les paramètres depuis le JSON
         try:
             with open(path, "r", encoding="utf-8") as f:
-                params = json.load(f)
+                data = json.load(f)
         except Exception as e:
             QMessageBox.critical(self, "Erreur", f"Échec de lecture de {path} :\n{e}")
             return
 
+        # Sépare métadonnées et formes
+        params = {k: data.get(k) for k in (
+            "name", "width", "height", "unit",
+            "orientation", "color_mode", "dpi",
+        )}
+        shapes = data.get("shapes", [])
+
         # Appelle MainWindow pour ouvrir le projet
-        self.parent.open_project(path, params)
+        self.parent.open_project(path, params, shapes)
