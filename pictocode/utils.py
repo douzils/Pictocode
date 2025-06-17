@@ -100,7 +100,7 @@ def generate_pycode(shapes):
                 lines.append(f"scene.addItem(path_item{i})")
 
         elif cls == "TextItem":
-            text = shp.toPlainText().replace("'", "'")
+            text = shp.toPlainText().replace("'", "\\'")
             lines.append(f"text{i} = QGraphicsTextItem('{text}')")
             lines.append(f"text{i}.setPos({shp.x()}, {shp.y()})")
             color = shp.defaultTextColor().name()
