@@ -130,7 +130,8 @@ class Rect(ResizableMixin, SnapToGridMixin, QGraphicsRectItem):
         # éviter que ``ResizableMixin`` ne reçoive des arguments
         # inattendus via ``super()``.
         ResizableMixin.__init__(self)
-        QGraphicsRectItem.__init__(self, x, y, w, h)
+        QGraphicsRectItem.__init__(self, 0, 0, w, h)
+        self.setPos(x, y)
         pen = QPen(color)
         pen.setWidth(2)
         self.setPen(pen)
@@ -144,15 +145,12 @@ class Rect(ResizableMixin, SnapToGridMixin, QGraphicsRectItem):
         self.setToolTip("Clique droit pour modifier")
 
     def rect(self):
-        return self.boundingRect()
+        return QGraphicsRectItem.rect(self)
 
     def setRect(self, x, y, w, h):
-        self.setPos(x, y)
-        br = self.boundingRect()
-        if br.width() and br.height():
-            sx = w / br.width()
-            sy = h / br.height()
-            self.setScale(min(sx, sy))
+        r = QRectF(x, y, w, h).normalized()
+        QGraphicsRectItem.setRect(self, 0, 0, r.width(), r.height())
+        self.setPos(r.x(), r.y())
 
 
 class Ellipse(ResizableMixin, SnapToGridMixin, QGraphicsEllipseItem):
@@ -160,7 +158,8 @@ class Ellipse(ResizableMixin, SnapToGridMixin, QGraphicsEllipseItem):
 
     def __init__(self, x, y, w, h, color: QColor = QColor("black")):
         ResizableMixin.__init__(self)
-        QGraphicsEllipseItem.__init__(self, x, y, w, h)
+        QGraphicsEllipseItem.__init__(self, 0, 0, w, h)
+        self.setPos(x, y)
         pen = QPen(color)
         pen.setWidth(2)
         self.setPen(pen)
@@ -172,6 +171,14 @@ class Ellipse(ResizableMixin, SnapToGridMixin, QGraphicsEllipseItem):
         )
         self.setAcceptHoverEvents(True)
         self.setToolTip("Clique droit pour modifier")
+
+    def rect(self):
+        return QGraphicsEllipseItem.rect(self)
+
+    def setRect(self, x, y, w, h):
+        r = QRectF(x, y, w, h).normalized()
+        QGraphicsEllipseItem.setRect(self, 0, 0, r.width(), r.height())
+        self.setPos(r.x(), r.y())
 
 
 class LineResizableMixin:

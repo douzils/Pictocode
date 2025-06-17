@@ -864,3 +864,11 @@ class CanvasWidget(QGraphicsView):
     def zoom_out(self):
         self.scale(0.8, 0.8)
 
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Escape and self._temp_item:
+            self.scene.removeItem(self._temp_item)
+            self._temp_item = None
+            self._start_pos = None
+            return
+        super().keyPressEvent(event)
+
