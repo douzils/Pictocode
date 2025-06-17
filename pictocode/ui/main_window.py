@@ -1,15 +1,16 @@
 # pictocode/ui/main_window.py
 import os, json
 from PyQt5.QtWidgets import (
-    QMainWindow, QDockWidget, QStackedWidget, QWidget,
-    QAction, QFileDialog, QMessageBox, QDialog
+    QMainWindow, QDockWidget, QStackedWidget, QWidget, QVBoxLayout, QMenuBar,
+    QAction, QFileDialog, QMessageBox, QDialog, QGraphicsOpacityEffect
 )
-from PyQt5.QtCore import Qt, QSettings
+from PyQt5.QtCore import Qt, QSettings, QPropertyAnimation
 from PyQt5.QtGui import QPalette, QColor, QKeySequence
 from PyQt5.QtWidgets import QApplication
 from ..utils import generate_pycode
 from ..canvas import CanvasWidget
 from .toolbar import Toolbar
+from .title_bar import TitleBar
 from .inspector import Inspector
 from .home_page import HomePage
 from .new_project_dialog import NewProjectDialog
@@ -21,6 +22,7 @@ PROJECTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Project
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
+        self.setWindowFlags(self.windowFlags() | Qt.FramelessWindowHint)
         self.setWindowTitle('Pictocode')
         self.resize(1024, 768)
 
@@ -30,6 +32,17 @@ class MainWindow(QMainWindow):
         # Stack home ↔ document
         self.stack = QStackedWidget()
         self.setCentralWidget(self.stack)
+
+        # Custom title bar and menu
+        self._menu_container = QWidget(self)
+        _ml = QVBoxLayout(self._menu_container)
+        _ml.setContentsMargins(0, 0, 0, 0)
+        _ml.setSpacing(0)
+        self.title_bar = TitleBar(self)
+        _ml.addWidget(self.title_bar)
+        self.menu_bar = QMenuBar(self._menu_container)
+        _ml.addWidget(self.menu_bar)
+        self.setMenuWidget(self._menu_container)
 
         # Page accueil
         self.home = HomePage(self)
@@ -81,6 +94,7 @@ class MainWindow(QMainWindow):
         # état courant
         self.current_project_path = None
         self.unsaved_changes = False
+        self._current_anim = None
 
         # Paramètres de l'application
         self.settings = QSettings("pictocode", "pictocode")
@@ -99,7 +113,7 @@ class MainWindow(QMainWindow):
         self._load_shortcuts()
 
     def _build_menu(self):
-        mb = self.menuBar()
+        mb = self.menu_bar
         from .animated_menu import AnimatedMenu
         filem = AnimatedMenu("Fichier", self)
         mb.addMenu(filem)
@@ -231,7 +245,7 @@ class MainWindow(QMainWindow):
         self.toolbar.setVisible(True)
         self.inspector_dock.setVisible(True)
         # bascule sur le canvas
-        self.stack.setCurrentWidget(self.canvas)
+        self._switch_page(self.canvas)
         self.current_project_path = None
         self.set_dirty(False)
 
@@ -262,7 +276,7 @@ class MainWindow(QMainWindow):
         # bascule UI
         self.toolbar.setVisible(True)
         self.inspector_dock.setVisible(True)
-        self.stack.setCurrentWidget(self.canvas)
+        self._switch_page(self.canvas)
         self.setWindowTitle(f"Pictocode — {params.get('name','')}")
         self.set_dirty(False)
 
@@ -335,7 +349,7 @@ class MainWindow(QMainWindow):
     def back_to_home(self):
         if not self.maybe_save():
             return
-        self.stack.setCurrentWidget(self.home)
+        self._switch_page(self.home)
         self.toolbar.setVisible(False)
         self.inspector_dock.setVisible(False)
 
@@ -387,6 +401,34 @@ class MainWindow(QMainWindow):
                 if action is not None:
                     action.setShortcut(QKeySequence(seq))
                     self.settings.setValue(f"shortcut_{name}", seq)
+
+    def _switch_page(self, widget):
+        current = self.stack.currentWidget()
+        if current is widget:
+            return
+        out_eff = QGraphicsOpacityEffect(current)
+        current.setGraphicsEffect(out_eff)
+        out_anim = QPropertyAnimation(out_eff, b"opacity", self)
+        out_anim.setDuration(200)
+        out_anim.setStartValue(1)
+        out_anim.setEndValue(0)
+
+        def _on_fade_out():
+            current.setGraphicsEffect(None)
+            self.stack.setCurrentWidget(widget)
+            in_eff = QGraphicsOpacityEffect(widget)
+            widget.setGraphicsEffect(in_eff)
+            in_anim = QPropertyAnimation(in_eff, b"opacity", self)
+            in_anim.setDuration(200)
+            in_anim.setStartValue(0)
+            in_anim.setEndValue(1)
+            in_anim.finished.connect(lambda: widget.setGraphicsEffect(None))
+            in_anim.start(QPropertyAnimation.DeleteWhenStopped)
+            self._current_anim = in_anim
+
+        out_anim.finished.connect(_on_fade_out)
+        out_anim.start(QPropertyAnimation.DeleteWhenStopped)
+        self._current_anim = out_anim
     def apply_theme(
         self,
         theme: str,
@@ -438,6 +480,9 @@ class MainWindow(QMainWindow):
         self.setStyleSheet(
             f"QToolBar {{ background: {toolbar_color.name()}; color: white; font-size: {toolbar_font_size}pt; }}\n"
             f"QMenuBar {{ background: {menu_color.name()}; color: white; font-size: {menu_font_size}pt; border-radius: 4px; }}\n"
+            f"QWidget#title_bar {{ background: {toolbar_color.name()}; color: white; font-size: {toolbar_font_size}pt; }}\n"
+            f"QWidget#title_bar QPushButton {{ border: none; background: transparent; color: white; padding: 4px; }}\n"
+            f"QWidget#title_bar QPushButton:hover {{ background: {toolbar_color.darker(110).name()}; }}\n"
             f"QMenuBar::item:selected {{ background: {menu_color.darker(120).name()}; }}\n"
             f"QMenu {{ background-color: {menu_color.name()}; color: white; border-radius: 6px; }}\n"
             f"QMenu::item:selected {{ background-color: {menu_color.darker(130).name()}; }}"

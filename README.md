@@ -116,6 +116,9 @@ Dans le menu **Préférences**, vous pouvez choisir le thème (clair ou sombre),
 définir une couleur et une taille de police spécifique pour la barre de menu,
 la barre d'outils et l'inspecteur. Les menus disposent d'une animation
 d'ouverture pour un rendu plus élégant.
+Une barre de titre personnalisée adopte également ces réglages, avec les boutons
+de réduction, plein écran et fermeture.
+Les passages entre l'accueil et le canvas utilisent désormais un effet de fondu.
 
 ### Raccourcis personnalisables
 
