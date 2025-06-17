@@ -12,6 +12,9 @@ Ce dépôt contient **l'intégralité du code source** de l'application. Les mod
 - Liste des projets sauvegardés dans le dossier `Projects` avec icônes.
 - Liste de modèles et formats disponibles (double-cliquez pour préremplir la création de projet).
 - Recherche instantanée pour retrouver rapidement un projet existant.
+- Liste de modèles et formats disponibles (double-cliquez pour préremplir la création de projet).
+- Recherche instantanée pour retrouver rapidement un projet existant.
+
 
 ### Création d'un projet
 - Fenêtre de création avec choix du nom, des dimensions et de l'unité.

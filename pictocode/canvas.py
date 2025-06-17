@@ -321,7 +321,11 @@ class CanvasWidget(QGraphicsView):
         super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event):
+
         if self.current_tool == "pan" or self._middle_pan:
+
+        if self._middle_pan:
+
             super().mouseMoveEvent(event)
             return
         scene_pos = self.mapToScene(event.pos())

@@ -1,3 +1,4 @@
+
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QFormLayout, QComboBox, QDialogButtonBox,
     QLineEdit, QColorDialog, QSpinBox
@@ -14,6 +15,7 @@ class AppSettingsDialog(QDialog):
                  dock_color: QColor | str | None = None,
                  menu_font_size: int | None = None, toolbar_font_size: int | None = None,
                  dock_font_size: int | None = None, parent=None):
+
         super().__init__(parent)
         self.setWindowTitle("Paramètres de l'application")
         self.setModal(True)
@@ -28,6 +30,7 @@ class AppSettingsDialog(QDialog):
         idx = self.theme_combo.findText(current_theme)
         if idx >= 0:
             self.theme_combo.setCurrentIndex(idx)
+
         form.addRow("Thème :", self.theme_combo)
 
         # Accent color
@@ -75,6 +78,7 @@ class AppSettingsDialog(QDialog):
         self.dock_font_spin.setValue(int(dock_font_size or font_size))
         form.addRow("Police inspecteur :", self.dock_font_spin)
 
+
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel, Qt.Horizontal, self)
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
@@ -114,3 +118,4 @@ class AppSettingsDialog(QDialog):
 
     def get_dock_font_size(self) -> int:
         return self.dock_font_spin.value()
+
