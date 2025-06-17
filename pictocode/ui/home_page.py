@@ -15,7 +15,7 @@ class HomePage(QWidget):
     - Bouton « Nouveau projet »
     - Double-clic sur un projet pour l’ouvrir
     """
-    PROJECTS_DIR = os.path.join(os.getcwd(), "Projects")
+    PROJECTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Projects")
 
     def __init__(self, parent):
         super().__init__(parent)
