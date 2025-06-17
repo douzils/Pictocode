@@ -2,6 +2,8 @@
 
 Pictocode est une application permettant de composer visuellement des formes pour ensuite générer du code. Son interface rappelle les logiciels de dessin comme Illustrator.
 
+Ce dépôt contient **l'intégralité du code source** de l'application. Les modules Python se trouvent dans le package `pictocode` et implémentent l'ensemble des fonctionnalités décrites ci-dessous.
+
 ## Fonctionnalités principales
 
 ### Écran d'accueil
@@ -187,3 +189,18 @@ Deux méthodes sont possibles :
    ```
 
 Ces commandes ouvrent la fenêtre principale de l'éditeur.
+
+### Exporter une image
+
+Depuis un projet ouvert, utilisez le menu **Fichier > Exporter en image…**
+pour enregistrer le contenu du canvas au format PNG ou JPEG.
+
+### Exporter en SVG
+
+Le menu **Fichier > Exporter en SVG…** permet d'enregistrer un fichier `.svg`
+contenant toutes les formes vectorielles du canvas.
+
+### Exporter le code Python
+
+Utilisez **Fichier > Exporter en code Python…** pour générer un script
+`PyQt5` reproduisant les formes de votre projet.
