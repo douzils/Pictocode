@@ -250,16 +250,25 @@ class CanvasWidget(QGraphicsView):
                            stroke=stroke)
             elif cls == 'FreehandPath':
                 path = item.path()
-                cmds = []
-                for i in range(path.elementCount()):
-                    ept = path.elementAt(i)
-                    cmd = 'M' if i == 0 else 'L'
-                    cmds.append(f"{cmd}{ept.x} {ept.y}")
-                SubElement(root, 'path', d=' '.join(cmds), fill='none', stroke=stroke)
+                pts = [path.elementAt(i) for i in range(path.elementCount())]
+                if len(pts) > 2 and pts[0].x == pts[-1].x and pts[0].y == pts[-1].y:
+                    points = ' '.join(f"{p.x},{p.y}" for p in pts[:-1])
+                    SubElement(root, 'polygon', points=points, fill='none', stroke=stroke)
+                else:
+                    cmds = []
+                    for i, ept in enumerate(pts):
+                        cmd = 'M' if i == 0 else 'L'
+                        cmds.append(f"{cmd}{ept.x} {ept.y}")
+                    SubElement(root, 'path', d=' '.join(cmds), fill='none', stroke=stroke)
             elif cls == 'TextItem':
-                SubElement(root, 'text', x=str(item.x()),
-                           y=str(item.y() + item.font().pointSize()),
-                           fill=item.defaultTextColor().name()).text = item.toPlainText()
+                SubElement(
+                    root,
+                    'text',
+                    x=str(item.x()),
+                    y=str(item.y() + item.font().pointSize()),
+                    fill=item.defaultTextColor().name(),
+                    **{'font-size': str(item.font().pointSize())}
+                ).text = item.toPlainText()
 
         ElementTree(root).write(path, encoding='utf-8', xml_declaration=True)
 
@@ -324,9 +333,9 @@ class CanvasWidget(QGraphicsView):
     def mouseMoveEvent(self, event):
 
         if self.current_tool == "pan" or self._middle_pan:
-
+            super().mouseMoveEvent(event)
+            return
         if self._middle_pan:
-
             super().mouseMoveEvent(event)
             return
         scene_pos = self.mapToScene(event.pos())
