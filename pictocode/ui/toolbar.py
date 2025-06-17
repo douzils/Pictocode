@@ -26,6 +26,10 @@ class Toolbar(QToolBar):
         free_act.triggered.connect(lambda: self.canvas.set_tool("freehand"))
         self.addAction(free_act)
 
+        poly_act = QAction("Polygone", self)
+        poly_act.triggered.connect(lambda: self.canvas.set_tool("polygon"))
+        self.addAction(poly_act)
+
         # Texte
         text_act = QAction("Texte", self)
         text_act.triggered.connect(lambda: self.canvas.set_tool("text"))
