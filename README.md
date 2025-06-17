@@ -205,8 +205,3 @@ contenant toutes les formes vectorielles du canvas.
 Utilisez **Fichier > Exporter en code Python…** pour générer un script
 `PyQt5` reproduisant les formes de votre projet.
 
-### Personnaliser l'apparence
-
-Dans le menu **Préférences**, vous pouvez choisir le thème (clair ou sombre),
-la couleur d'accent et la taille globale de police afin d'adapter l'interface
-à vos envies.
