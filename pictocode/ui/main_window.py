@@ -7,11 +7,13 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt, QSettings
 from PyQt5.QtGui import QPalette, QColor
 from PyQt5.QtWidgets import QApplication
+from ..utils import generate_pycode
 from ..canvas import CanvasWidget
 from .toolbar import Toolbar
 from .inspector import Inspector
 from .home_page import HomePage
 from .new_project_dialog import NewProjectDialog
+from .animated_menu import AnimatedMenu
 
 PROJECTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Projects")
 
@@ -67,11 +69,23 @@ class MainWindow(QMainWindow):
         # Paramètres de l'application
         self.settings = QSettings("pictocode", "pictocode")
         self.current_theme = self.settings.value("theme", "Light")
-        self.apply_theme(self.current_theme)
+        self.accent_color = QColor(self.settings.value("accent_color", "#2a82da"))
+        self.font_size = int(self.settings.value("font_size", 10))
+        self.menu_color = QColor(self.settings.value("menu_color", self.accent_color.name()))
+        self.toolbar_color = QColor(self.settings.value("toolbar_color", self.accent_color.name()))
+        self.dock_color = QColor(self.settings.value("dock_color", self.accent_color.name()))
+        self.menu_font_size = int(self.settings.value("menu_font_size", self.font_size))
+        self.toolbar_font_size = int(self.settings.value("toolbar_font_size", self.font_size))
+        self.dock_font_size = int(self.settings.value("dock_font_size", self.font_size))
+        self.apply_theme(self.current_theme, self.accent_color, self.font_size,
+                         self.menu_color, self.toolbar_color, self.dock_color,
+                         self.menu_font_size, self.toolbar_font_size, self.dock_font_size)
 
     def _build_menu(self):
         mb = self.menuBar()
-        filem = mb.addMenu("Fichier")
+        from .animated_menu import AnimatedMenu
+        filem = AnimatedMenu("Fichier", self)
+        mb.addMenu(filem)
 
         new_act = QAction("Nouveau…", self)
         new_act.triggered.connect(self.open_new_project_dialog)
@@ -91,6 +105,18 @@ class MainWindow(QMainWindow):
         saveas_act.triggered.connect(self.save_as_project)
         filem.addAction(saveas_act)
 
+        export_img_act = QAction("Exporter en image…", self)
+        export_img_act.triggered.connect(self.export_image)
+        filem.addAction(export_img_act)
+
+        export_svg_act = QAction("Exporter en SVG…", self)
+        export_svg_act.triggered.connect(self.export_svg)
+        filem.addAction(export_svg_act)
+
+        export_code_act = QAction("Exporter en code Python…", self)
+        export_code_act.triggered.connect(self.export_pycode)
+        filem.addAction(export_code_act)
+
         filem.addSeparator()
 
         home_act = QAction("Accueil", self)
@@ -101,12 +127,14 @@ class MainWindow(QMainWindow):
         exit_act.triggered.connect(self.close)
         filem.addAction(exit_act)
 
-        projectm = mb.addMenu("Projet")
+        projectm = AnimatedMenu("Projet", self)
+        mb.addMenu(projectm)
         props_act = QAction("Paramètres…", self)
         props_act.triggered.connect(self.open_project_settings)
         projectm.addAction(props_act)
 
-        prefm = mb.addMenu("Préférences")
+        prefm = AnimatedMenu("Préférences", self)
+        mb.addMenu(prefm)
         app_act = QAction("Apparence…", self)
         app_act.triggered.connect(self.open_app_settings)
         prefm.addAction(app_act)
@@ -226,6 +254,50 @@ class MainWindow(QMainWindow):
             self.save_project()
             self.setWindowTitle(f"Pictocode — {os.path.basename(path)[:-5]}")
 
+    def export_image(self):
+        path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Exporter comme image",
+            PROJECTS_DIR,
+            "PNG (*.png);;JPEG (*.jpg *.jpeg)"
+        )
+        if path:
+            fmt = "PNG"
+            lower = path.lower()
+            if lower.endswith(".jpg") or lower.endswith(".jpeg"):
+                fmt = "JPEG"
+            self.canvas.export_image(path, fmt)
+
+    def export_svg(self):
+        path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Exporter comme SVG",
+            PROJECTS_DIR,
+            "SVG (*.svg)"
+        )
+        if path:
+            if not path.lower().endswith('.svg'):
+                path += '.svg'
+            self.canvas.export_svg(path)
+
+    def export_pycode(self):
+        path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Exporter en code Python",
+            PROJECTS_DIR,
+            "Python (*.py)"
+        )
+        if path:
+            if not path.lower().endswith('.py'):
+                path += '.py'
+            shapes = [it for it in self.canvas.scene.items() if it is not self.canvas._frame_item]
+            code = generate_pycode(shapes)
+            try:
+                with open(path, 'w', encoding='utf-8') as f:
+                    f.write(code)
+            except Exception as e:
+                QMessageBox.critical(self, "Erreur", f"Impossible d'exporter : {e}")
+
     def back_to_home(self):
         if not self.maybe_save():
             return
@@ -243,14 +315,56 @@ class MainWindow(QMainWindow):
     # ------------------------------------------------------------------
     def open_app_settings(self):
         from .app_settings_dialog import AppSettingsDialog
-        dlg = AppSettingsDialog(self.current_theme, self)
+        dlg = AppSettingsDialog(
+            self.current_theme,
+            self.accent_color,
+            self.font_size,
+            self.menu_color,
+            self.toolbar_color,
+            self.dock_color,
+            self.menu_font_size,
+            self.toolbar_font_size,
+            self.dock_font_size,
+            self,
+        )
         if dlg.exec_() == QDialog.Accepted:
             theme = dlg.get_theme()
-            self.apply_theme(theme)
-
-    def apply_theme(self, theme: str):
-        """Applique un th\u00e8me clair ou sombre."""
+            accent = dlg.get_accent_color()
+            font_size = dlg.get_font_size()
+            menu_col = dlg.get_menu_color()
+            toolbar_col = dlg.get_toolbar_color()
+            dock_col = dlg.get_dock_color()
+            menu_fs = dlg.get_menu_font_size()
+            toolbar_fs = dlg.get_toolbar_font_size()
+            dock_fs = dlg.get_dock_font_size()
+            self.apply_theme(
+                theme, accent, font_size,
+                menu_col, toolbar_col, dock_col,
+                menu_fs, toolbar_fs, dock_fs,
+            )
+    def apply_theme(
+        self,
+        theme: str,
+        accent: QColor | None = None,
+        font_size: int | None = None,
+        menu_color: QColor | None = None,
+        toolbar_color: QColor | None = None,
+        dock_color: QColor | None = None,
+        menu_font_size: int | None = None,
+        toolbar_font_size: int | None = None,
+        dock_font_size: int | None = None,
+    ):
+        """Applique un thème clair ou sombre ainsi que des réglages personnalisés."""
         app = QApplication.instance()
+        accent = accent or self.accent_color
+        font_size = font_size or self.font_size
+        menu_color = menu_color or self.menu_color
+        toolbar_color = toolbar_color or self.toolbar_color
+        dock_color = dock_color or self.dock_color
+        menu_font_size = menu_font_size or self.menu_font_size
+        toolbar_font_size = toolbar_font_size or self.toolbar_font_size
+        dock_font_size = dock_font_size or self.dock_font_size
+
         if theme.lower() == "dark":
             pal = QPalette()
             pal.setColor(QPalette.Window, QColor(53, 53, 53))
@@ -262,15 +376,53 @@ class MainWindow(QMainWindow):
             pal.setColor(QPalette.Text, Qt.white)
             pal.setColor(QPalette.Button, QColor(53, 53, 53))
             pal.setColor(QPalette.ButtonText, Qt.white)
-            pal.setColor(QPalette.Highlight, QColor(42, 130, 218))
+            pal.setColor(QPalette.Highlight, accent)
             pal.setColor(QPalette.HighlightedText, Qt.black)
             app.setPalette(pal)
             app.setStyle("Fusion")
         else:
-            app.setPalette(app.style().standardPalette())
+            pal = app.style().standardPalette()
+            pal.setColor(QPalette.Highlight, accent)
+            app.setPalette(pal)
             app.setStyle("Fusion")
+
+        font = app.font()
+        font.setPointSize(int(font_size))
+        app.setFont(font)
+
+        self.setStyleSheet(
+            f"QToolBar {{ background: {toolbar_color.name()}; color: white; font-size: {toolbar_font_size}pt; }}\n"
+            f"QMenuBar {{ background: {menu_color.name()}; color: white; font-size: {menu_font_size}pt; border-radius: 4px; }}\n"
+            f"QMenuBar::item:selected {{ background: {menu_color.darker(120).name()}; }}\n"
+            f"QMenu {{ background-color: {menu_color.name()}; color: white; border-radius: 6px; }}\n"
+            f"QMenu::item:selected {{ background-color: {menu_color.darker(130).name()}; }}"
+        )
+        self.inspector_dock.setStyleSheet(
+            f"QDockWidget {{ background: {dock_color.name()}; }}"
+        )
+        self.inspector.setStyleSheet(
+            f"font-size: {dock_font_size}pt;"
+        )
+
         self.current_theme = theme
+        self.accent_color = accent
+        self.font_size = font_size
+        self.menu_color = menu_color
+        self.toolbar_color = toolbar_color
+        self.dock_color = dock_color
+        self.menu_font_size = menu_font_size
+        self.toolbar_font_size = toolbar_font_size
+        self.dock_font_size = dock_font_size
         self.settings.setValue("theme", theme)
+        self.settings.setValue("accent_color", accent.name())
+        self.settings.setValue("font_size", font_size)
+        self.settings.setValue("menu_color", menu_color.name())
+        self.settings.setValue("toolbar_color", toolbar_color.name())
+        self.settings.setValue("dock_color", dock_color.name())
+        self.settings.setValue("menu_font_size", menu_font_size)
+        self.settings.setValue("toolbar_font_size", toolbar_font_size)
+        self.settings.setValue("dock_font_size", dock_font_size)
+
 
 
 def main(app, argv):
