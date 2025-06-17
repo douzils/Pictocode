@@ -6,13 +6,11 @@ from PyQt5.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QLabel,
-    QPushButton,
     QListWidget,
     QListWidgetItem,
     QMessageBox,
-    QHBoxLayout,
     QStyle,
-    QLineEdit,
+    QMenu,
 )
 from PyQt5.QtCore import Qt
 
@@ -48,21 +46,32 @@ class HomePage(QWidget):
         subtitle.setObjectName("subtitle_label")
         vbox.addWidget(subtitle)
 
-        # Zone de recherche
-        search_hbox = QHBoxLayout()
-        self.search_edit = QLineEdit()
-        self.search_edit.setPlaceholderText("Rechercher...")
-        self.search_edit.textChanged.connect(self.filter_projects)
-        search_hbox.addWidget(self.search_edit)
-        vbox.addLayout(search_hbox)
+        # Liste des favoris
+        fav_label = QLabel("Projets favoris")
+        fav_label.setObjectName("section_label")
+        vbox.addWidget(fav_label)
+        self.fav_list = QListWidget()
+        self.fav_list.setObjectName("favorites_list")
+        self.fav_list.itemDoubleClicked.connect(self._on_project_double_click)
+        self.fav_list.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.fav_list.customContextMenuRequested.connect(self._on_fav_menu)
+        vbox.addWidget(self.fav_list)
 
-        # Liste des projets
-        self.list_widget = QListWidget()
-        self.list_widget.setObjectName("project_list")
-        self.list_widget.itemDoubleClicked.connect(self._on_project_double_click)
-        vbox.addWidget(self.list_widget, 1)
+        # Liste des projets récents
+        recent_label = QLabel("Projets récents")
+        recent_label.setObjectName("section_label")
+        vbox.addWidget(recent_label)
+        self.recent_list = QListWidget()
+        self.recent_list.setObjectName("recent_list")
+        self.recent_list.itemDoubleClicked.connect(self._on_project_double_click)
+        self.recent_list.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.recent_list.customContextMenuRequested.connect(self._on_recent_menu)
+        vbox.addWidget(self.recent_list)
 
         # Liste des modèles (très simple)
+        tmpl_label = QLabel("Modèles")
+        tmpl_label.setObjectName("section_label")
+        vbox.addWidget(tmpl_label)
         self.template_list = QListWidget()
         self.template_list.setObjectName("template_list")
         self.template_list.addItem("A4 Portrait (210×297 mm)")
@@ -71,22 +80,8 @@ class HomePage(QWidget):
         self.template_list.itemDoubleClicked.connect(self._on_template_double_click)
         vbox.addWidget(self.template_list)
 
-        # Boutons bas
-        hbox = QHBoxLayout()
-        self.new_btn = QPushButton("➕ Nouveau projet")
-        self.new_btn.setObjectName("new_btn")
-        self.new_btn.clicked.connect(self.parent.open_new_project_dialog)
-        hbox.addWidget(self.new_btn)
-
-        self.refresh_btn = QPushButton("🔄 Rafraîchir")
-        self.refresh_btn.setObjectName("refresh_btn")
-        self.refresh_btn.clicked.connect(self.populate_projects)
-        hbox.addWidget(self.refresh_btn)
-
-        vbox.addLayout(hbox)
-
-        # Remplit la liste au démarrage
-        self.populate_projects()
+        # Remplit les listes au démarrage
+        self.populate_lists()
 
         self._apply_styles()
 
@@ -108,7 +103,8 @@ class HomePage(QWidget):
                 color: white;
                 padding-bottom: 12px;
             }
-            QListWidget#project_list {
+            QListWidget#favorites_list,
+            QListWidget#recent_list {
                 background: rgba(255, 255, 255, 0.85);
                 border-radius: 8px;
                 padding: 6px;
@@ -119,46 +115,43 @@ class HomePage(QWidget):
                 padding: 4px;
                 margin-top: 8px;
             }
-            QLineEdit {
-                border-radius: 6px;
-                padding: 4px 8px;
-            }
-            QListWidget#project_list::item {
+            QListWidget#favorites_list::item,
+            QListWidget#recent_list::item {
                 padding: 6px;
             }
-            QPushButton#new_btn,
-            QPushButton#refresh_btn {
-                background: white;
-                color: #333;
-                border-radius: 6px;
-                padding: 6px 12px;
-            }
-            QPushButton#new_btn:hover,
-            QPushButton#refresh_btn:hover {
-                background: #f0f0f0;
+            QLabel#section_label {
+                color: white;
+                font-weight: bold;
+                margin-top: 8px;
             }
             """
         )
 
-    def populate_projects(self):
-        """Scanne PROJECTS_DIR et affiche chaque projet (fichiers .json)."""
-        self.list_widget.clear()
+    def populate_lists(self):
+        self._populate_list(self.fav_list, self.parent.favorite_projects, "(Aucun favori)")
+        self._populate_list(self.recent_list, self.parent.recent_projects, "(Aucun projet récent)")
+
+    def _populate_list(self, widget: QListWidget, paths: list, empty_text: str):
+        widget.clear()
         style = self.style()
         icon = style.standardIcon(QStyle.SP_FileIcon)
-        for fname in sorted(os.listdir(self.PROJECTS_DIR)):
-            if fname.endswith(".json"):
-                path = os.path.join(self.PROJECTS_DIR, fname)
-                try:
-                    with open(path, "r", encoding="utf-8") as f:
-                        meta = json.load(f)
-                    display = meta.get("name", fname[:-5])
-                except Exception:
-                    display = fname[:-5]
-                item = QListWidgetItem(icon, display)
-                item.setData(Qt.UserRole, path)
-                self.list_widget.addItem(item)
-        if self.list_widget.count() == 0:
-            self.list_widget.addItem("(Aucun projet trouvé)")
+        valid = []
+        for path in paths:
+            if not os.path.exists(path):
+                continue
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    meta = json.load(f)
+                display = meta.get("name", os.path.basename(path)[:-5])
+            except Exception:
+                display = os.path.basename(path)[:-5]
+            item = QListWidgetItem(icon, display)
+            item.setData(Qt.UserRole, path)
+            widget.addItem(item)
+            valid.append(path)
+        if widget.count() == 0:
+            widget.addItem(empty_text)
+        return valid
 
     def _on_project_double_click(self, item: QListWidgetItem):
         """Ouvre le projet sélectionné."""
@@ -193,14 +186,6 @@ class HomePage(QWidget):
         # Appelle MainWindow pour ouvrir le projet
         self.parent.open_project(path, params, shapes)
 
-    # ------------------------------------------------------------------
-    def filter_projects(self, text: str):
-        """Filtre la liste des projets selon la recherche."""
-        for row in range(self.list_widget.count()):
-            item = self.list_widget.item(row)
-            visible = text.lower() in item.text().lower()
-            item.setHidden(not visible)
-
     def _on_template_double_click(self, item: QListWidgetItem):
         """Pré-remplit le dialogue de nouveau projet avec un modèle."""
         text = item.text()
@@ -218,3 +203,28 @@ class HomePage(QWidget):
             dlg.unit_combo.setCurrentText("px")
             dlg.orient_combo.setCurrentText("Paysage")
         dlg.open()
+
+    def _on_recent_menu(self, pos):
+        item = self.recent_list.itemAt(pos)
+        if not item:
+            return
+        path = item.data(Qt.UserRole)
+        menu = QMenu(self)
+        if path in self.parent.favorite_projects:
+            act = menu.addAction("Retirer des favoris")
+        else:
+            act = menu.addAction("Ajouter aux favoris")
+        if menu.exec_(self.recent_list.mapToGlobal(pos)) == act:
+            self.parent.toggle_favorite_project(path)
+            self.populate_lists()
+
+    def _on_fav_menu(self, pos):
+        item = self.fav_list.itemAt(pos)
+        if not item:
+            return
+        path = item.data(Qt.UserRole)
+        menu = QMenu(self)
+        act = menu.addAction("Retirer des favoris")
+        if menu.exec_(self.fav_list.mapToGlobal(pos)) == act:
+            self.parent.toggle_favorite_project(path)
+            self.populate_lists()

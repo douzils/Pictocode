@@ -57,6 +57,11 @@ class MainWindow(QMainWindow):
         _ml.addWidget(self.menu_bar)
         self.setMenuWidget(self._menu_container)
 
+        # Paramètres de l'application
+        self.settings = QSettings("pictocode", "pictocode")
+        self.favorite_projects = self.settings.value("favorite_projects", [], type=list)
+        self.recent_projects = self.settings.value("recent_projects", [], type=list)
+
         # Page accueil
         self.home = HomePage(self)
         self.stack.addWidget(self.home)
@@ -138,16 +143,12 @@ class MainWindow(QMainWindow):
             "toggle_snap": "Ctrl+Shift+G",
         }
 
-        # Connexions
-        self.home.new_btn.clicked.connect(self.open_new_project_dialog)
-
         # état courant
         self.current_project_path = None
         self.unsaved_changes = False
         self._current_anim = None
 
-        # Paramètres de l'application
-        self.settings = QSettings("pictocode", "pictocode")
+        # Paramètres de thème et raccourcis
         self.current_theme = self.settings.value("theme", "Light")
         self.accent_color = QColor(self.settings.value("accent_color", "#2a82da"))
         self.font_size = int(self.settings.value("font_size", 10))
@@ -423,6 +424,8 @@ class MainWindow(QMainWindow):
         self._switch_page(self.canvas)
         self.setWindowTitle(f"Pictocode — {params.get('name','')}")
         self.set_dirty(False)
+        self.add_recent_project(path)
+        self.home.populate_lists()
 
     def save_project(self):
         if not self.current_project_path:
@@ -432,6 +435,8 @@ class MainWindow(QMainWindow):
             with open(self.current_project_path, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
             self.set_dirty(False)
+            self.add_recent_project(self.current_project_path)
+            self.home.populate_lists()
         except Exception as e:
             QMessageBox.critical(self, "Erreur", f"Impossible d'enregistrer : {e}")
 
@@ -683,11 +688,12 @@ class MainWindow(QMainWindow):
 
         self.setStyleSheet(
             f"QToolBar {{ background: {toolbar_color.name()}; color: white; font-size: {toolbar_font_size}pt; }}\n"
-            f"QMenuBar {{ background: {menu_color.name()}; color: white; font-size: {menu_font_size}pt; border-radius: 4px; }}\n"
+            f"QMenuBar {{ background: transparent; color: {menu_color.name()}; font-size: {menu_font_size}pt; padding: 2px; }}\n"
+            f"QMenuBar::item {{ background: transparent; padding: 2px 6px; }}\n"
             f"QWidget#title_bar {{ background: {toolbar_color.name()}; color: white; font-size: {toolbar_font_size}pt; }}\n"
             f"QWidget#title_bar QPushButton {{ border: none; background: transparent; color: white; padding: 4px; }}\n"
             f"QWidget#title_bar QPushButton:hover {{ background: {toolbar_color.darker(110).name()}; }}\n"
-            f"QMenuBar::item:selected {{ background: {menu_color.darker(120).name()}; }}\n"
+            f"QMenuBar::item:selected {{ background: {menu_color.darker(120).name()}; color: white; }}\n"
             f"QMenu {{ background-color: {menu_color.name()}; color: white; border-radius: 6px; }}\n"
             f"QMenu::item:selected {{ background-color: {menu_color.darker(130).name()}; }}"
         )
@@ -731,6 +737,21 @@ class MainWindow(QMainWindow):
             )
             if seq:
                 action.setShortcut(QKeySequence(seq))
+
+    # --- Gestion favoris et récents ------------------------------------
+    def add_recent_project(self, path: str):
+        if path in self.recent_projects:
+            self.recent_projects.remove(path)
+        self.recent_projects.insert(0, path)
+        self.recent_projects = self.recent_projects[:10]
+        self.settings.setValue("recent_projects", self.recent_projects)
+
+    def toggle_favorite_project(self, path: str):
+        if path in self.favorite_projects:
+            self.favorite_projects.remove(path)
+        else:
+            self.favorite_projects.insert(0, path)
+        self.settings.setValue("favorite_projects", self.favorite_projects)
 
 
 def main(app, argv):
