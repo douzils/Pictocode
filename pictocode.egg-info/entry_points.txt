@@ -1,2 +1,0 @@
-[console_scripts]
-pictocode = pictocode.__main__:main
