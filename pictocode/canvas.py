@@ -27,7 +27,7 @@ class CanvasWidget(QGraphicsView):
         self._polygon_points = None
         self._polygon_item = None
         self._poly_preview_line = None
-        self.pen_color = QColor("white")
+        self.pen_color = QColor("black")
 
         # Grille et magnétisme
         # grid_size correspond à l’écart en pixels à l’échelle 1:1
@@ -43,6 +43,7 @@ class CanvasWidget(QGraphicsView):
         self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
         self._prev_drag_mode = None
         self._middle_pan = False
+        self._pan_start = None
 
         # Cadre de la zone de travail (sera redessiné par new_document)
         self._doc_rect = QRectF(0, 0, 800, 800)
@@ -338,8 +339,9 @@ class CanvasWidget(QGraphicsView):
         if event.button() == Qt.MiddleButton:
             # Déplacement temporaire avec le clic molette
             self._prev_drag_mode = self.dragMode()
-            self.setDragMode(QGraphicsView.ScrollHandDrag)
+            self.setDragMode(QGraphicsView.NoDrag)
             self._middle_pan = True
+            self._pan_start = event.pos()
         elif event.button() == Qt.LeftButton:
             if self.snap_to_grid:
                 scale = self.transform().m11() or 1
@@ -418,11 +420,18 @@ class CanvasWidget(QGraphicsView):
 
     def mouseMoveEvent(self, event):
 
-        if self.current_tool == "pan" or self._middle_pan:
+        if self.current_tool == "pan":
             super().mouseMoveEvent(event)
             return
         if self._middle_pan:
-            super().mouseMoveEvent(event)
+            delta = event.pos() - self._pan_start
+            self._pan_start = event.pos()
+            self.horizontalScrollBar().setValue(
+                self.horizontalScrollBar().value() - delta.x()
+            )
+            self.verticalScrollBar().setValue(
+                self.verticalScrollBar().value() - delta.y()
+            )
             return
         scene_pos = self.mapToScene(event.pos())
         if self.snap_to_grid:
@@ -446,9 +455,12 @@ class CanvasWidget(QGraphicsView):
         elif self._temp_item and self._start_pos:
             x0, y0 = self._start_pos.x(), self._start_pos.y()
             if self.current_tool in ("rect", "ellipse"):
-                self._temp_item.setRect(x0, y0, scene_pos.x() - x0, scene_pos.y() - y0)
+                self._temp_item.setRect(
+                    x0, y0, scene_pos.x() - x0, scene_pos.y() - y0
+                )
             elif self.current_tool == "line":
                 self._temp_item.setLine(x0, y0, scene_pos.x(), scene_pos.y())
+            return
         super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event):
@@ -456,9 +468,8 @@ class CanvasWidget(QGraphicsView):
             super().mouseReleaseEvent(event)
             return
         if self._middle_pan and event.button() == Qt.MiddleButton:
-            self.setDragMode(self._prev_drag_mode or QGraphicsView.NoDrag)
             self._middle_pan = False
-            super().mouseReleaseEvent(event)
+            self.setDragMode(self._prev_drag_mode or QGraphicsView.NoDrag)
             return
         scene_pos = self.mapToScene(event.pos())
         if self.snap_to_grid:
@@ -489,12 +500,16 @@ class CanvasWidget(QGraphicsView):
         elif self._temp_item and self._start_pos:
             x0, y0 = self._start_pos.x(), self._start_pos.y()
             if self.current_tool in ("rect", "ellipse"):
-                self._temp_item.setRect(x0, y0, scene_pos.x() - x0, scene_pos.y() - y0)
+                self._temp_item.setRect(
+                    x0, y0, scene_pos.x() - x0, scene_pos.y() - y0
+                )
             elif self.current_tool == "line":
                 self._temp_item.setLine(x0, y0, scene_pos.x(), scene_pos.y())
             self._temp_item.setOpacity(1.0)
             self._temp_item = None
             self._mark_dirty()
+            self._start_pos = None
+            return
         self._start_pos = None
         super().mouseReleaseEvent(event)
 

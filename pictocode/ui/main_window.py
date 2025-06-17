@@ -499,6 +499,9 @@ class MainWindow(QMainWindow):
         self._switch_page(self.home)
         self.toolbar.setVisible(False)
         self.inspector_dock.setVisible(False)
+        self.layers_dock.setVisible(False)
+        self.imports_dock.setVisible(False)
+        self.panel_dock.setVisible(False)
 
     # --- Edit actions -------------------------------------------------
     def copy_selection(self):
