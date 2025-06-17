@@ -10,6 +10,10 @@ Ce dépôt contient **l'intégralité du code source** de l'application. Les mod
 - Interface modernisée avec en‑tête coloré.
 - Bouton **Nouveau projet** pour créer un canvas vierge.
 - Liste des projets sauvegardés dans le dossier `Projects` avec icônes.
+
+- Liste de modèles et formats disponibles (double-cliquez pour préremplir la création de projet).
+- Recherche instantanée pour retrouver rapidement un projet existant.
+
 - 
 - Liste de modèles et formats disponibles (double-cliquez pour préremplir la création de projet).
 - Recherche instantanée pour retrouver rapidement un projet existant.
@@ -28,16 +32,21 @@ Ce dépôt contient **l'intégralité du code source** de l'application. Les mod
 
 ### Fenêtre de paramètres
 - **Général** : choix de la langue.
+- **Apparence** : personnalisation fine de l'interface. Chaque zone (menu, barre d'outils, inspecteur) peut
+  avoir sa propre couleur d'accent et sa taille de police.
+
 
 - **Apparence** : personnalisation fine de l'interface. Chaque zone (menu, barre d'outils, inspecteur) peut
   avoir sa propre couleur d'accent et sa taille de police.
 
 
 ### Dans un projet
-- Canvas avec grille optionnelle et magnétisme.
+- Canvas avec grille optionnelle et magnétisme. La grille s'adapte à
+  l'échelle de zoom pour conserver un espacement lisible.
 - Outils : rectangle, ellipse, ligne, tracé libre, texte, sélection et gomme.
 - Choix de la couleur des formes.
-- Zoom à la molette et déplacement (pan).
+- Zoom à la molette et déplacement (pan). Un clic molette permet de
+  déplacer temporairement la vue.
 - Inspecteur pour modifier position, taille et couleur de l'objet sélectionné.
 - Sauvegarde du projet au format JSON et génération de code Python.
 

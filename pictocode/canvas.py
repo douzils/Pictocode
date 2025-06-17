@@ -25,6 +25,7 @@ class CanvasWidget(QGraphicsView):
         self.pen_color = QColor("black")
 
         # Grille et magnétisme
+        # grid_size correspond à l’écart en pixels à l’échelle 1:1
         self.grid_size = 50
         self.show_grid = True
         self.snap_to_grid = False
@@ -34,6 +35,9 @@ class CanvasWidget(QGraphicsView):
 
         # Pan & Zoom
         self.setDragMode(QGraphicsView.NoDrag)
+        self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
+        self._prev_drag_mode = None
+        self._middle_pan = False
 
         # Cadre de la zone de travail (sera redessiné par new_document)
         self._doc_rect = QRectF(0, 0, 800, 800)
@@ -255,9 +259,15 @@ class CanvasWidget(QGraphicsView):
 
     def mousePressEvent(self, event):
         scene_pos = self.mapToScene(event.pos())
-        if event.button() == Qt.LeftButton:
+        if event.button() == Qt.MiddleButton:
+            # Déplacement temporaire avec le clic molette
+            self._prev_drag_mode = self.dragMode()
+            self.setDragMode(QGraphicsView.ScrollHandDrag)
+            self._middle_pan = True
+        elif event.button() == Qt.LeftButton:
             if self.snap_to_grid:
-                grid = self.grid_size
+                scale = self.transform().m11() or 1
+                grid = self.grid_size / scale
                 scene_pos.setX(round(scene_pos.x() / grid) * grid)
                 scene_pos.setY(round(scene_pos.y() / grid) * grid)
             if self.current_tool in ("rect", "ellipse", "line"):
@@ -282,9 +292,13 @@ class CanvasWidget(QGraphicsView):
         super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event):
+        if self._middle_pan:
+            super().mouseMoveEvent(event)
+            return
         scene_pos = self.mapToScene(event.pos())
         if self.snap_to_grid:
-            grid = self.grid_size
+            scale = self.transform().m11() or 1
+            grid = self.grid_size / scale
             scene_pos.setX(round(scene_pos.x() / grid) * grid)
             scene_pos.setY(round(scene_pos.y() / grid) * grid)
         if self.current_tool == "freehand" and self._freehand_points is not None:
@@ -304,9 +318,15 @@ class CanvasWidget(QGraphicsView):
         super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event):
+        if self._middle_pan and event.button() == Qt.MiddleButton:
+            self.setDragMode(self._prev_drag_mode or QGraphicsView.NoDrag)
+            self._middle_pan = False
+            super().mouseReleaseEvent(event)
+            return
         scene_pos = self.mapToScene(event.pos())
         if self.snap_to_grid:
-            grid = self.grid_size
+            scale = self.transform().m11() or 1
+            grid = self.grid_size / scale
             scene_pos.setX(round(scene_pos.x() / grid) * grid)
             scene_pos.setY(round(scene_pos.y() / grid) * grid)
         if self.current_tool == "freehand" and self._freehand_points:
@@ -336,7 +356,8 @@ class CanvasWidget(QGraphicsView):
     def mouseDoubleClickEvent(self, event):
         scene_pos = self.mapToScene(event.pos())
         if self.snap_to_grid:
-            grid = self.grid_size
+            scale = self.transform().m11() or 1
+            grid = self.grid_size / scale
             scene_pos.setX(round(scene_pos.x() / grid) * grid)
             scene_pos.setY(round(scene_pos.y() / grid) * grid)
         items = self.scene.items(scene_pos)
@@ -360,7 +381,12 @@ class CanvasWidget(QGraphicsView):
             return
         pen = QPen(QColor(220, 220, 220), 0)
         painter.setPen(pen)
-        gs = self.grid_size
+        # Taille de la grille en coordonnées scène pour conserver
+        # un espacement constant à l'écran malgré le zoom
+        scale = self.transform().m11()
+        if scale == 0:
+            scale = 1
+        gs = self.grid_size / scale
         left = int(math.floor(rect.left()))
         right = int(math.ceil(rect.right()))
         top = int(math.floor(rect.top()))

@@ -8,7 +8,6 @@ from PyQt5.QtCore import Qt, QSettings
 from PyQt5.QtGui import QPalette, QColor
 from PyQt5.QtWidgets import QApplication
 from ..utils import generate_pycode
-
 from ..canvas import CanvasWidget
 from .toolbar import Toolbar
 from .inspector import Inspector
@@ -406,13 +405,11 @@ class MainWindow(QMainWindow):
         )
         self.inspector.setStyleSheet(
             f"font-size: {dock_font_size}pt;"
-
         )
 
         self.current_theme = theme
         self.accent_color = accent
         self.font_size = font_size
-
         self.menu_color = menu_color
         self.toolbar_color = toolbar_color
         self.dock_color = dock_color
