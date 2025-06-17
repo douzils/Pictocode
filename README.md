@@ -25,7 +25,7 @@ Ce dépôt contient **l'intégralité du code source** de l'application. Les mod
 
 ### Fenêtre de paramètres
 - **Général** : choix de la langue.
-- **Apparence** : personnalisation des couleurs, bordures, etc.
+- **Apparence** : personnalisation des couleurs (thème, couleur d'accent), bordures et taille de police.
 
 ### Dans un projet
 - Canvas avec grille optionnelle et magnétisme.
@@ -204,3 +204,9 @@ contenant toutes les formes vectorielles du canvas.
 
 Utilisez **Fichier > Exporter en code Python…** pour générer un script
 `PyQt5` reproduisant les formes de votre projet.
+
+### Personnaliser l'apparence
+
+Dans le menu **Préférences**, vous pouvez choisir le thème (clair ou sombre),
+la couleur d'accent et la taille globale de police afin d'adapter l'interface
+à vos envies.

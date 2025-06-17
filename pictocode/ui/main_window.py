@@ -68,7 +68,9 @@ class MainWindow(QMainWindow):
         # Paramètres de l'application
         self.settings = QSettings("pictocode", "pictocode")
         self.current_theme = self.settings.value("theme", "Light")
-        self.apply_theme(self.current_theme)
+        self.accent_color = QColor(self.settings.value("accent_color", "#2a82da"))
+        self.font_size = int(self.settings.value("font_size", 10))
+        self.apply_theme(self.current_theme, self.accent_color, self.font_size)
 
     def _build_menu(self):
         mb = self.menuBar()
@@ -300,14 +302,18 @@ class MainWindow(QMainWindow):
     # ------------------------------------------------------------------
     def open_app_settings(self):
         from .app_settings_dialog import AppSettingsDialog
-        dlg = AppSettingsDialog(self.current_theme, self)
+        dlg = AppSettingsDialog(self.current_theme, self.accent_color, self.font_size, self)
         if dlg.exec_() == QDialog.Accepted:
             theme = dlg.get_theme()
-            self.apply_theme(theme)
-
-    def apply_theme(self, theme: str):
-        """Applique un th\u00e8me clair ou sombre."""
+            accent = dlg.get_accent_color()
+            font_size = dlg.get_font_size()
+            self.apply_theme(theme, accent, font_size)
+    def apply_theme(self, theme: str, accent: QColor | None = None, font_size: int | None = None):
+        """Applique un thème clair ou sombre ainsi que des réglages personnels."""
         app = QApplication.instance()
+        accent = accent or self.accent_color
+        font_size = font_size or self.font_size
+
         if theme.lower() == "dark":
             pal = QPalette()
             pal.setColor(QPalette.Window, QColor(53, 53, 53))
@@ -319,15 +325,33 @@ class MainWindow(QMainWindow):
             pal.setColor(QPalette.Text, Qt.white)
             pal.setColor(QPalette.Button, QColor(53, 53, 53))
             pal.setColor(QPalette.ButtonText, Qt.white)
-            pal.setColor(QPalette.Highlight, QColor(42, 130, 218))
+            pal.setColor(QPalette.Highlight, accent)
             pal.setColor(QPalette.HighlightedText, Qt.black)
             app.setPalette(pal)
             app.setStyle("Fusion")
         else:
-            app.setPalette(app.style().standardPalette())
+            pal = app.style().standardPalette()
+            pal.setColor(QPalette.Highlight, accent)
+            app.setPalette(pal)
             app.setStyle("Fusion")
+
+        font = app.font()
+        font.setPointSize(int(font_size))
+        app.setFont(font)
+
+        self.setStyleSheet(
+            f"QToolBar {{ background: {accent.name()}; color: white; }}\n" +
+            f"QMenuBar {{ background: {accent.darker(120).name()}; color: white; }}\n" +
+            f"QMenuBar::item:selected {{ background: {accent.darker(140).name()}; }}"
+        )
+
         self.current_theme = theme
+        self.accent_color = accent
+        self.font_size = font_size
         self.settings.setValue("theme", theme)
+        self.settings.setValue("accent_color", accent.name())
+        self.settings.setValue("font_size", font_size)
+
 
 
 def main(app, argv):
