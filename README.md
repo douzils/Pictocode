@@ -12,6 +12,9 @@ Ce dépôt contient **l'intégralité du code source** de l'application. Les mod
 - Liste des projets sauvegardés dans le dossier `Projects` avec icônes.
 - Liste de modèles et formats disponibles (double-cliquez pour préremplir la création de projet).
 - Recherche instantanée pour retrouver rapidement un projet existant.
+- Liste de modèles et formats disponibles (double-cliquez pour préremplir la création de projet).
+- Recherche instantanée pour retrouver rapidement un projet existant.
+
 
 ### Création d'un projet
 - Fenêtre de création avec choix du nom, des dimensions et de l'unité.
@@ -29,12 +32,19 @@ Ce dépôt contient **l'intégralité du code source** de l'application. Les mod
 - **Apparence** : personnalisation fine de l'interface. Chaque zone (menu, barre d'outils, inspecteur) peut
   avoir sa propre couleur d'accent et sa taille de police.
 
+
+- **Apparence** : personnalisation fine de l'interface. Chaque zone (menu, barre d'outils, inspecteur) peut
+  avoir sa propre couleur d'accent et sa taille de police.
+
+
 ### Dans un projet
 - Canvas avec grille optionnelle et magnétisme. La grille s'adapte à
   l'échelle de zoom pour conserver un espacement lisible.
 - Outils : rectangle, ellipse, ligne, polygone, tracé libre, texte, sélection et gomme.
 - Choix de la couleur des formes.
 - Clic droit sur une forme pour modifier couleur, remplissage ou bordure.
+=======
+
 - Zoom à la molette et déplacement (pan). Un clic molette permet de
   déplacer temporairement la vue.
 - Inspecteur pour modifier position, taille et couleur de l'objet sélectionné.
@@ -210,9 +220,11 @@ contenant toutes les formes vectorielles du canvas.
 Utilisez **Fichier > Exporter en code Python…** pour générer un script
 `PyQt5` reproduisant les formes de votre projet.
 
+
 ### Personnaliser l'apparence
 
 Dans le menu **Préférences**, vous pouvez choisir le thème (clair ou sombre),
 définir une couleur et une taille de police spécifique pour la barre de menu,
 la barre d'outils et l'inspecteur. Les menus disposent d'une animation
 d'ouverture pour un rendu plus élégant.
+
