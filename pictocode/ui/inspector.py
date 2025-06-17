@@ -20,6 +20,13 @@ class Inspector(QWidget):
         self.color_btn.setReadOnly(True)
         self.layout.addRow("Couleur :", self.color_btn)
 
+        self.text_field = QLineEdit(self)
+        self.font_field = QLineEdit(self)
+        self.layout.addRow("Texte :", self.text_field)
+        self.layout.addRow("Taille :", self.font_field)
+        self.text_field.hide()
+        self.font_field.hide()
+
         # Item courant
         self._item = None
 
@@ -29,6 +36,8 @@ class Inspector(QWidget):
             (self.y_field, lambda val: self._item.setY(int(val))),
             (self.w_field, lambda val: self._item.setRect(0,0,int(self.w_field.text()), self._item.rect().height())),
             (self.h_field, lambda val: self._item.setRect(0,0,self._item.rect().width(), int(val))),
+            (self.text_field, lambda val: self._item.setPlainText(val) if hasattr(self._item, 'setPlainText') else None),
+            (self.font_field, lambda val: self._set_font_size(int(val))),
         ):
             fld.editingFinished.connect(lambda fld=fld, st=setter: self._update_field(fld, st))
 
@@ -45,6 +54,14 @@ class Inspector(QWidget):
         self.h_field.setText(str(int(r.height())))
         pen = item.pen().color().name() if hasattr(item, "pen") else "#000000"
         self.color_btn.setText(pen)
+        if hasattr(item, 'toPlainText'):
+            self.text_field.show()
+            self.font_field.show()
+            self.text_field.setText(item.toPlainText())
+            self.font_field.setText(str(item.font().pointSize()))
+        else:
+            self.text_field.hide()
+            self.font_field.hide()
 
     def _update_field(self, fld, setter):
         try:
@@ -60,3 +77,10 @@ class Inspector(QWidget):
             pen.setColor(col)
             self._item.setPen(pen)
             self.color_btn.setText(col.name())
+
+    def _set_font_size(self, size: int):
+        if hasattr(self._item, 'font'):
+            f = self._item.font()
+            f.setPointSize(size)
+            self._item.setFont(f)
+
