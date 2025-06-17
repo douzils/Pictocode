@@ -116,3 +116,10 @@ Dans le menu **Préférences**, vous pouvez choisir le thème (clair ou sombre),
 définir une couleur et une taille de police spécifique pour la barre de menu,
 la barre d'outils et l'inspecteur. Les menus disposent d'une animation
 d'ouverture pour un rendu plus élégant.
+
+### Raccourcis personnalisables
+
+Une boîte de dialogue **Préférences > Raccourcis…** permet de modifier les
+combinaisons clavier associées aux principales commandes (ouvrir, enregistrer,
+etc.). Les raccourcis choisis sont sauvegardés et réappliqués au lancement de
+l'application.
