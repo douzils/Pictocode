@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import QMenu, QGraphicsOpacityEffect
-from PyQt5.QtCore import QPropertyAnimation
+from PyQt5.QtCore import QPropertyAnimation, QEasingCurve
 
 
 class AnimatedMenu(QMenu):
@@ -11,6 +11,7 @@ class AnimatedMenu(QMenu):
         self.setGraphicsEffect(self._effect)
         self._anim = QPropertyAnimation(self._effect, b"opacity", self)
         self._anim.setDuration(150)
+        self._anim.setEasingCurve(QEasingCurve.InOutQuad)
 
     def showEvent(self, event):
         self._effect.setOpacity(0)

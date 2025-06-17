@@ -17,6 +17,7 @@ class CanvasWidget(QGraphicsView):
         # Scène
         self.scene = QGraphicsScene(self)
         self.setScene(self.scene)
+        self.setViewportUpdateMode(QGraphicsView.BoundingRectViewportUpdate)
 
         # Outil actif
         self.current_tool = None
@@ -455,9 +456,8 @@ class CanvasWidget(QGraphicsView):
         elif self._temp_item and self._start_pos:
             x0, y0 = self._start_pos.x(), self._start_pos.y()
             if self.current_tool in ("rect", "ellipse"):
-                self._temp_item.setRect(
-                    x0, y0, scene_pos.x() - x0, scene_pos.y() - y0
-                )
+                rect = QRectF(x0, y0, scene_pos.x() - x0, scene_pos.y() - y0).normalized()
+                self._temp_item.setRect(rect)
             elif self.current_tool == "line":
                 self._temp_item.setLine(x0, y0, scene_pos.x(), scene_pos.y())
             return
@@ -500,9 +500,8 @@ class CanvasWidget(QGraphicsView):
         elif self._temp_item and self._start_pos:
             x0, y0 = self._start_pos.x(), self._start_pos.y()
             if self.current_tool in ("rect", "ellipse"):
-                self._temp_item.setRect(
-                    x0, y0, scene_pos.x() - x0, scene_pos.y() - y0
-                )
+                rect = QRectF(x0, y0, scene_pos.x() - x0, scene_pos.y() - y0).normalized()
+                self._temp_item.setRect(rect)
             elif self.current_tool == "line":
                 self._temp_item.setLine(x0, y0, scene_pos.x(), scene_pos.y())
             self._temp_item.setOpacity(1.0)
