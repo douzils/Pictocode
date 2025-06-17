@@ -43,6 +43,11 @@ def generate_pycode(shapes):
             if shp.brush().style() != 0:
                 fill = shp.brush().color().name()
                 lines.append(f"rect{i}.setBrush(QBrush(QColor('{fill}')))")
+            lines.append(f"rect{i}.setPos({shp.x()}, {shp.y()})")
+            if shp.rotation() != 0:
+                lines.append(f"rect{i}.setRotation({shp.rotation()})")
+            if shp.zValue() != 0:
+                lines.append(f"rect{i}.setZValue({shp.zValue()})")
             lines.append(f"scene.addItem(rect{i})")
 
         elif cls == "Ellipse":
@@ -56,6 +61,11 @@ def generate_pycode(shapes):
             if shp.brush().style() != 0:
                 fill = shp.brush().color().name()
                 lines.append(f"ellipse{i}.setBrush(QBrush(QColor('{fill}')))")
+            lines.append(f"ellipse{i}.setPos({shp.x()}, {shp.y()})")
+            if shp.rotation() != 0:
+                lines.append(f"ellipse{i}.setRotation({shp.rotation()})")
+            if shp.zValue() != 0:
+                lines.append(f"ellipse{i}.setZValue({shp.zValue()})")
             lines.append(f"scene.addItem(ellipse{i})")
 
         elif cls == "Line":
@@ -66,6 +76,11 @@ def generate_pycode(shapes):
             color = shp.pen().color().name()
             width = shp.pen().width()
             lines.append(f"line{i}.setPen(QPen(QColor('{color}'), {width}))")
+            lines.append(f"line{i}.setPos({shp.x()}, {shp.y()})")
+            if shp.rotation() != 0:
+                lines.append(f"line{i}.setRotation({shp.rotation()})")
+            if shp.zValue() != 0:
+                lines.append(f"line{i}.setZValue({shp.zValue()})")
             lines.append(f"scene.addItem(line{i})")
 
         elif cls == "FreehandPath":
@@ -84,6 +99,11 @@ def generate_pycode(shapes):
                 if shp.brush().style() != 0:
                     fill = shp.brush().color().name()
                     lines.append(f"poly_item{i}.setBrush(QBrush(QColor('{fill}')))")
+                lines.append(f"poly_item{i}.setPos({shp.x()}, {shp.y()})")
+                if shp.rotation() != 0:
+                    lines.append(f"poly_item{i}.setRotation({shp.rotation()})")
+                if shp.zValue() != 0:
+                    lines.append(f"poly_item{i}.setZValue({shp.zValue()})")
                 lines.append(f"scene.addItem(poly_item{i})")
             else:
                 lines.append(f"path{i} = QPainterPath()")
@@ -97,6 +117,11 @@ def generate_pycode(shapes):
                 if shp.brush().style() != 0:
                     fill = shp.brush().color().name()
                     lines.append(f"path_item{i}.setBrush(QBrush(QColor('{fill}')))")
+                lines.append(f"path_item{i}.setPos({shp.x()}, {shp.y()})")
+                if shp.rotation() != 0:
+                    lines.append(f"path_item{i}.setRotation({shp.rotation()})")
+                if shp.zValue() != 0:
+                    lines.append(f"path_item{i}.setZValue({shp.zValue()})")
                 lines.append(f"scene.addItem(path_item{i})")
 
         elif cls == "TextItem":
@@ -109,6 +134,10 @@ def generate_pycode(shapes):
             lines.append(f"font{i}.setPointSize({size})")
             lines.append(f"text{i}.setFont(font{i})")
             lines.append(f"text{i}.setDefaultTextColor(QColor('{color}'))")
+            if shp.rotation() != 0:
+                lines.append(f"text{i}.setRotation({shp.rotation()})")
+            if shp.zValue() != 0:
+                lines.append(f"text{i}.setZValue({shp.zValue()})")
             lines.append(f"scene.addItem(text{i})")
 
         lines.append("")
