@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import (
     QAction, QFileDialog, QMessageBox, QDialog
 )
 from PyQt5.QtCore import Qt, QSettings
-from PyQt5.QtGui import QPalette, QColor
+from PyQt5.QtGui import QPalette, QColor, QKeySequence
 from PyQt5.QtWidgets import QApplication
 from ..utils import generate_pycode
 from ..canvas import CanvasWidget
@@ -14,6 +14,7 @@ from .inspector import Inspector
 from .home_page import HomePage
 from .new_project_dialog import NewProjectDialog
 from .animated_menu import AnimatedMenu
+from .shortcut_settings_dialog import ShortcutSettingsDialog
 
 PROJECTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Projects")
 
@@ -59,6 +60,21 @@ class MainWindow(QMainWindow):
         # Barre de menu
         self._build_menu()
 
+        self.default_shortcuts = {
+            'new': 'Ctrl+N',
+            'open': 'Ctrl+O',
+            'save': 'Ctrl+S',
+            'saveas': 'Ctrl+Shift+S',
+            'export_image': 'Ctrl+E',
+            'export_svg': '',
+            'export_code': '',
+            'home': 'Ctrl+H',
+            'exit': 'Ctrl+Q',
+            'project_props': 'Ctrl+P',
+            'appearance': '',
+            'shortcuts': '',
+        }
+
         # Connexions
         self.home.new_btn.clicked.connect(self.open_new_project_dialog)
 
@@ -80,64 +96,82 @@ class MainWindow(QMainWindow):
         self.apply_theme(self.current_theme, self.accent_color, self.font_size,
                          self.menu_color, self.toolbar_color, self.dock_color,
                          self.menu_font_size, self.toolbar_font_size, self.dock_font_size)
+        self._load_shortcuts()
 
     def _build_menu(self):
         mb = self.menuBar()
         from .animated_menu import AnimatedMenu
         filem = AnimatedMenu("Fichier", self)
         mb.addMenu(filem)
+        self.actions = {}
 
         new_act = QAction("Nouveau…", self)
         new_act.triggered.connect(self.open_new_project_dialog)
         filem.addAction(new_act)
+        self.actions['new'] = new_act
 
         open_act = QAction("Ouvrir…", self)
         open_act.triggered.connect(self._on_file_open)
         filem.addAction(open_act)
+        self.actions['open'] = open_act
 
         filem.addSeparator()
 
         save_act = QAction("Enregistrer", self)
         save_act.triggered.connect(self.save_project)
         filem.addAction(save_act)
+        self.actions['save'] = save_act
 
         saveas_act = QAction("Enregistrer sous…", self)
         saveas_act.triggered.connect(self.save_as_project)
         filem.addAction(saveas_act)
+        self.actions['saveas'] = saveas_act
 
         export_img_act = QAction("Exporter en image…", self)
         export_img_act.triggered.connect(self.export_image)
         filem.addAction(export_img_act)
+        self.actions['export_image'] = export_img_act
 
         export_svg_act = QAction("Exporter en SVG…", self)
         export_svg_act.triggered.connect(self.export_svg)
         filem.addAction(export_svg_act)
+        self.actions['export_svg'] = export_svg_act
 
         export_code_act = QAction("Exporter en code Python…", self)
         export_code_act.triggered.connect(self.export_pycode)
         filem.addAction(export_code_act)
+        self.actions['export_code'] = export_code_act
 
         filem.addSeparator()
 
         home_act = QAction("Accueil", self)
         home_act.triggered.connect(self.back_to_home)
         filem.addAction(home_act)
+        self.actions['home'] = home_act
 
         exit_act = QAction("Quitter", self)
         exit_act.triggered.connect(self.close)
         filem.addAction(exit_act)
+        self.actions['exit'] = exit_act
 
         projectm = AnimatedMenu("Projet", self)
         mb.addMenu(projectm)
         props_act = QAction("Paramètres…", self)
         props_act.triggered.connect(self.open_project_settings)
         projectm.addAction(props_act)
+        self.actions['project_props'] = props_act
 
         prefm = AnimatedMenu("Préférences", self)
         mb.addMenu(prefm)
         app_act = QAction("Apparence…", self)
         app_act.triggered.connect(self.open_app_settings)
         prefm.addAction(app_act)
+        self.actions['appearance'] = app_act
+
+        short_act = QAction("Raccourcis…", self)
+        short_act.triggered.connect(self.open_shortcut_settings)
+        prefm.addAction(short_act)
+        self.actions['shortcuts'] = short_act
 
     # ─── Gestion de l'état modifié ─────────────────────────────
     def set_dirty(self, value: bool = True):
@@ -342,6 +376,17 @@ class MainWindow(QMainWindow):
                 menu_col, toolbar_col, dock_col,
                 menu_fs, toolbar_fs, dock_fs,
             )
+
+    def open_shortcut_settings(self):
+        current = {name: act.shortcut().toString() for name, act in self.actions.items()}
+        dlg = ShortcutSettingsDialog(current, self)
+        if dlg.exec_() == QDialog.Accepted:
+            values = dlg.get_shortcuts()
+            for name, seq in values.items():
+                action = self.actions.get(name)
+                if action is not None:
+                    action.setShortcut(QKeySequence(seq))
+                    self.settings.setValue(f"shortcut_{name}", seq)
     def apply_theme(
         self,
         theme: str,
@@ -422,6 +467,13 @@ class MainWindow(QMainWindow):
         self.settings.setValue("menu_font_size", menu_font_size)
         self.settings.setValue("toolbar_font_size", toolbar_font_size)
         self.settings.setValue("dock_font_size", dock_font_size)
+
+    def _load_shortcuts(self):
+        self.actions = getattr(self, 'actions', {})
+        for name, action in self.actions.items():
+            seq = self.settings.value(f"shortcut_{name}", self.default_shortcuts.get(name, ""))
+            if seq:
+                action.setShortcut(QKeySequence(seq))
 
 
 
