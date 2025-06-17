@@ -27,7 +27,7 @@ class SnapToGridMixin:
 
 
 class ResizableMixin:
-    """Ajoute une poignée de redimensionnement et la logique associée."""
+    """Ajoute des poignées de redimensionnement et la logique associée."""
 
     handle_size = 8
 
@@ -36,6 +36,7 @@ class ResizableMixin:
         self._resizing = False
         self._start_pos = QPointF()
         self._start_rect = QRectF()
+        self._active_handle = None  # 0: TL, 1: TR, 2: BR, 3: BL
 
     def paint(self, painter, option, widget=None):
         super().paint(painter, option, widget)
@@ -44,41 +45,69 @@ class ResizableMixin:
             s = self.handle_size
             painter.setBrush(QBrush(Qt.white))
             painter.setPen(QPen(Qt.black))
-            painter.drawRect(r.right() - s, r.bottom() - s, s, s)
+            handles = [
+                QRectF(r.left() - s / 2, r.top() - s / 2, s, s),
+                QRectF(r.right() - s / 2, r.top() - s / 2, s, s),
+                QRectF(r.right() - s / 2, r.bottom() - s / 2, s, s),
+                QRectF(r.left() - s / 2, r.bottom() - s / 2, s, s),
+            ]
+            for handle in handles:
+                painter.drawRect(handle)
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton and self.isSelected():
             r = self.rect()
-            handle = QRectF(
-                r.right() - self.handle_size,
-                r.bottom() - self.handle_size,
-                self.handle_size,
-                self.handle_size,
-            )
-            if handle.contains(event.pos()):
-                self._resizing = True
-                self._start_pos = event.scenePos()
-                self._start_rect = QRectF(r)
-                event.accept()
-                return
+            s = self.handle_size
+            handles = [
+                QRectF(r.left() - s / 2, r.top() - s / 2, s, s),
+                QRectF(r.right() - s / 2, r.top() - s / 2, s, s),
+                QRectF(r.right() - s / 2, r.bottom() - s / 2, s, s),
+                QRectF(r.left() - s / 2, r.bottom() - s / 2, s, s),
+            ]
+            for idx, handle in enumerate(handles):
+                if handle.contains(event.pos()):
+                    self._resizing = True
+                    self._active_handle = idx
+                    self._start_pos = event.scenePos()
+                    self._start_rect = QRectF(r)
+                    event.accept()
+                    return
         super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event):
         if self._resizing:
             delta = event.scenePos() - self._start_pos
-            w = self._start_rect.width() + delta.x()
-            h = self._start_rect.height() + delta.y()
+            x = self._start_rect.x()
+            y = self._start_rect.y()
+            w = self._start_rect.width()
+            h = self._start_rect.height()
+            if self._active_handle == 0:  # top-left
+                x += delta.x()
+                y += delta.y()
+                w -= delta.x()
+                h -= delta.y()
+            elif self._active_handle == 1:  # top-right
+                y += delta.y()
+                w += delta.x()
+                h -= delta.y()
+            elif self._active_handle == 2:  # bottom-right
+                w += delta.x()
+                h += delta.y()
+            elif self._active_handle == 3:  # bottom-left
+                x += delta.x()
+                w -= delta.x()
+                h += delta.y()
             if event.modifiers() & Qt.ShiftModifier:
                 aspect = (
                     self._start_rect.width() / self._start_rect.height()
                     if self._start_rect.height()
                     else 1
                 )
-                if abs(delta.x()) > abs(delta.y()):
-                    h = w / aspect
+                if abs(w) / aspect > abs(h):
+                    h = abs(w) / aspect * (1 if h >= 0 else -1)
                 else:
-                    w = h * aspect
-            self.setRect(self._start_rect.x(), self._start_rect.y(), w, h)
+                    w = abs(h) * aspect * (1 if w >= 0 else -1)
+            self.setRect(x, y, w, h)
             event.accept()
             return
         super().mouseMoveEvent(event)
@@ -86,6 +115,7 @@ class ResizableMixin:
     def mouseReleaseEvent(self, event):
         if self._resizing:
             self._resizing = False
+            self._active_handle = None
             event.accept()
             return
         super().mouseReleaseEvent(event)
