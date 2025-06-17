@@ -91,7 +91,11 @@ class ResizableMixin:
 class Rect(ResizableMixin, SnapToGridMixin, QGraphicsRectItem):
     """Rectangle déplaçable, sélectionnable et redimensionnable."""
     def __init__(self, x, y, w, h, color: QColor = QColor('white')):
-        super().__init__(x, y, w, h)
+        # Initialise explicitement les différentes bases pour
+        # éviter que ``ResizableMixin`` ne reçoive des arguments
+        # inattendus via ``super()``.
+        ResizableMixin.__init__(self)
+        QGraphicsRectItem.__init__(self, x, y, w, h)
         pen = QPen(color)
         pen.setWidth(2)
         self.setPen(pen)
@@ -109,7 +113,8 @@ class Rect(ResizableMixin, SnapToGridMixin, QGraphicsRectItem):
 class Ellipse(ResizableMixin, SnapToGridMixin, QGraphicsEllipseItem):
     """Ellipse déplaçable, sélectionnable et redimensionnable."""
     def __init__(self, x, y, w, h, color: QColor = QColor('white')):
-        super().__init__(x, y, w, h)
+        ResizableMixin.__init__(self)
+        QGraphicsEllipseItem.__init__(self, x, y, w, h)
         pen = QPen(color)
         pen.setWidth(2)
         self.setPen(pen)
