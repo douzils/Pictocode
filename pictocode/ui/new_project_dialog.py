@@ -1,10 +1,16 @@
 # pictocode/ui/new_project_dialog.py
 
 from PyQt5.QtWidgets import (
-    QDialog, QVBoxLayout, QFormLayout, QLineEdit,
-    QSpinBox, QComboBox, QDialogButtonBox
+    QDialog,
+    QVBoxLayout,
+    QFormLayout,
+    QLineEdit,
+    QSpinBox,
+    QComboBox,
+    QDialogButtonBox,
 )
 from PyQt5.QtCore import Qt
+
 
 class NewProjectDialog(QDialog):
     def __init__(self, parent=None):
@@ -56,8 +62,7 @@ class NewProjectDialog(QDialog):
 
         # Boutons OK / Annuler
         buttons = QDialogButtonBox(
-            QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
-            Qt.Horizontal, self
+            QDialogButtonBox.Ok | QDialogButtonBox.Cancel, Qt.Horizontal, self
         )
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
@@ -68,13 +73,15 @@ class NewProjectDialog(QDialog):
         Retourne tous les paramètres, y compris le nom.
         """
         return {
-            'name':        self.name_edit.text().strip(),
-            'width':       self.width_spin.value(),
-            'height':      self.height_spin.value(),
-            'unit':        self.unit_combo.currentText(),
-            'orientation': 'portrait'
-                           if self.orient_combo.currentText() == "Portrait"
-                           else 'landscape',
-            'color_mode':  self.color_combo.currentText(),
-            'dpi':         self.dpi_spin.value(),
+            "name": self.name_edit.text().strip(),
+            "width": self.width_spin.value(),
+            "height": self.height_spin.value(),
+            "unit": self.unit_combo.currentText(),
+            "orientation": (
+                "portrait"
+                if self.orient_combo.currentText() == "Portrait"
+                else "landscape"
+            ),
+            "color_mode": self.color_combo.currentText(),
+            "dpi": self.dpi_spin.value(),
         }

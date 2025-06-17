@@ -1,6 +1,7 @@
 from PyQt5.QtWidgets import QToolBar, QAction, QColorDialog
 from PyQt5.QtGui import QIcon, QColor
 
+
 class Toolbar(QToolBar):
     def __init__(self, parent):
         super().__init__("Outils", parent)
@@ -60,7 +61,9 @@ class Toolbar(QToolBar):
 
     def choose_color(self):
         """Ouvre une palette, récupère la couleur et la passe au canvas."""
-        color = QColorDialog.getColor(self.currentColor, self.parent(), "Choisir une couleur")
+        color = QColorDialog.getColor(
+            self.currentColor, self.parent(), "Choisir une couleur"
+        )
         if color.isValid():
             self.currentColor = color
             self.canvas.set_pen_color(color)
