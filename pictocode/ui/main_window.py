@@ -61,6 +61,7 @@ class MainWindow(QMainWindow):
         self.favorite_projects = self.settings.value("favorite_projects", [], type=list)
         self.recent_projects = self.settings.value("recent_projects", [], type=list)
         self.imported_images = self.settings.value("imported_images", [], type=list)
+        self.template_projects = self.settings.value("template_projects", [], type=list)
 
         # Page accueil
         self.home = HomePage(self)
@@ -156,6 +157,12 @@ class MainWindow(QMainWindow):
         self.dock_color = QColor(
             self.settings.value("dock_color", self.accent_color.name())
         )
+        self.flag_active_color = QColor(
+            self.settings.value("flag_active_color", "#da8a8a")
+        )
+        self.flag_inactive_color = QColor(
+            self.settings.value("flag_inactive_color", "#a95555")
+        )
         self.menu_font_size = int(self.settings.value("menu_font_size", self.font_size))
         self.toolbar_font_size = int(
             self.settings.value("toolbar_font_size", self.font_size)
@@ -178,6 +185,8 @@ class MainWindow(QMainWindow):
             self.menu_font_size,
             self.toolbar_font_size,
             self.dock_font_size,
+            self.flag_active_color,
+            self.flag_inactive_color,
         )
         self._apply_handle_settings()
         self._load_shortcuts()
@@ -644,6 +653,8 @@ class MainWindow(QMainWindow):
                 menu_fs,
                 toolbar_fs,
                 dock_fs,
+                self.flag_active_color,
+                self.flag_inactive_color,
             )
             self._apply_handle_settings()
             self.settings.setValue("show_splash", self.show_splash)
@@ -706,6 +717,8 @@ class MainWindow(QMainWindow):
         menu_font_size: int | None = None,
         toolbar_font_size: int | None = None,
         dock_font_size: int | None = None,
+        flag_active: QColor | None = None,
+        flag_inactive: QColor | None = None,
     ):
         """Applique un thème clair ou sombre ainsi que des réglages personnalisés."""
         app = QApplication.instance()
@@ -717,6 +730,8 @@ class MainWindow(QMainWindow):
         menu_font_size = menu_font_size or self.menu_font_size
         toolbar_font_size = toolbar_font_size or self.toolbar_font_size
         dock_font_size = dock_font_size or self.dock_font_size
+        flag_active = flag_active or self.flag_active_color
+        flag_inactive = flag_inactive or self.flag_inactive_color
 
         if theme.lower() == "dark":
             pal = QPalette()
@@ -743,14 +758,18 @@ class MainWindow(QMainWindow):
         font.setPointSize(int(font_size))
         app.setFont(font)
 
+        active = getattr(self, "flag_active_color", QColor("#da8a8a"))
+        inactive = getattr(self, "flag_inactive_color", QColor("#a95555"))
+
         self.setStyleSheet(
             f"QToolBar {{ background: {toolbar_color.name()}; color: white; font-size: {toolbar_font_size}pt; }}\n"
-            f"QMenuBar {{ background: transparent; color: {menu_color.name()}; font-size: {menu_font_size}pt; padding: 2px; }}\n"
-            f"QMenuBar::item {{ background: transparent; padding: 2px 6px; }}\n"
+            f"QMenuBar {{ background: transparent; font-size: {menu_font_size}pt; padding: 2px; }}\n"
+            f"QMenuBar::item {{ background: {inactive.name()}; color: white; padding: 4px 8px; margin: 0 2px; border-top-left-radius:4px; border-top-right-radius:4px; }}\n"
+            f"QMenuBar::item:selected {{ background: {active.name()}; margin-top: 2px; }}\n"
+            f"QMenuBar::item:pressed {{ background: {active.name()}; margin-top: 2px; }}\n"
             f"QWidget#title_bar {{ background: {toolbar_color.name()}; color: white; font-size: {toolbar_font_size}pt; }}\n"
             f"QWidget#title_bar QPushButton {{ border: none; background: transparent; color: white; padding: 4px; }}\n"
             f"QWidget#title_bar QPushButton:hover {{ background: {toolbar_color.darker(110).name()}; }}\n"
-            f"QMenuBar::item:selected {{ background: {menu_color.darker(120).name()}; color: white; }}\n"
             f"QMenu {{ background-color: {menu_color.name()}; color: white; border-radius: 6px; }}\n"
             f"QMenu::item:selected {{ background-color: {menu_color.darker(130).name()}; }}"
         )
@@ -776,6 +795,8 @@ class MainWindow(QMainWindow):
         self.menu_font_size = menu_font_size
         self.toolbar_font_size = toolbar_font_size
         self.dock_font_size = dock_font_size
+        self.flag_active_color = flag_active
+        self.flag_inactive_color = flag_inactive
         self.settings.setValue("theme", theme)
         self.settings.setValue("accent_color", accent.name())
         self.settings.setValue("font_size", font_size)
@@ -785,6 +806,8 @@ class MainWindow(QMainWindow):
         self.settings.setValue("menu_font_size", menu_font_size)
         self.settings.setValue("toolbar_font_size", toolbar_font_size)
         self.settings.setValue("dock_font_size", dock_font_size)
+        self.settings.setValue("flag_active_color", flag_active.name())
+        self.settings.setValue("flag_inactive_color", flag_inactive.name())
 
     def _load_shortcuts(self):
         self.actions = getattr(self, "actions", {})
@@ -853,6 +876,12 @@ class MainWindow(QMainWindow):
         self.imported_images.insert(0, path)
         self.settings.setValue("imported_images", self.imported_images)
         self.imports.add_image(path)
+
+    def add_template_project(self, path: str):
+        if path in self.template_projects:
+            self.template_projects.remove(path)
+        self.template_projects.insert(0, path)
+        self.settings.setValue("template_projects", self.template_projects)
 
 
 def main(app, argv):
