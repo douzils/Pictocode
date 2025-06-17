@@ -26,7 +26,7 @@ class CanvasWidget(QGraphicsView):
         self._polygon_points = None
         self._polygon_item = None
         self._poly_preview_line = None
-        self.pen_color = QColor("black")
+        self.pen_color = QColor("white")
 
         # Grille et magnétisme
         # grid_size correspond à l’écart en pixels à l’échelle 1:1
@@ -299,6 +299,10 @@ class CanvasWidget(QGraphicsView):
                     self.scene.removeItem(items[0])
                     self._mark_dirty()
             elif self.current_tool in ("rect", "ellipse", "line"):
+                items = [it for it in self.scene.items(scene_pos) if it is not self._frame_item]
+                if items:
+                    super().mousePressEvent(event)
+                    return
                 self._start_pos = scene_pos
                 if self.current_tool == "rect":
                     self._temp_item = Rect(scene_pos.x(), scene_pos.y(), 0, 0, self.pen_color)
@@ -437,18 +441,13 @@ class CanvasWidget(QGraphicsView):
             ti = items[0]
             ti.setTextInteractionFlags(Qt.TextEditorInteraction)
             ti.setFocus()
-        elif items:
-            x, y = scene_pos.x(), scene_pos.y()
-            ti = TextItem(x, y, text="Texte", color=self.pen_color)
-            ti.setTextInteractionFlags(Qt.TextEditorInteraction)
-            self.scene.addItem(ti)
-            ti.setFocus()
-            self._mark_dirty()
         else:
             super().mouseDoubleClickEvent(event)
 
     def drawBackground(self, painter, rect):
         super().drawBackground(painter, rect)
+        painter.fillRect(rect, QColor(60, 60, 60))
+        painter.fillRect(self._doc_rect, Qt.white)
         if not self.show_grid:
             return
         pen = QPen(QColor(220, 220, 220), 0)
@@ -459,10 +458,11 @@ class CanvasWidget(QGraphicsView):
         if scale == 0:
             scale = 1
         gs = self.grid_size / scale
-        left = int(math.floor(rect.left()))
-        right = int(math.ceil(rect.right()))
-        top = int(math.floor(rect.top()))
-        bottom = int(math.ceil(rect.bottom()))
+        r = rect.intersected(self._doc_rect)
+        left = int(math.floor(r.left()))
+        right = int(math.ceil(r.right()))
+        top = int(math.floor(r.top()))
+        bottom = int(math.ceil(r.bottom()))
         # verticales
         x = left - int(left % gs)
         while x < right:
@@ -473,6 +473,16 @@ class CanvasWidget(QGraphicsView):
         while y < bottom:
             painter.drawLine(left, int(y), right, int(y))
             y += gs
+
+    def drawForeground(self, painter, rect):
+        super().drawForeground(painter, rect)
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(QColor(0, 0, 0, 100))
+        outer = QPainterPath()
+        outer.addRect(rect)
+        inner = QPainterPath()
+        inner.addRect(self._doc_rect)
+        painter.drawPath(outer.subtracted(inner))
 
     def _show_context_menu(self, event):
         menu = AnimatedMenu(self)

@@ -53,7 +53,7 @@ class Toolbar(QToolBar):
         self.addSeparator()
 
         # Palette de couleurs
-        self.currentColor = QColor("black")
+        self.currentColor = QColor("white")
         color_act = QAction("Couleur...", self)
         color_act.triggered.connect(self.choose_color)
         self.addAction(color_act)
