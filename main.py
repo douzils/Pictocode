@@ -1,7 +1,7 @@
 # pictocode/__main__.py
 import sys
 from PyQt5.QtWidgets import QApplication
-from .ui.main_window import MainWindow
+from pictocode.ui.main_window import MainWindow
 
 def main():
     app = QApplication(sys.argv)
