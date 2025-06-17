@@ -4,7 +4,8 @@ import os
 import json
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QLabel, QPushButton, QListWidget,
-    QListWidgetItem, QMessageBox, QHBoxLayout, QStyle
+    QListWidgetItem, QMessageBox, QHBoxLayout, QStyle, QLineEdit
+
 )
 from PyQt5.QtCore import Qt
 
@@ -38,11 +39,30 @@ class HomePage(QWidget):
         subtitle.setObjectName("subtitle_label")
         vbox.addWidget(subtitle)
 
+
+        # Zone de recherche
+        search_hbox = QHBoxLayout()
+        self.search_edit = QLineEdit()
+        self.search_edit.setPlaceholderText("Rechercher...")
+        self.search_edit.textChanged.connect(self.filter_projects)
+        search_hbox.addWidget(self.search_edit)
+        vbox.addLayout(search_hbox)
+
+
         # Liste des projets
         self.list_widget = QListWidget()
         self.list_widget.setObjectName("project_list")
         self.list_widget.itemDoubleClicked.connect(self._on_project_double_click)
         vbox.addWidget(self.list_widget, 1)
+
+        # Liste des modèles (très simple)
+        self.template_list = QListWidget()
+        self.template_list.setObjectName("template_list")
+        self.template_list.addItem("A4 Portrait (210×297 mm)")
+        self.template_list.addItem("A4 Paysage (297×210 mm)")
+        self.template_list.addItem("HD 1080p (1920×1080 px)")
+        self.template_list.itemDoubleClicked.connect(self._on_template_double_click)
+        vbox.addWidget(self.template_list)
 
         # Boutons bas
         hbox = QHBoxLayout()
@@ -86,6 +106,17 @@ class HomePage(QWidget):
                 border-radius: 8px;
                 padding: 6px;
             }
+
+            QListWidget#template_list {
+                background: rgba(255, 255, 255, 0.6);
+                border-radius: 8px;
+                padding: 4px;
+                margin-top: 8px;
+            }
+            QLineEdit {
+                border-radius: 6px;
+                padding: 4px 8px;
+
             QListWidget#project_list::item {
                 padding: 6px;
             }
@@ -147,3 +178,27 @@ class HomePage(QWidget):
 
         # Appelle MainWindow pour ouvrir le projet
         self.parent.open_project(path, params, shapes)
+
+    # ------------------------------------------------------------------
+    def filter_projects(self, text: str):
+        """Filtre la liste des projets selon la recherche."""
+        for row in range(self.list_widget.count()):
+            item = self.list_widget.item(row)
+            visible = text.lower() in item.text().lower()
+            item.setHidden(not visible)
+
+    def _on_template_double_click(self, item: QListWidgetItem):
+        """Pré-remplit le dialogue de nouveau projet avec un modèle."""
+        text = item.text()
+        dlg = self.parent.new_proj_dlg
+        if "A4" in text:
+            dlg.width_spin.setValue(210 if "Portrait" in text else 297)
+            dlg.height_spin.setValue(297 if "Portrait" in text else 210)
+            dlg.unit_combo.setCurrentText("mm")
+            dlg.orient_combo.setCurrentText("Portrait" if "Portrait" in text else "Paysage")
+        elif "1080p" in text:
+            dlg.width_spin.setValue(1920)
+            dlg.height_spin.setValue(1080)
+            dlg.unit_combo.setCurrentText("px")
+            dlg.orient_combo.setCurrentText("Paysage")
+        dlg.open()
