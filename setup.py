@@ -10,7 +10,7 @@ setup(
         "PyQt5>=5.15"
     ],
     entry_points={
-        "console_scripts": [
+        "gui_scripts": [
             "pictocode = pictocode.__main__:main"
         ]
     },
