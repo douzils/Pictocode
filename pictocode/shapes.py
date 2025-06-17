@@ -5,7 +5,8 @@ from PyQt5.QtWidgets import (
     QGraphicsEllipseItem,
     QGraphicsLineItem,
     QGraphicsPathItem,
-    QGraphicsTextItem
+    QGraphicsTextItem,
+    QGraphicsItem
 )
 from PyQt5.QtGui import (
     QPen,
@@ -30,6 +31,18 @@ class Rect(QGraphicsRectItem):
             | QGraphicsRectItem.ItemIsSelectable
             | QGraphicsRectItem.ItemSendsGeometryChanges
         )
+        self.setAcceptHoverEvents(True)
+        self.setToolTip("Clique droit pour modifier")
+
+    def itemChange(self, change, value):
+        if change == QGraphicsItem.ItemPositionChange and self.scene():
+            view = self.scene().views()[0] if self.scene().views() else None
+            if view and getattr(view, "snap_to_grid", False):
+                scale = view.transform().m11() or 1
+                grid = view.grid_size / scale
+                value.setX(round(value.x() / grid) * grid)
+                value.setY(round(value.y() / grid) * grid)
+        return super().itemChange(change, value)
 
 
 class Ellipse(QGraphicsEllipseItem):
@@ -45,6 +58,18 @@ class Ellipse(QGraphicsEllipseItem):
             | QGraphicsEllipseItem.ItemIsSelectable
             | QGraphicsEllipseItem.ItemSendsGeometryChanges
         )
+        self.setAcceptHoverEvents(True)
+        self.setToolTip("Clique droit pour modifier")
+
+    def itemChange(self, change, value):
+        if change == QGraphicsItem.ItemPositionChange and self.scene():
+            view = self.scene().views()[0] if self.scene().views() else None
+            if view and getattr(view, "snap_to_grid", False):
+                scale = view.transform().m11() or 1
+                grid = view.grid_size / scale
+                value.setX(round(value.x() / grid) * grid)
+                value.setY(round(value.y() / grid) * grid)
+        return super().itemChange(change, value)
 
 
 class Line(QGraphicsLineItem):
@@ -59,6 +84,18 @@ class Line(QGraphicsLineItem):
             | QGraphicsLineItem.ItemIsSelectable
             | QGraphicsLineItem.ItemSendsGeometryChanges
         )
+        self.setAcceptHoverEvents(True)
+        self.setToolTip("Clique droit pour modifier")
+
+    def itemChange(self, change, value):
+        if change == QGraphicsItem.ItemPositionChange and self.scene():
+            view = self.scene().views()[0] if self.scene().views() else None
+            if view and getattr(view, "snap_to_grid", False):
+                scale = view.transform().m11() or 1
+                grid = view.grid_size / scale
+                value.setX(round(value.x() / grid) * grid)
+                value.setY(round(value.y() / grid) * grid)
+        return super().itemChange(change, value)
 
 
 class FreehandPath(QGraphicsPathItem):
@@ -78,6 +115,18 @@ class FreehandPath(QGraphicsPathItem):
             | QGraphicsPathItem.ItemIsSelectable
             | QGraphicsPathItem.ItemSendsGeometryChanges
         )
+        self.setAcceptHoverEvents(True)
+        self.setToolTip("Clique droit pour modifier")
+
+    def itemChange(self, change, value):
+        if change == QGraphicsItem.ItemPositionChange and self.scene():
+            view = self.scene().views()[0] if self.scene().views() else None
+            if view and getattr(view, "snap_to_grid", False):
+                scale = view.transform().m11() or 1
+                grid = view.grid_size / scale
+                value.setX(round(value.x() / grid) * grid)
+                value.setY(round(value.y() / grid) * grid)
+        return super().itemChange(change, value)
 
     @classmethod
     def from_points(cls, points: list[QPointF], pen_color: QColor = QColor('black'), pen_width: int = 2):
@@ -105,3 +154,15 @@ class TextItem(QGraphicsTextItem):
             | QGraphicsTextItem.ItemIsSelectable
             | QGraphicsTextItem.ItemSendsGeometryChanges
         )
+        self.setAcceptHoverEvents(True)
+        self.setToolTip("Clique droit pour modifier")
+
+    def itemChange(self, change, value):
+        if change == QGraphicsItem.ItemPositionChange and self.scene():
+            view = self.scene().views()[0] if self.scene().views() else None
+            if view and getattr(view, "snap_to_grid", False):
+                scale = view.transform().m11() or 1
+                grid = view.grid_size / scale
+                value.setX(round(value.x() / grid) * grid)
+                value.setY(round(value.y() / grid) * grid)
+        return super().itemChange(change, value)
