@@ -35,6 +35,11 @@ class Toolbar(QToolBar):
         text_act.triggered.connect(lambda: self.canvas.set_tool("text"))
         self.addAction(text_act)
 
+        # Pan / déplacement du plan de travail
+        pan_act = QAction("Pan", self)
+        pan_act.triggered.connect(lambda: self.canvas.set_tool("pan"))
+        self.addAction(pan_act)
+
         # Sélection
         sel_act = QAction("Sélection", self)
         sel_act.triggered.connect(lambda: self.canvas.set_tool("select"))
