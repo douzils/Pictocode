@@ -1,7 +1,7 @@
 
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QFormLayout, QComboBox, QDialogButtonBox,
-    QLineEdit, QColorDialog, QSpinBox
+    QLineEdit, QColorDialog, QSpinBox, QCheckBox
 )
 from PyQt5.QtGui import QColor
 from PyQt5.QtCore import Qt
@@ -23,6 +23,7 @@ class AppSettingsDialog(QDialog):
         menu_font_size: Optional[int] = None,
         toolbar_font_size: Optional[int] = None,
         dock_font_size: Optional[int] = None,
+        show_splash: bool = True,
         parent=None,
     ):
 
@@ -89,6 +90,10 @@ class AppSettingsDialog(QDialog):
         self.dock_font_spin.setValue(int(dock_font_size or font_size))
         form.addRow("Police inspecteur :", self.dock_font_spin)
 
+        self.show_splash_chk = QCheckBox()
+        self.show_splash_chk.setChecked(bool(show_splash))
+        form.addRow("Afficher l'écran de démarrage :", self.show_splash_chk)
+
 
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel, Qt.Horizontal, self)
         buttons.accepted.connect(self.accept)
@@ -129,4 +134,7 @@ class AppSettingsDialog(QDialog):
 
     def get_dock_font_size(self) -> int:
         return self.dock_font_spin.value()
+
+    def get_show_splash(self) -> bool:
+        return self.show_splash_chk.isChecked()
 

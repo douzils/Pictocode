@@ -565,4 +565,94 @@ class CanvasWidget(QGraphicsView):
         if hasattr(parent, "set_dirty"):
             parent.set_dirty(True)
 
+    # --- Clipboard / editing helpers ---------------------------------
+    def _serialize_item(self, item):
+        cls = type(item).__name__
+        if cls == "Rect":
+            r = item.rect()
+            return {"type": "rect", "x": r.x(), "y": r.y(), "w": r.width(), "h": r.height(), "color": item.pen().color().name()}
+        if cls == "Ellipse":
+            e = item.rect()
+            return {"type": "ellipse", "x": e.x(), "y": e.y(), "w": e.width(), "h": e.height(), "color": item.pen().color().name()}
+        if cls == "Line":
+            line = item.line()
+            return {"type": "line", "x1": line.x1(), "y1": line.y1(), "x2": line.x2(), "y2": line.y2(), "color": item.pen().color().name()}
+        if cls == "FreehandPath":
+            path = item.path()
+            pts = [(path.elementAt(i).x, path.elementAt(i).y) for i in range(path.elementCount())]
+            return {"type": "path", "points": pts, "color": item.pen().color().name()}
+        if cls == "TextItem":
+            return {"type": "text", "x": item.x(), "y": item.y(), "text": item.toPlainText(), "font_size": item.font().pointSize(), "color": item.defaultTextColor().name()}
+        return None
+
+    def _create_item(self, data):
+        t = data.get("type")
+        if t == "rect":
+            item = Rect(data["x"], data["y"], data["w"], data["h"], QColor(data["color"]))
+        elif t == "ellipse":
+            item = Ellipse(data["x"], data["y"], data["w"], data["h"], QColor(data["color"]))
+        elif t == "line":
+            item = Line(data["x1"], data["y1"], data["x2"], data["y2"], QColor(data["color"]))
+        elif t == "path":
+            pts = [QPointF(p[0], p[1]) for p in data.get("points", [])]
+            item = FreehandPath.from_points(pts, QColor(data.get("color", "black")))
+        elif t == "text":
+            item = TextItem(data["x"], data["y"], data.get("text", ""), data.get("font_size", 12), QColor(data.get("color", "black")))
+        else:
+            return None
+        self.scene.addItem(item)
+        return item
+
+    def copy_selected(self):
+        items = self.scene.selectedItems()
+        if not items:
+            return None
+        return self._serialize_item(items[0])
+
+    def cut_selected(self):
+        data = self.copy_selected()
+        if data:
+            for it in self.scene.selectedItems():
+                self.scene.removeItem(it)
+            self._mark_dirty()
+        return data
+
+    def paste_item(self, data):
+        if not data:
+            return
+        item = self._create_item(data)
+        if item:
+            item.setSelected(True)
+            self._mark_dirty()
+
+    def duplicate_selected(self):
+        data = self.copy_selected()
+        if not data:
+            return
+        if "x" in data:
+            data["x"] += 10
+        if "y" in data:
+            data["y"] += 10
+        if "x1" in data:
+            data["x1"] += 10; data["x2"] += 10
+        if "y1" in data:
+            data["y1"] += 10; data["y2"] += 10
+        self.paste_item(data)
+
+    def delete_selected(self):
+        for it in self.scene.selectedItems():
+            self.scene.removeItem(it)
+        self._mark_dirty()
+
+    def select_all(self):
+        for it in self.scene.items():
+            if it is not self._frame_item:
+                it.setSelected(True)
+
+    def zoom_in(self):
+        self.scale(1.25, 1.25)
+
+    def zoom_out(self):
+        self.scale(0.8, 0.8)
+
 
