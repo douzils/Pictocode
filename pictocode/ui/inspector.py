@@ -61,6 +61,19 @@ class Inspector(QWidget):
     def set_target(self, item):
         """Appelé par le Canvas quand un item est sélectionné."""
         self._item = item
+        if item is None:
+            for fld in (
+                self.x_field,
+                self.y_field,
+                self.w_field,
+                self.h_field,
+                self.color_btn,
+            ):
+                fld.setText("")
+            self.text_field.hide()
+            self.font_field.hide()
+            return
+
         r = item.rect() if hasattr(item, "rect") else item.boundingRect()
         self.x_field.setText(str(int(item.x())))
         self.y_field.setText(str(int(item.y())))
@@ -68,7 +81,7 @@ class Inspector(QWidget):
         self.h_field.setText(str(int(r.height())))
         pen = item.pen().color().name() if hasattr(item, "pen") else "#000000"
         self.color_btn.setText(pen)
-        if hasattr(item, 'toPlainText'):
+        if hasattr(item, "toPlainText"):
             self.text_field.show()
             self.font_field.show()
             self.text_field.setText(item.toPlainText())

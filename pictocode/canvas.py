@@ -663,6 +663,8 @@ class CanvasWidget(QGraphicsView):
                 parent.inspector.set_target(items[0])
                 if hasattr(parent, "layers"):
                     parent.layers.highlight_item(items[0])
+            else:
+                parent.inspector.set_target(None)
 
     def _mark_dirty(self):
         parent = self.parent()
@@ -674,6 +676,13 @@ class CanvasWidget(QGraphicsView):
         parent = self.parent()
         if hasattr(parent, "layers"):
             parent.layers.update_layers(self)
+
+        # Agrandit automatiquement la zone de la scène pour permettre
+        # le déplacement libre des formes en dehors du document initial.
+        bounds = self.scene.itemsBoundingRect().adjusted(-50, -50, 50, 50)
+        if not bounds.contains(self._doc_rect):
+            bounds = bounds.united(self._doc_rect)
+            self.setSceneRect(bounds)
 
     # --- Clipboard / editing helpers ---------------------------------
     def _serialize_item(self, item):
