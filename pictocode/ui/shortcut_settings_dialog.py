@@ -1,8 +1,16 @@
-from PyQt5.QtWidgets import QDialog, QVBoxLayout, QFormLayout, QKeySequenceEdit, QDialogButtonBox
+from PyQt5.QtWidgets import (
+    QDialog,
+    QVBoxLayout,
+    QFormLayout,
+    QKeySequenceEdit,
+    QDialogButtonBox,
+)
 from PyQt5.QtCore import Qt
+
 
 class ShortcutSettingsDialog(QDialog):
     """Dialog to customize keyboard shortcuts."""
+
     def __init__(self, shortcuts: dict[str, str], parent=None):
         super().__init__(parent)
         self.setWindowTitle("Raccourcis clavier")
@@ -19,10 +27,14 @@ class ShortcutSettingsDialog(QDialog):
             form.addRow(name + " :", edit)
             self._edits[name] = edit
 
-        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel, Qt.Horizontal, self)
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.Ok | QDialogButtonBox.Cancel, Qt.Horizontal, self
+        )
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         main_layout.addWidget(buttons)
 
     def get_shortcuts(self) -> dict[str, str]:
-        return {name: edit.keySequence().toString() for name, edit in self._edits.items()}
+        return {
+            name: edit.keySequence().toString() for name, edit in self._edits.items()
+        }

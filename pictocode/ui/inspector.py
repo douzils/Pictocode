@@ -1,6 +1,6 @@
 # pictocode/ui/inspector.py
 from PyQt5.QtWidgets import QWidget, QFormLayout, QLineEdit, QColorDialog
-from PyQt5.QtCore import Qt
+
 
 class Inspector(QWidget):
     def __init__(self, parent=None):
@@ -27,10 +27,22 @@ class Inspector(QWidget):
         for fld, setter in (
             (self.x_field, lambda val: self._item.setX(int(val))),
             (self.y_field, lambda val: self._item.setY(int(val))),
-            (self.w_field, lambda val: self._item.setRect(0,0,int(self.w_field.text()), self._item.rect().height())),
-            (self.h_field, lambda val: self._item.setRect(0,0,self._item.rect().width(), int(val))),
+            (
+                self.w_field,
+                lambda val: self._item.setRect(
+                    0, 0, int(self.w_field.text()), self._item.rect().height()
+                ),
+            ),
+            (
+                self.h_field,
+                lambda val: self._item.setRect(
+                    0, 0, self._item.rect().width(), int(val)
+                ),
+            ),
         ):
-            fld.editingFinished.connect(lambda fld=fld, st=setter: self._update_field(fld, st))
+            fld.editingFinished.connect(
+                lambda fld=fld, st=setter: self._update_field(fld, st)
+            )
 
         # Choix de couleur
         self.color_btn.mousePressEvent = self._pick_color
@@ -53,7 +65,8 @@ class Inspector(QWidget):
             pass
 
     def _pick_color(self, event):
-        if not self._item: return
+        if not self._item:
+            return
         col = QColorDialog.getColor(parent=self)
         if col.isValid():
             pen = self._item.pen()

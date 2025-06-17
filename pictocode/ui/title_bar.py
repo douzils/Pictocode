@@ -1,8 +1,10 @@
 from PyQt5.QtWidgets import QWidget, QLabel, QPushButton, QHBoxLayout
 from PyQt5.QtCore import Qt, QPoint
 
+
 class TitleBar(QWidget):
     """Custom window title bar with move and control buttons."""
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self._parent = parent

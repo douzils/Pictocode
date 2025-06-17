@@ -3,12 +3,13 @@
 Fonctions d'export (génération de code), conversion de couleurs, etc.
 """
 
+
 def color_to_hex(qcolor):
     """Convertit un QColor en chaîne hex."""
     r = qcolor.red()
     g = qcolor.green()
     b = qcolor.blue()
-    return f'#{r:02X}{g:02X}{b:02X}'
+    return f"#{r:02X}{g:02X}{b:02X}"
 
 
 def generate_pycode(shapes):
@@ -33,7 +34,9 @@ def generate_pycode(shapes):
 
         if cls == "Rect":
             r = shp.rect()
-            lines.append(f"rect{i} = QGraphicsRectItem({r.x()}, {r.y()}, {r.width()}, {r.height()})")
+            lines.append(
+                f"rect{i} = QGraphicsRectItem({r.x()}, {r.y()}, {r.width()}, {r.height()})"
+            )
             color = shp.pen().color().name()
             width = shp.pen().width()
             lines.append(f"rect{i}.setPen(QPen(QColor('{color}'), {width}))")
@@ -44,7 +47,9 @@ def generate_pycode(shapes):
 
         elif cls == "Ellipse":
             e = shp.rect()
-            lines.append(f"ellipse{i} = QGraphicsEllipseItem({e.x()}, {e.y()}, {e.width()}, {e.height()})")
+            lines.append(
+                f"ellipse{i} = QGraphicsEllipseItem({e.x()}, {e.y()}, {e.width()}, {e.height()})"
+            )
             color = shp.pen().color().name()
             width = shp.pen().width()
             lines.append(f"ellipse{i}.setPen(QPen(QColor('{color}'), {width}))")
@@ -55,7 +60,9 @@ def generate_pycode(shapes):
 
         elif cls == "Line":
             line = shp.line()
-            lines.append(f"line{i} = QGraphicsLineItem({line.x1()}, {line.y1()}, {line.x2()}, {line.y2()})")
+            lines.append(
+                f"line{i} = QGraphicsLineItem({line.x1()}, {line.y1()}, {line.x2()}, {line.y2()})"
+            )
             color = shp.pen().color().name()
             width = shp.pen().width()
             lines.append(f"line{i}.setPen(QPen(QColor('{color}'), {width}))")
@@ -81,7 +88,7 @@ def generate_pycode(shapes):
             else:
                 lines.append(f"path{i} = QPainterPath()")
                 for idx, p in enumerate(pts):
-                    cmd = 'moveTo' if idx == 0 else 'lineTo'
+                    cmd = "moveTo" if idx == 0 else "lineTo"
                     lines.append(f"path{i}.{cmd}({p.x}, {p.y})")
                 lines.append(f"path_item{i} = QGraphicsPathItem(path{i})")
                 color = shp.pen().color().name()
@@ -93,7 +100,7 @@ def generate_pycode(shapes):
                 lines.append(f"scene.addItem(path_item{i})")
 
         elif cls == "TextItem":
-            text = shp.toPlainText().replace("'", "\'")
+            text = shp.toPlainText().replace("'", "'")
             lines.append(f"text{i} = QGraphicsTextItem('{text}')")
             lines.append(f"text{i}.setPos({shp.x()}, {shp.y()})")
             color = shp.defaultTextColor().name()
@@ -113,15 +120,14 @@ def generate_pycode(shapes):
 def to_pixels(value: float, unit: str, dpi: float = 72) -> float:
     """Convertit une longueur dans l'unité donnée vers des pixels."""
     unit = unit.lower()
-    if unit == 'px':
+    if unit == "px":
         return float(value)
-    if unit == 'pt':
+    if unit == "pt":
         return float(value) * dpi / 72.0
-    if unit == 'mm':
+    if unit == "mm":
         return float(value) * dpi / 25.4
-    if unit == 'cm':
+    if unit == "cm":
         return float(value) * dpi / 2.54
-    if unit == 'in':
+    if unit == "in":
         return float(value) * dpi
     return float(value)
-

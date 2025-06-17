@@ -3,18 +3,28 @@
 import os
 import json
 from PyQt5.QtWidgets import (
-    QWidget, QVBoxLayout, QLabel, QPushButton, QListWidget,
-    QListWidgetItem, QMessageBox, QHBoxLayout, QStyle, QLineEdit
+    QWidget,
+    QVBoxLayout,
+    QLabel,
+    QPushButton,
+    QListWidget,
+    QListWidgetItem,
+    QMessageBox,
+    QHBoxLayout,
+    QStyle,
+    QLineEdit,
 )
 from PyQt5.QtCore import Qt
 
+
 class HomePage(QWidget):
     """
-    Page d’accueil : 
+    Page d’accueil :
     - Affiche la liste des projets existants (scan du dossier ./Projects)
     - Bouton « Nouveau projet »
     - Double-clic sur un projet pour l’ouvrir
     """
+
     PROJECTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Projects")
 
     def __init__(self, parent):
@@ -166,10 +176,18 @@ class HomePage(QWidget):
             return
 
         # Sépare métadonnées et formes
-        params = {k: data.get(k) for k in (
-            "name", "width", "height", "unit",
-            "orientation", "color_mode", "dpi",
-        )}
+        params = {
+            k: data.get(k)
+            for k in (
+                "name",
+                "width",
+                "height",
+                "unit",
+                "orientation",
+                "color_mode",
+                "dpi",
+            )
+        }
         shapes = data.get("shapes", [])
 
         # Appelle MainWindow pour ouvrir le projet
@@ -191,7 +209,9 @@ class HomePage(QWidget):
             dlg.width_spin.setValue(210 if "Portrait" in text else 297)
             dlg.height_spin.setValue(297 if "Portrait" in text else 210)
             dlg.unit_combo.setCurrentText("mm")
-            dlg.orient_combo.setCurrentText("Portrait" if "Portrait" in text else "Paysage")
+            dlg.orient_combo.setCurrentText(
+                "Portrait" if "Portrait" in text else "Paysage"
+            )
         elif "1080p" in text:
             dlg.width_spin.setValue(1920)
             dlg.height_spin.setValue(1080)

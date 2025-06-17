@@ -1,12 +1,17 @@
-
 from PyQt5.QtWidgets import (
-    QDialog, QVBoxLayout, QFormLayout, QComboBox, QDialogButtonBox,
-    QLineEdit, QColorDialog, QSpinBox, QCheckBox
+    QDialog,
+    QVBoxLayout,
+    QFormLayout,
+    QComboBox,
+    QDialogButtonBox,
+    QLineEdit,
+    QColorDialog,
+    QSpinBox,
+    QCheckBox,
 )
 from PyQt5.QtGui import QColor
 from PyQt5.QtCore import Qt
 from typing import Optional, Union
-
 
 
 class AppSettingsDialog(QDialog):
@@ -26,7 +31,6 @@ class AppSettingsDialog(QDialog):
         show_splash: bool = True,
         parent=None,
     ):
-
 
         super().__init__(parent)
         self.setWindowTitle("Paramètres de l'application")
@@ -49,7 +53,7 @@ class AppSettingsDialog(QDialog):
         self.accent_color = QColor(accent)
         self.color_edit = QLineEdit(self.accent_color.name())
         self.color_edit.setReadOnly(True)
-        self.color_edit.mousePressEvent = lambda e: self._choose_color('accent')
+        self.color_edit.mousePressEvent = lambda e: self._choose_color("accent")
         form.addRow("Couleur d'accent :", self.color_edit)
 
         # Global font size
@@ -62,31 +66,36 @@ class AppSettingsDialog(QDialog):
         self.menu_color = QColor(menu_color or self.accent_color)
         self.menu_color_edit = QLineEdit(self.menu_color.name())
         self.menu_color_edit.setReadOnly(True)
-        self.menu_color_edit.mousePressEvent = lambda e: self._choose_color('menu')
+        self.menu_color_edit.mousePressEvent = lambda e: self._choose_color("menu")
         form.addRow("Couleur menu :", self.menu_color_edit)
 
         self.toolbar_color = QColor(toolbar_color or self.accent_color)
         self.toolbar_color_edit = QLineEdit(self.toolbar_color.name())
         self.toolbar_color_edit.setReadOnly(True)
-        self.toolbar_color_edit.mousePressEvent = lambda e: self._choose_color('toolbar')
+        self.toolbar_color_edit.mousePressEvent = lambda e: self._choose_color(
+            "toolbar"
+        )
         form.addRow("Couleur barre d'outils :", self.toolbar_color_edit)
 
         self.dock_color = QColor(dock_color or self.accent_color)
         self.dock_color_edit = QLineEdit(self.dock_color.name())
         self.dock_color_edit.setReadOnly(True)
-        self.dock_color_edit.mousePressEvent = lambda e: self._choose_color('dock')
+        self.dock_color_edit.mousePressEvent = lambda e: self._choose_color("dock")
         form.addRow("Couleur inspecteur :", self.dock_color_edit)
 
         # Per-element font sizes
-        self.menu_font_spin = QSpinBox(); self.menu_font_spin.setRange(6, 32)
+        self.menu_font_spin = QSpinBox()
+        self.menu_font_spin.setRange(6, 32)
         self.menu_font_spin.setValue(int(menu_font_size or font_size))
         form.addRow("Police menu :", self.menu_font_spin)
 
-        self.toolbar_font_spin = QSpinBox(); self.toolbar_font_spin.setRange(6, 32)
+        self.toolbar_font_spin = QSpinBox()
+        self.toolbar_font_spin.setRange(6, 32)
         self.toolbar_font_spin.setValue(int(toolbar_font_size or font_size))
         form.addRow("Police barre d'outils :", self.toolbar_font_spin)
 
-        self.dock_font_spin = QSpinBox(); self.dock_font_spin.setRange(6, 32)
+        self.dock_font_spin = QSpinBox()
+        self.dock_font_spin.setRange(6, 32)
         self.dock_font_spin.setValue(int(dock_font_size or font_size))
         form.addRow("Police inspecteur :", self.dock_font_spin)
 
@@ -94,8 +103,9 @@ class AppSettingsDialog(QDialog):
         self.show_splash_chk.setChecked(bool(show_splash))
         form.addRow("Afficher l'écran de démarrage :", self.show_splash_chk)
 
-
-        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel, Qt.Horizontal, self)
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.Ok | QDialogButtonBox.Cancel, Qt.Horizontal, self
+        )
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         main_layout.addWidget(buttons)
@@ -137,4 +147,3 @@ class AppSettingsDialog(QDialog):
 
     def get_show_splash(self) -> bool:
         return self.show_splash_chk.isChecked()
-

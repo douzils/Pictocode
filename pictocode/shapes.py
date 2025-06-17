@@ -6,15 +6,9 @@ from PyQt5.QtWidgets import (
     QGraphicsLineItem,
     QGraphicsPathItem,
     QGraphicsTextItem,
-    QGraphicsItem
+    QGraphicsItem,
 )
-from PyQt5.QtGui import (
-    QPen,
-    QBrush,
-    QColor,
-    QPainterPath,
-    QFont
-)
+from PyQt5.QtGui import QPen, QBrush, QColor, QPainterPath, QFont
 from PyQt5.QtCore import Qt, QPointF, QRectF
 
 
@@ -55,7 +49,12 @@ class ResizableMixin:
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton and self.isSelected():
             r = self.rect()
-            handle = QRectF(r.right() - self.handle_size, r.bottom() - self.handle_size, self.handle_size, self.handle_size)
+            handle = QRectF(
+                r.right() - self.handle_size,
+                r.bottom() - self.handle_size,
+                self.handle_size,
+                self.handle_size,
+            )
             if handle.contains(event.pos()):
                 self._resizing = True
                 self._start_pos = event.scenePos()
@@ -70,7 +69,11 @@ class ResizableMixin:
             w = self._start_rect.width() + delta.x()
             h = self._start_rect.height() + delta.y()
             if event.modifiers() & Qt.ShiftModifier:
-                aspect = self._start_rect.width() / self._start_rect.height() if self._start_rect.height() else 1
+                aspect = (
+                    self._start_rect.width() / self._start_rect.height()
+                    if self._start_rect.height()
+                    else 1
+                )
                 if abs(delta.x()) > abs(delta.y()):
                     h = w / aspect
                 else:
@@ -90,7 +93,8 @@ class ResizableMixin:
 
 class Rect(ResizableMixin, SnapToGridMixin, QGraphicsRectItem):
     """Rectangle déplaçable, sélectionnable et redimensionnable."""
-    def __init__(self, x, y, w, h, color: QColor = QColor('white')):
+
+    def __init__(self, x, y, w, h, color: QColor = QColor("white")):
         # Initialise explicitement les différentes bases pour
         # éviter que ``ResizableMixin`` ne reçoive des arguments
         # inattendus via ``super()``.
@@ -109,10 +113,10 @@ class Rect(ResizableMixin, SnapToGridMixin, QGraphicsRectItem):
         self.setToolTip("Clique droit pour modifier")
 
 
-
 class Ellipse(ResizableMixin, SnapToGridMixin, QGraphicsEllipseItem):
     """Ellipse déplaçable, sélectionnable et redimensionnable."""
-    def __init__(self, x, y, w, h, color: QColor = QColor('white')):
+
+    def __init__(self, x, y, w, h, color: QColor = QColor("white")):
         ResizableMixin.__init__(self)
         QGraphicsEllipseItem.__init__(self, x, y, w, h)
         pen = QPen(color)
@@ -128,10 +132,10 @@ class Ellipse(ResizableMixin, SnapToGridMixin, QGraphicsEllipseItem):
         self.setToolTip("Clique droit pour modifier")
 
 
-
 class Line(SnapToGridMixin, QGraphicsLineItem):
     """Ligne déplaçable et sélectionnable."""
-    def __init__(self, x1, y1, x2, y2, color: QColor = QColor('black')):
+
+    def __init__(self, x1, y1, x2, y2, color: QColor = QColor("black")):
         super().__init__(x1, y1, x2, y2)
         pen = QPen(color)
         pen.setWidth(2)
@@ -145,13 +149,15 @@ class Line(SnapToGridMixin, QGraphicsLineItem):
         self.setToolTip("Clique droit pour modifier")
 
 
-
 class FreehandPath(SnapToGridMixin, QGraphicsPathItem):
     """
-    Tracé libre.  
+    Tracé libre.
     Utilisez `from_points` pour construire à partir d’une liste de QPointF.
     """
-    def __init__(self, path=None, pen_color: QColor = QColor('black'), pen_width: int = 2):
+
+    def __init__(
+        self, path=None, pen_color: QColor = QColor("black"), pen_width: int = 2
+    ):
         super().__init__()
         pen = QPen(pen_color)
         pen.setWidth(pen_width)
@@ -166,9 +172,13 @@ class FreehandPath(SnapToGridMixin, QGraphicsPathItem):
         self.setAcceptHoverEvents(True)
         self.setToolTip("Clique droit pour modifier")
 
-
     @classmethod
-    def from_points(cls, points: list[QPointF], pen_color: QColor = QColor('black'), pen_width: int = 2):
+    def from_points(
+        cls,
+        points: list[QPointF],
+        pen_color: QColor = QColor("black"),
+        pen_width: int = 2,
+    ):
         painter_path = QPainterPath()
         if points:
             painter_path.moveTo(points[0])
@@ -179,7 +189,15 @@ class FreehandPath(SnapToGridMixin, QGraphicsPathItem):
 
 class TextItem(QGraphicsTextItem):
     """Bloc de texte éditable et déplaçable."""
-    def __init__(self, x: float, y: float, text: str = '', font_size: int = 12, color: QColor = QColor('black')):
+
+    def __init__(
+        self,
+        x: float,
+        y: float,
+        text: str = "",
+        font_size: int = 12,
+        color: QColor = QColor("black"),
+    ):
         super().__init__(text)
         font = QFont()
         font.setPointSize(font_size)

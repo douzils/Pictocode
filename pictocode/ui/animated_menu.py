@@ -1,8 +1,10 @@
 from PyQt5.QtWidgets import QMenu, QGraphicsOpacityEffect
 from PyQt5.QtCore import QPropertyAnimation
 
+
 class AnimatedMenu(QMenu):
     """QMenu with a simple fade-in effect when shown."""
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._effect = QGraphicsOpacityEffect(self)
@@ -17,4 +19,3 @@ class AnimatedMenu(QMenu):
         self._anim.setStartValue(0)
         self._anim.setEndValue(1)
         self._anim.start()
-
