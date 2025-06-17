@@ -5,16 +5,25 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import QColor
 from PyQt5.QtCore import Qt
+from typing import Optional, Union
 
 
 class AppSettingsDialog(QDialog):
     """Dialog to adjust global application settings like appearance."""
 
-    def __init__(self, current_theme: str = "Light", accent: QColor | str = QColor(42, 130, 218), font_size: int = 10,
-                 menu_color: QColor | str | None = None, toolbar_color: QColor | str | None = None,
-                 dock_color: QColor | str | None = None,
-                 menu_font_size: int | None = None, toolbar_font_size: int | None = None,
-                 dock_font_size: int | None = None, parent=None):
+    def __init__(
+        self,
+        current_theme: str = "Light",
+        accent: Union[QColor, str] = QColor(42, 130, 218),
+        font_size: int = 10,
+        menu_color: Optional[Union[QColor, str]] = None,
+        toolbar_color: Optional[Union[QColor, str]] = None,
+        dock_color: Optional[Union[QColor, str]] = None,
+        menu_font_size: Optional[int] = None,
+        toolbar_font_size: Optional[int] = None,
+        dock_font_size: Optional[int] = None,
+        parent=None,
+    ):
 
         super().__init__(parent)
         self.setWindowTitle("Paramètres de l'application")
