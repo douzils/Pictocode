@@ -8,6 +8,7 @@ from PyQt5.QtCore import Qt
 from typing import Optional, Union
 
 
+
 class AppSettingsDialog(QDialog):
     """Dialog to adjust global application settings like appearance."""
 
@@ -24,6 +25,7 @@ class AppSettingsDialog(QDialog):
         dock_font_size: Optional[int] = None,
         parent=None,
     ):
+
 
         super().__init__(parent)
         self.setWindowTitle("Paramètres de l'application")
