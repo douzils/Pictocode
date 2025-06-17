@@ -2,6 +2,8 @@
 
 Pictocode est une application permettant de composer visuellement des formes pour ensuite générer du code. Son interface rappelle les logiciels de dessin comme Illustrator.
 
+Ce dépôt contient **l'intégralité du code source** de l'application. Les modules Python se trouvent dans le package `pictocode` et implémentent l'ensemble des fonctionnalités décrites ci-dessous.
+
 ## Fonctionnalités principales
 
 ### Écran d'accueil
