@@ -1,4 +1,5 @@
 # pictocode/canvas.py
+# -*- coding: utf-8 -*-
 
 import math
 from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QAction
