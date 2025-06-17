@@ -1,19 +1,32 @@
+
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QFormLayout, QComboBox, QDialogButtonBox,
     QLineEdit, QColorDialog, QSpinBox
 )
 from PyQt5.QtGui import QColor
 from PyQt5.QtCore import Qt
+from typing import Optional, Union
+
 
 
 class AppSettingsDialog(QDialog):
     """Dialog to adjust global application settings like appearance."""
 
-    def __init__(self, current_theme: str = "Light", accent: QColor | str = QColor(42, 130, 218), font_size: int = 10,
-                 menu_color: QColor | str | None = None, toolbar_color: QColor | str | None = None,
-                 dock_color: QColor | str | None = None,
-                 menu_font_size: int | None = None, toolbar_font_size: int | None = None,
-                 dock_font_size: int | None = None, parent=None):
+    def __init__(
+        self,
+        current_theme: str = "Light",
+        accent: Union[QColor, str] = QColor(42, 130, 218),
+        font_size: int = 10,
+        menu_color: Optional[Union[QColor, str]] = None,
+        toolbar_color: Optional[Union[QColor, str]] = None,
+        dock_color: Optional[Union[QColor, str]] = None,
+        menu_font_size: Optional[int] = None,
+        toolbar_font_size: Optional[int] = None,
+        dock_font_size: Optional[int] = None,
+        parent=None,
+    ):
+
+
         super().__init__(parent)
         self.setWindowTitle("Paramètres de l'application")
         self.setModal(True)
@@ -28,6 +41,7 @@ class AppSettingsDialog(QDialog):
         idx = self.theme_combo.findText(current_theme)
         if idx >= 0:
             self.theme_combo.setCurrentIndex(idx)
+
         form.addRow("Thème :", self.theme_combo)
 
         # Accent color
@@ -75,6 +89,7 @@ class AppSettingsDialog(QDialog):
         self.dock_font_spin.setValue(int(dock_font_size or font_size))
         form.addRow("Police inspecteur :", self.dock_font_spin)
 
+
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel, Qt.Horizontal, self)
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
@@ -114,3 +129,4 @@ class AppSettingsDialog(QDialog):
 
     def get_dock_font_size(self) -> int:
         return self.dock_font_spin.value()
+
