@@ -27,7 +27,6 @@ from .animated_menu import AnimatedMenu
 from .shortcut_settings_dialog import ShortcutSettingsDialog
 from .layers_dock import LayersWidget
 from .imports_dock import ImportsWidget
-from .windows_panel import WindowsPanel
 
 PROJECTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Projects")
 
@@ -102,14 +101,7 @@ class MainWindow(QMainWindow):
         i_dock.setVisible(False)
         self.imports_dock = i_dock
 
-        # Panneau d'activation
-        self.windows_panel = WindowsPanel(self)
-        p_dock = QDockWidget("Panneaux", self)
-        p_dock.setWidget(self.windows_panel)
-        p_dock.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
-        self.addDockWidget(Qt.LeftDockWidgetArea, p_dock)
-        p_dock.setVisible(True)
-        self.panel_dock = p_dock
+
 
         # Dialog nouveau projet
         self.new_proj_dlg = NewProjectDialog(self)
@@ -179,6 +171,8 @@ class MainWindow(QMainWindow):
             self.dock_font_size,
         )
         self._load_shortcuts()
+        self._set_project_actions_enabled(False)
+        self._update_view_checks()
 
     def _build_menu(self):
         mb = self.menu_bar
@@ -299,6 +293,34 @@ class MainWindow(QMainWindow):
         projectm.addAction(props_act)
         self.actions["project_props"] = props_act
 
+        viewm = AnimatedMenu("Affichage", self)
+        mb.addMenu(viewm)
+        self.view_menu = viewm
+
+        tool_act = QAction("Barre d'outils", self, checkable=True)
+        tool_act.toggled.connect(self.toolbar.setVisible)
+        self.toolbar.visibilityChanged.connect(tool_act.setChecked)
+        viewm.addAction(tool_act)
+        self.actions["view_toolbar"] = tool_act
+
+        layers_act = QAction("Calques", self, checkable=True)
+        layers_act.toggled.connect(self.layers_dock.setVisible)
+        self.layers_dock.visibilityChanged.connect(layers_act.setChecked)
+        viewm.addAction(layers_act)
+        self.actions["view_layers"] = layers_act
+
+        insp_act = QAction("Inspecteur", self, checkable=True)
+        insp_act.toggled.connect(self.inspector_dock.setVisible)
+        self.inspector_dock.visibilityChanged.connect(insp_act.setChecked)
+        viewm.addAction(insp_act)
+        self.actions["view_inspector"] = insp_act
+
+        imp_act = QAction("Imports", self, checkable=True)
+        imp_act.toggled.connect(self.imports_dock.setVisible)
+        self.imports_dock.visibilityChanged.connect(imp_act.setChecked)
+        viewm.addAction(imp_act)
+        self.actions["view_imports"] = imp_act
+
         prefm = AnimatedMenu("Préférences", self)
         mb.addMenu(prefm)
         app_act = QAction("Apparence…", self)
@@ -367,15 +389,13 @@ class MainWindow(QMainWindow):
             name=params.get("name", ""),
         )
 
-        # affiche toolbar & inspector
+        # affiche toolbar et docks
         self.toolbar.setVisible(True)
         self.inspector_dock.setVisible(True)
         self.layers_dock.setVisible(True)
         self.imports_dock.setVisible(True)
-        self.windows_panel.chk_layers.setChecked(True)
-        self.windows_panel.chk_imports.setChecked(True)
-        self.windows_panel.chk_toolbar.setChecked(True)
-        self.windows_panel.chk_props.setChecked(True)
+        self._set_project_actions_enabled(True)
+        self._update_view_checks()
         # bascule sur le canvas
         self._switch_page(self.canvas)
         self.current_project_path = None
@@ -421,10 +441,8 @@ class MainWindow(QMainWindow):
         self.inspector_dock.setVisible(True)
         self.layers_dock.setVisible(True)
         self.imports_dock.setVisible(True)
-        self.windows_panel.chk_layers.setChecked(True)
-        self.windows_panel.chk_imports.setChecked(True)
-        self.windows_panel.chk_toolbar.setChecked(True)
-        self.windows_panel.chk_props.setChecked(True)
+        self._set_project_actions_enabled(True)
+        self._update_view_checks()
         self._switch_page(self.canvas)
         self.setWindowTitle(f"Pictocode — {params.get('name','')}")
         self.set_dirty(False)
@@ -511,11 +529,8 @@ class MainWindow(QMainWindow):
         self.inspector_dock.setVisible(False)
         self.layers_dock.setVisible(False)
         self.imports_dock.setVisible(False)
-        self.panel_dock.setVisible(False)
-        self.windows_panel.chk_layers.setChecked(False)
-        self.windows_panel.chk_imports.setChecked(False)
-        self.windows_panel.chk_toolbar.setChecked(False)
-        self.windows_panel.chk_props.setChecked(False)
+        self._set_project_actions_enabled(False)
+        self._update_view_checks()
 
     # --- Edit actions -------------------------------------------------
     def copy_selection(self):
@@ -721,9 +736,9 @@ class MainWindow(QMainWindow):
         self.inspector.setStyleSheet(
             f"font-size: {dock_font_size}pt;"
         )
-        for dock in (self.layers_dock, self.imports_dock, self.panel_dock):
+        for dock in (self.layers_dock, self.imports_dock):
             dock.setStyleSheet(f"QDockWidget {{ background: {dock_color.name()}; }}")
-        for widget in (self.layers, self.imports, self.windows_panel):
+        for widget in (self.layers, self.imports):
             widget.setStyleSheet(f"font-size: {dock_font_size}pt;")
 
 
@@ -754,6 +769,35 @@ class MainWindow(QMainWindow):
             )
             if seq:
                 action.setShortcut(QKeySequence(seq))
+
+    def _set_project_actions_enabled(self, enabled: bool):
+        for name in (
+            "save",
+            "saveas",
+            "export_image",
+            "export_svg",
+            "export_code",
+            "project_props",
+        ):
+            if name in self.actions:
+                self.actions[name].setEnabled(enabled)
+        if hasattr(self, "view_menu"):
+            self.view_menu.menuAction().setVisible(enabled)
+
+    def _update_view_checks(self):
+        if hasattr(self, "actions"):
+            act = self.actions.get("view_toolbar")
+            if act:
+                act.setChecked(self.toolbar.isVisible())
+            act = self.actions.get("view_layers")
+            if act:
+                act.setChecked(self.layers_dock.isVisible())
+            act = self.actions.get("view_inspector")
+            if act:
+                act.setChecked(self.inspector_dock.isVisible())
+            act = self.actions.get("view_imports")
+            if act:
+                act.setChecked(self.imports_dock.isVisible())
 
     # --- Gestion favoris et récents ------------------------------------
     def add_recent_project(self, path: str):
