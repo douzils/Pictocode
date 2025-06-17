@@ -293,7 +293,12 @@ class CanvasWidget(QGraphicsView):
                 grid = self.grid_size / scale
                 scene_pos.setX(round(scene_pos.x() / grid) * grid)
                 scene_pos.setY(round(scene_pos.y() / grid) * grid)
-            if self.current_tool in ("rect", "ellipse", "line"):
+            if self.current_tool == "erase":
+                items = self.scene.items(scene_pos)
+                if items and items[0] is not self._frame_item:
+                    self.scene.removeItem(items[0])
+                    self._mark_dirty()
+            elif self.current_tool in ("rect", "ellipse", "line"):
                 self._start_pos = scene_pos
                 if self.current_tool == "rect":
                     self._temp_item = Rect(scene_pos.x(), scene_pos.y(), 0, 0, self.pen_color)
