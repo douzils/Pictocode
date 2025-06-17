@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt, QSettings
 from PyQt5.QtGui import QPalette, QColor
 from PyQt5.QtWidgets import QApplication
-from ..utils import generate_pycode
+
 from ..canvas import CanvasWidget
 from .toolbar import Toolbar
 from .inspector import Inspector
@@ -68,9 +68,11 @@ class MainWindow(QMainWindow):
         # Paramètres de l'application
         self.settings = QSettings("pictocode", "pictocode")
         self.current_theme = self.settings.value("theme", "Light")
+
         self.accent_color = QColor(self.settings.value("accent_color", "#2a82da"))
         self.font_size = int(self.settings.value("font_size", 10))
         self.apply_theme(self.current_theme, self.accent_color, self.font_size)
+
 
     def _build_menu(self):
         mb = self.menuBar()
@@ -302,6 +304,7 @@ class MainWindow(QMainWindow):
     # ------------------------------------------------------------------
     def open_app_settings(self):
         from .app_settings_dialog import AppSettingsDialog
+
         dlg = AppSettingsDialog(self.current_theme, self.accent_color, self.font_size, self)
         if dlg.exec_() == QDialog.Accepted:
             theme = dlg.get_theme()
@@ -325,11 +328,14 @@ class MainWindow(QMainWindow):
             pal.setColor(QPalette.Text, Qt.white)
             pal.setColor(QPalette.Button, QColor(53, 53, 53))
             pal.setColor(QPalette.ButtonText, Qt.white)
-            pal.setColor(QPalette.Highlight, accent)
+
+            pal.setColor(QPalette.Highlight, QColor(42, 130, 218))
+
             pal.setColor(QPalette.HighlightedText, Qt.black)
             app.setPalette(pal)
             app.setStyle("Fusion")
         else:
+
             pal = app.style().standardPalette()
             pal.setColor(QPalette.Highlight, accent)
             app.setPalette(pal)
