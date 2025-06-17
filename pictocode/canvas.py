@@ -1,9 +1,10 @@
 # pictocode/canvas.py
 
 import math
-from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QMenu, QAction
+from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QAction
+from .ui.animated_menu import AnimatedMenu
 from PyQt5.QtCore import Qt, QRectF, QPointF
-from PyQt5.QtGui import QPainter, QColor, QPen
+from PyQt5.QtGui import QPainter, QColor, QPen, QImage
 from .shapes import Rect, Ellipse, Line, FreehandPath, TextItem
 from .utils import to_pixels
 
@@ -24,6 +25,7 @@ class CanvasWidget(QGraphicsView):
         self.pen_color = QColor("black")
 
         # Grille et magnétisme
+        # grid_size correspond à l’écart en pixels à l’échelle 1:1
         self.grid_size = 50
         self.show_grid = True
         self.snap_to_grid = False
@@ -33,6 +35,9 @@ class CanvasWidget(QGraphicsView):
 
         # Pan & Zoom
         self.setDragMode(QGraphicsView.NoDrag)
+        self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
+        self._prev_drag_mode = None
+        self._middle_pan = False
 
         # Cadre de la zone de travail (sera redessiné par new_document)
         self._doc_rect = QRectF(0, 0, 800, 800)
@@ -189,6 +194,64 @@ class CanvasWidget(QGraphicsView):
         meta = getattr(self, "current_meta", {})
         return {**meta, "shapes": shapes}
 
+    def export_image(self, path: str, img_format: str = "PNG"):
+        """Enregistre la scène actuelle dans un fichier image."""
+        w = int(self._doc_rect.width())
+        h = int(self._doc_rect.height())
+        image = QImage(w, h, QImage.Format_ARGB32)
+        image.fill(Qt.white)
+        painter = QPainter(image)
+        self.scene.render(painter, QRectF(0, 0, w, h), self._doc_rect)
+        painter.end()
+        image.save(path, img_format)
+
+    def export_svg(self, path: str):
+        """Enregistre la scène actuelle au format SVG (très basique)."""
+        from xml.etree.ElementTree import Element, SubElement, ElementTree
+
+        w = int(self._doc_rect.width())
+        h = int(self._doc_rect.height())
+        root = Element('svg', xmlns="http://www.w3.org/2000/svg",
+                       width=str(w), height=str(h))
+
+        for item in reversed(self.scene.items()):
+            if item is self._frame_item:
+                continue
+            cls = type(item).__name__
+            stroke = item.pen().color().name() if hasattr(item, 'pen') else '#000000'
+
+            if cls == 'Rect':
+                r = item.rect()
+                SubElement(root, 'rect', x=str(r.x()), y=str(r.y()),
+                           width=str(r.width()), height=str(r.height()),
+                           fill='none', stroke=stroke)
+            elif cls == 'Ellipse':
+                e = item.rect()
+                cx = e.x() + e.width()/2
+                cy = e.y() + e.height()/2
+                SubElement(root, 'ellipse', cx=str(cx), cy=str(cy),
+                           rx=str(e.width()/2), ry=str(e.height()/2),
+                           fill='none', stroke=stroke)
+            elif cls == 'Line':
+                line = item.line()
+                SubElement(root, 'line', x1=str(line.x1()), y1=str(line.y1()),
+                           x2=str(line.x2()), y2=str(line.y2()),
+                           stroke=stroke)
+            elif cls == 'FreehandPath':
+                path = item.path()
+                cmds = []
+                for i in range(path.elementCount()):
+                    ept = path.elementAt(i)
+                    cmd = 'M' if i == 0 else 'L'
+                    cmds.append(f"{cmd}{ept.x} {ept.y}")
+                SubElement(root, 'path', d=' '.join(cmds), fill='none', stroke=stroke)
+            elif cls == 'TextItem':
+                SubElement(root, 'text', x=str(item.x()),
+                           y=str(item.y() + item.font().pointSize()),
+                           fill=item.defaultTextColor().name()).text = item.toPlainText()
+
+        ElementTree(root).write(path, encoding='utf-8', xml_declaration=True)
+
     # ─── Pan & Zoom ────────────────────────────────────────────────────
     def wheelEvent(self, event):
         factor = 1.25 if event.angleDelta().y() > 0 else 1 / 1.25
@@ -196,9 +259,15 @@ class CanvasWidget(QGraphicsView):
 
     def mousePressEvent(self, event):
         scene_pos = self.mapToScene(event.pos())
-        if event.button() == Qt.LeftButton:
+        if event.button() == Qt.MiddleButton:
+            # Déplacement temporaire avec le clic molette
+            self._prev_drag_mode = self.dragMode()
+            self.setDragMode(QGraphicsView.ScrollHandDrag)
+            self._middle_pan = True
+        elif event.button() == Qt.LeftButton:
             if self.snap_to_grid:
-                grid = self.grid_size
+                scale = self.transform().m11() or 1
+                grid = self.grid_size / scale
                 scene_pos.setX(round(scene_pos.x() / grid) * grid)
                 scene_pos.setY(round(scene_pos.y() / grid) * grid)
             if self.current_tool in ("rect", "ellipse", "line"):
@@ -223,9 +292,13 @@ class CanvasWidget(QGraphicsView):
         super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event):
+        if self._middle_pan:
+            super().mouseMoveEvent(event)
+            return
         scene_pos = self.mapToScene(event.pos())
         if self.snap_to_grid:
-            grid = self.grid_size
+            scale = self.transform().m11() or 1
+            grid = self.grid_size / scale
             scene_pos.setX(round(scene_pos.x() / grid) * grid)
             scene_pos.setY(round(scene_pos.y() / grid) * grid)
         if self.current_tool == "freehand" and self._freehand_points is not None:
@@ -245,9 +318,15 @@ class CanvasWidget(QGraphicsView):
         super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event):
+        if self._middle_pan and event.button() == Qt.MiddleButton:
+            self.setDragMode(self._prev_drag_mode or QGraphicsView.NoDrag)
+            self._middle_pan = False
+            super().mouseReleaseEvent(event)
+            return
         scene_pos = self.mapToScene(event.pos())
         if self.snap_to_grid:
-            grid = self.grid_size
+            scale = self.transform().m11() or 1
+            grid = self.grid_size / scale
             scene_pos.setX(round(scene_pos.x() / grid) * grid)
             scene_pos.setY(round(scene_pos.y() / grid) * grid)
         if self.current_tool == "freehand" and self._freehand_points:
@@ -277,7 +356,8 @@ class CanvasWidget(QGraphicsView):
     def mouseDoubleClickEvent(self, event):
         scene_pos = self.mapToScene(event.pos())
         if self.snap_to_grid:
-            grid = self.grid_size
+            scale = self.transform().m11() or 1
+            grid = self.grid_size / scale
             scene_pos.setX(round(scene_pos.x() / grid) * grid)
             scene_pos.setY(round(scene_pos.y() / grid) * grid)
         items = self.scene.items(scene_pos)
@@ -301,7 +381,12 @@ class CanvasWidget(QGraphicsView):
             return
         pen = QPen(QColor(220, 220, 220), 0)
         painter.setPen(pen)
-        gs = self.grid_size
+        # Taille de la grille en coordonnées scène pour conserver
+        # un espacement constant à l'écran malgré le zoom
+        scale = self.transform().m11()
+        if scale == 0:
+            scale = 1
+        gs = self.grid_size / scale
         left = int(math.floor(rect.left()))
         right = int(math.ceil(rect.right()))
         top = int(math.floor(rect.top()))
@@ -318,7 +403,7 @@ class CanvasWidget(QGraphicsView):
             y += gs
 
     def _show_context_menu(self, event):
-        menu = QMenu(self)
+        menu = AnimatedMenu(self)
         scene_pos = self.mapToScene(event.pos())
         items = self.scene.items(scene_pos)
         if items:
