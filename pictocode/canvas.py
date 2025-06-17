@@ -146,25 +146,7 @@ class CanvasWidget(QGraphicsView):
         """Charge depuis une liste de dicts (issue de export_project)."""
         self.scene.blockSignals(True)
         for s in shapes:
-            t = s["type"]
-            if t == "rect":
-                item = Rect(s["x"], s["y"], s["w"], s["h"], QColor(s["color"]))
-            elif t == "ellipse":
-                item = Ellipse(s["x"], s["y"], s["w"], s["h"], QColor(s["color"]))
-            elif t == "line":
-                item = Line(s["x1"], s["y1"], s["x2"], s["y2"], QColor(s["color"]))
-            elif t == "path":
-                pts = [QPointF(p[0], p[1]) for p in s.get("points", [])]
-                item = FreehandPath.from_points(pts, QColor(s.get("color", "black")))
-            elif t == "text":
-                item = TextItem(
-                    s["x"], s["y"], s["text"], s["font_size"], QColor(s["color"])
-                )
-            elif t == "image":
-                item = ImageItem(s["x"], s["y"], s["path"])
-            else:
-                continue
-            self.scene.addItem(item)
+            self._create_item(s)
         self.scene.blockSignals(False)
         parent = self.parent()
         if hasattr(parent, "layers"):
@@ -176,76 +158,12 @@ class CanvasWidget(QGraphicsView):
         Prêt à sérialiser en JSON.
         """
         shapes = []
-        for item in self.scene.items():
-            cls = type(item).__name__
-            if cls == "Rect":
-                r = item.rect()
-                shapes.append(
-                    {
-                        "type": "rect",
-                        "x": r.x(),
-                        "y": r.y(),
-                        "w": r.width(),
-                        "h": r.height(),
-                        "color": item.pen().color().name(),
-                    }
-                )
-            elif cls == "Ellipse":
-                e = item.rect()
-                shapes.append(
-                    {
-                        "type": "ellipse",
-                        "x": e.x(),
-                        "y": e.y(),
-                        "w": e.width(),
-                        "h": e.height(),
-                        "color": item.pen().color().name(),
-                    }
-                )
-            elif cls == "Line":
-                line = item.line()
-                shapes.append(
-                    {
-                        "type": "line",
-                        "x1": line.x1(),
-                        "y1": line.y1(),
-                        "x2": line.x2(),
-                        "y2": line.y2(),
-                        "color": item.pen().color().name(),
-                    }
-                )
-            elif cls == "FreehandPath":
-                path = item.path()
-                pts = [
-                    (path.elementAt(i).x, path.elementAt(i).y)
-                    for i in range(path.elementCount())
-                ]
-                shapes.append(
-                    {"type": "path", "points": pts, "color": item.pen().color().name()}
-                )
-            elif cls == "TextItem":
-                shapes.append(
-                    {
-                        "type": "text",
-                        "x": item.x(),
-                        "y": item.y(),
-                        "text": item.toPlainText(),
-                        "font_size": item.font().pointSize(),
-                        "color": item.defaultTextColor().name(),
-                    }
-                )
-            elif cls == "ImageItem":
-                r = item.rect()
-                shapes.append(
-                    {
-                        "type": "image",
-                        "x": item.x(),
-                        "y": item.y(),
-                        "w": r.width(),
-                        "h": r.height(),
-                        "path": item.path,
-                    }
-                )
+        for item in reversed(self.scene.items()):
+            if item is self._frame_item:
+                continue
+            data = self._serialize_item(item)
+            if data:
+                shapes.append(data)
         meta = getattr(self, "current_meta", {})
         return {**meta, "shapes": shapes}
 
@@ -729,6 +647,10 @@ class CanvasWidget(QGraphicsView):
                 "w": r.width(),
                 "h": r.height(),
                 "color": item.pen().color().name(),
+                "pen_width": item.pen().width(),
+                "fill": item.brush().color().name(),
+                "rotation": item.rotation(),
+                "z": item.zValue(),
             }
         if cls == "Ellipse":
             e = item.rect()
@@ -739,6 +661,10 @@ class CanvasWidget(QGraphicsView):
                 "w": e.width(),
                 "h": e.height(),
                 "color": item.pen().color().name(),
+                "pen_width": item.pen().width(),
+                "fill": item.brush().color().name(),
+                "rotation": item.rotation(),
+                "z": item.zValue(),
             }
         if cls == "Line":
             line = item.line()
@@ -749,6 +675,9 @@ class CanvasWidget(QGraphicsView):
                 "x2": line.x2(),
                 "y2": line.y2(),
                 "color": item.pen().color().name(),
+                "pen_width": item.pen().width(),
+                "rotation": item.rotation(),
+                "z": item.zValue(),
             }
         if cls == "FreehandPath":
             path = item.path()
@@ -756,7 +685,15 @@ class CanvasWidget(QGraphicsView):
                 (path.elementAt(i).x, path.elementAt(i).y)
                 for i in range(path.elementCount())
             ]
-            return {"type": "path", "points": pts, "color": item.pen().color().name()}
+            return {
+                "type": "path",
+                "points": pts,
+                "color": item.pen().color().name(),
+                "pen_width": item.pen().width(),
+                "fill": item.brush().color().name(),
+                "rotation": item.rotation(),
+                "z": item.zValue(),
+            }
         if cls == "TextItem":
             return {
                 "type": "text",
@@ -765,6 +702,8 @@ class CanvasWidget(QGraphicsView):
                 "text": item.toPlainText(),
                 "font_size": item.font().pointSize(),
                 "color": item.defaultTextColor().name(),
+                "rotation": item.rotation(),
+                "z": item.zValue(),
             }
         if cls == "ImageItem":
             r = item.rect()
@@ -775,6 +714,8 @@ class CanvasWidget(QGraphicsView):
                 "w": r.width(),
                 "h": r.height(),
                 "path": item.path,
+                "rotation": item.rotation(),
+                "z": item.zValue(),
             }
         return None
 
@@ -784,17 +725,48 @@ class CanvasWidget(QGraphicsView):
             item = Rect(
                 data["x"], data["y"], data["w"], data["h"], QColor(data["color"])
             )
+            pen = item.pen()
+            pen.setWidth(int(data.get("pen_width", pen.width())))
+            item.setPen(pen)
+            brush = item.brush()
+            brush.setColor(QColor(data.get("fill", brush.color().name())))
+            brush.setStyle(Qt.SolidPattern)
+            item.setBrush(brush)
+            item.setRotation(float(data.get("rotation", 0)))
+            item.setZValue(float(data.get("z", 0)))
         elif t == "ellipse":
             item = Ellipse(
                 data["x"], data["y"], data["w"], data["h"], QColor(data["color"])
             )
+            pen = item.pen()
+            pen.setWidth(int(data.get("pen_width", pen.width())))
+            item.setPen(pen)
+            brush = item.brush()
+            brush.setColor(QColor(data.get("fill", brush.color().name())))
+            brush.setStyle(Qt.SolidPattern)
+            item.setBrush(brush)
+            item.setRotation(float(data.get("rotation", 0)))
+            item.setZValue(float(data.get("z", 0)))
         elif t == "line":
             item = Line(
                 data["x1"], data["y1"], data["x2"], data["y2"], QColor(data["color"])
             )
+            pen = item.pen()
+            pen.setWidth(int(data.get("pen_width", pen.width())))
+            item.setPen(pen)
+            item.setRotation(float(data.get("rotation", 0)))
+            item.setZValue(float(data.get("z", 0)))
         elif t == "path":
             pts = [QPointF(p[0], p[1]) for p in data.get("points", [])]
             item = FreehandPath.from_points(pts, QColor(data.get("color", "black")))
+            pen = item.pen()
+            pen.setWidth(int(data.get("pen_width", pen.width())))
+            item.setPen(pen)
+            brush = item.brush()
+            brush.setColor(QColor(data.get("fill", brush.color().name())))
+            item.setBrush(brush)
+            item.setRotation(float(data.get("rotation", 0)))
+            item.setZValue(float(data.get("z", 0)))
         elif t == "text":
             item = TextItem(
                 data["x"],
@@ -803,12 +775,16 @@ class CanvasWidget(QGraphicsView):
                 data.get("font_size", 12),
                 QColor(data.get("color", "black")),
             )
+            item.setRotation(float(data.get("rotation", 0)))
+            item.setZValue(float(data.get("z", 0)))
         elif t == "image":
             item = ImageItem(
                 data.get("x", 0),
                 data.get("y", 0),
                 data.get("path", ""),
             )
+            item.setRotation(float(data.get("rotation", 0)))
+            item.setZValue(float(data.get("z", 0)))
         else:
             return None
         self.scene.addItem(item)
