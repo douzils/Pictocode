@@ -84,7 +84,6 @@ class AppSettingsDialog(QDialog):
         buttons.rejected.connect(self.reject)
         main_layout.addWidget(buttons)
 
-
     # --- accessors -------------------------------------------------------
     def _choose_color(self, target):
         current = getattr(self, f"{target}_color")

@@ -5,7 +5,6 @@ from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QAction
 from .ui.animated_menu import AnimatedMenu
 from PyQt5.QtCore import Qt, QRectF, QPointF
 from PyQt5.QtGui import QPainter, QColor, QPen, QImage, QPainterPath
-
 from .shapes import Rect, Ellipse, Line, FreehandPath, TextItem
 from .utils import to_pixels
 
@@ -270,11 +269,9 @@ class CanvasWidget(QGraphicsView):
 
     def mousePressEvent(self, event):
         scene_pos = self.mapToScene(event.pos())
-
         if self.current_tool == "pan":
             super().mousePressEvent(event)
             return
-
         if event.button() == Qt.MiddleButton:
             # Déplacement temporaire avec le clic molette
             self._prev_drag_mode = self.dragMode()
@@ -357,11 +354,9 @@ class CanvasWidget(QGraphicsView):
         super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event):
-
         if self.current_tool == "pan":
             super().mouseReleaseEvent(event)
             return
-
         if self._middle_pan and event.button() == Qt.MiddleButton:
             self.setDragMode(self._prev_drag_mode or QGraphicsView.NoDrag)
             self._middle_pan = False

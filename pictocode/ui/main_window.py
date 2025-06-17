@@ -377,7 +377,6 @@ class MainWindow(QMainWindow):
             pal.setColor(QPalette.Button, QColor(53, 53, 53))
             pal.setColor(QPalette.ButtonText, Qt.white)
             pal.setColor(QPalette.Highlight, accent)
-
             pal.setColor(QPalette.HighlightedText, Qt.black)
             app.setPalette(pal)
             app.setStyle("Fusion")
