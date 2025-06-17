@@ -5,6 +5,7 @@ import json
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QLabel, QPushButton, QListWidget,
     QListWidgetItem, QMessageBox, QHBoxLayout, QStyle, QLineEdit
+
 )
 from PyQt5.QtCore import Qt
 
@@ -38,6 +39,7 @@ class HomePage(QWidget):
         subtitle.setObjectName("subtitle_label")
         vbox.addWidget(subtitle)
 
+
         # Zone de recherche
         search_hbox = QHBoxLayout()
         self.search_edit = QLineEdit()
@@ -45,6 +47,7 @@ class HomePage(QWidget):
         self.search_edit.textChanged.connect(self.filter_projects)
         search_hbox.addWidget(self.search_edit)
         vbox.addLayout(search_hbox)
+
 
         # Liste des projets
         self.list_widget = QListWidget()
@@ -103,6 +106,7 @@ class HomePage(QWidget):
                 border-radius: 8px;
                 padding: 6px;
             }
+
             QListWidget#template_list {
                 background: rgba(255, 255, 255, 0.6);
                 border-radius: 8px;
@@ -113,6 +117,7 @@ class HomePage(QWidget):
                 border-radius: 6px;
                 padding: 4px 8px;
             }
+
             QListWidget#project_list::item {
                 padding: 6px;
             }

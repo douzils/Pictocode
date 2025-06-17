@@ -5,6 +5,7 @@ from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QAction
 from .ui.animated_menu import AnimatedMenu
 from PyQt5.QtCore import Qt, QRectF, QPointF
 from PyQt5.QtGui import QPainter, QColor, QPen, QImage, QPainterPath
+
 from .shapes import Rect, Ellipse, Line, FreehandPath, TextItem
 from .utils import to_pixels
 
