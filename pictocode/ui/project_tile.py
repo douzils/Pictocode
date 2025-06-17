@@ -5,15 +5,17 @@ from PyQt5.QtCore import Qt
 class ProjectTile(QWidget):
     """Widget affichant une miniature de projet avec un overlay au survol."""
 
-    def __init__(self, icon: QIcon, title: str, size=128, parent=None):
+    def __init__(self, icon: QIcon, title: str, width=128, height=None, parent=None):
         super().__init__(parent)
-        self._size = size
+        self._width = int(width)
+        self._height = int(height or width)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
         self.preview = QLabel(self)
-        self.preview.setPixmap(icon.pixmap(size, size))
+        self.preview.setFixedSize(self._width, self._height)
+        self.preview.setPixmap(icon.pixmap(self._width, self._height))
         self.preview.setAlignment(Qt.AlignCenter)
         self.preview.setScaledContents(True)
         layout.addWidget(self.preview)
@@ -34,5 +36,9 @@ class ProjectTile(QWidget):
         self.overlay.hide()
         super().leaveEvent(event)
 
+    def resizeEvent(self, event):
+        self.overlay.setGeometry(0, 0, self.width(), self.height())
+        super().resizeEvent(event)
+
     def sizeHint(self):
-        return self.preview.pixmap().size()
+        return self.preview.size()
