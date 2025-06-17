@@ -1,11 +1,18 @@
-from PyQt5.QtWidgets import QDialog, QVBoxLayout, QFormLayout, QComboBox, QDialogButtonBox
+
+from PyQt5.QtWidgets import (
+    QDialog, QVBoxLayout, QFormLayout, QComboBox, QDialogButtonBox,
+    QLineEdit, QColorDialog, QSpinBox
+)
+from PyQt5.QtGui import QColor
 from PyQt5.QtCore import Qt
+
 
 class AppSettingsDialog(QDialog):
     """Dialog to adjust global application settings like appearance."""
-    def __init__(self, current_theme: str = "Light", parent=None):
+
+    def __init__(self, current_theme: str = "Light", accent: QColor | str = QColor(42, 130, 218), font_size: int = 10, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Param\u00e8tres de l'application")
+        self.setWindowTitle("Paramètres de l'application")
         self.setModal(True)
 
         main_layout = QVBoxLayout(self)
@@ -17,12 +24,11 @@ class AppSettingsDialog(QDialog):
         idx = self.theme_combo.findText(current_theme)
         if idx >= 0:
             self.theme_combo.setCurrentIndex(idx)
-        form.addRow("Th\u00e8me :", self.theme_combo)
+
 
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel, Qt.Horizontal, self)
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         main_layout.addWidget(buttons)
 
-    def get_theme(self) -> str:
-        return self.theme_combo.currentText()
+
