@@ -47,9 +47,6 @@ class Inspector(QWidget):
                     0, 0, self._item.rect().width(), int(val)
                 ),
             ),
-
-            (self.w_field, lambda val: self._item.setRect(0,0,int(self.w_field.text()), self._item.rect().height())),
-            (self.h_field, lambda val: self._item.setRect(0,0,self._item.rect().width(), int(val))),
             (self.text_field, lambda val: self._item.setPlainText(val) if hasattr(self._item, 'setPlainText') else None),
             (self.font_field, lambda val: self._set_font_size(int(val))),
 
