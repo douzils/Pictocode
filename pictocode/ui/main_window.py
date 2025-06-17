@@ -374,6 +374,8 @@ class MainWindow(QMainWindow):
         self.imports_dock.setVisible(True)
         self.windows_panel.chk_layers.setChecked(True)
         self.windows_panel.chk_imports.setChecked(True)
+        self.windows_panel.chk_toolbar.setChecked(True)
+        self.windows_panel.chk_props.setChecked(True)
         # bascule sur le canvas
         self._switch_page(self.canvas)
         self.current_project_path = None
@@ -421,6 +423,8 @@ class MainWindow(QMainWindow):
         self.imports_dock.setVisible(True)
         self.windows_panel.chk_layers.setChecked(True)
         self.windows_panel.chk_imports.setChecked(True)
+        self.windows_panel.chk_toolbar.setChecked(True)
+        self.windows_panel.chk_props.setChecked(True)
         self._switch_page(self.canvas)
         self.setWindowTitle(f"Pictocode — {params.get('name','')}")
         self.set_dirty(False)
@@ -508,6 +512,10 @@ class MainWindow(QMainWindow):
         self.layers_dock.setVisible(False)
         self.imports_dock.setVisible(False)
         self.panel_dock.setVisible(False)
+        self.windows_panel.chk_layers.setChecked(False)
+        self.windows_panel.chk_imports.setChecked(False)
+        self.windows_panel.chk_toolbar.setChecked(False)
+        self.windows_panel.chk_props.setChecked(False)
 
     # --- Edit actions -------------------------------------------------
     def copy_selection(self):
