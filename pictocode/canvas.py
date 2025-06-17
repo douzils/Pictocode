@@ -270,6 +270,11 @@ class CanvasWidget(QGraphicsView):
 
     def mousePressEvent(self, event):
         scene_pos = self.mapToScene(event.pos())
+
+        if self.current_tool == "pan":
+            super().mousePressEvent(event)
+            return
+
         if event.button() == Qt.MiddleButton:
             # Déplacement temporaire avec le clic molette
             self._prev_drag_mode = self.dragMode()
@@ -319,7 +324,11 @@ class CanvasWidget(QGraphicsView):
         super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event):
+
+        if self.current_tool == "pan" or self._middle_pan:
+
         if self._middle_pan:
+
             super().mouseMoveEvent(event)
             return
         scene_pos = self.mapToScene(event.pos())
@@ -348,6 +357,11 @@ class CanvasWidget(QGraphicsView):
         super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event):
+
+        if self.current_tool == "pan":
+            super().mouseReleaseEvent(event)
+            return
+
         if self._middle_pan and event.button() == Qt.MiddleButton:
             self.setDragMode(self._prev_drag_mode or QGraphicsView.NoDrag)
             self._middle_pan = False
@@ -456,6 +470,18 @@ class CanvasWidget(QGraphicsView):
         items = self.scene.items(scene_pos)
         if items:
             item = items[0]
+            if hasattr(item, "pen"):
+                act_color = QAction("Couleur du contour...", self)
+                act_color.triggered.connect(
+                    lambda: self._change_pen_color(item))
+                menu.addAction(act_color)
+                act_width = QAction("Épaisseur du trait...", self)
+                act_width.triggered.connect(lambda: self._change_pen_width(item))
+                menu.addAction(act_width)
+            if hasattr(item, "brush"):
+                act_fill = QAction("Couleur de remplissage...", self)
+                act_fill.triggered.connect(lambda: self._change_brush_color(item))
+                menu.addAction(act_fill)
             act_delete = QAction("Supprimer", self)
             act_delete.triggered.connect(lambda: (self.scene.removeItem(item), self._mark_dirty()))
             menu.addAction(act_delete)
@@ -476,6 +502,31 @@ class CanvasWidget(QGraphicsView):
 
     def _toggle_snap(self):
         self.snap_to_grid = not self.snap_to_grid
+
+    def _change_pen_color(self, item):
+        from PyQt5.QtWidgets import QColorDialog
+        color = QColorDialog.getColor(item.pen().color(), self)
+        if color.isValid():
+            pen = item.pen()
+            pen.setColor(color)
+            item.setPen(pen)
+
+    def _change_brush_color(self, item):
+        from PyQt5.QtWidgets import QColorDialog
+        color = QColorDialog.getColor(item.brush().color(), self)
+        if color.isValid():
+            brush = item.brush()
+            brush.setColor(color)
+            brush.setStyle(Qt.SolidPattern)
+            item.setBrush(brush)
+
+    def _change_pen_width(self, item):
+        from PyQt5.QtWidgets import QInputDialog
+        width, ok = QInputDialog.getInt(self, "Épaisseur", "Largeur :", item.pen().width(), 1, 20)
+        if ok:
+            pen = item.pen()
+            pen.setWidth(width)
+            item.setPen(pen)
 
     # ─── Couleur et sélection ─────────────────────────────────────────
     def set_pen_color(self, color: QColor):

@@ -15,6 +15,7 @@ Ce dépôt contient **l'intégralité du code source** de l'application. Les mod
 - Liste de modèles et formats disponibles (double-cliquez pour préremplir la création de projet).
 - Recherche instantanée pour retrouver rapidement un projet existant.
 
+
 ### Création d'un projet
 - Fenêtre de création avec choix du nom, des dimensions et de l'unité.
 - Orientation portrait ou paysage.
@@ -31,6 +32,7 @@ Ce dépôt contient **l'intégralité du code source** de l'application. Les mod
 - **Apparence** : personnalisation fine de l'interface. Chaque zone (menu, barre d'outils, inspecteur) peut
   avoir sa propre couleur d'accent et sa taille de police.
 
+
 - **Apparence** : personnalisation fine de l'interface. Chaque zone (menu, barre d'outils, inspecteur) peut
   avoir sa propre couleur d'accent et sa taille de police.
 
@@ -40,6 +42,9 @@ Ce dépôt contient **l'intégralité du code source** de l'application. Les mod
   l'échelle de zoom pour conserver un espacement lisible.
 - Outils : rectangle, ellipse, ligne, polygone, tracé libre, texte, sélection et gomme.
 - Choix de la couleur des formes.
+- Clic droit sur une forme pour modifier couleur, remplissage ou bordure.
+=======
+
 - Zoom à la molette et déplacement (pan). Un clic molette permet de
   déplacer temporairement la vue.
 - Inspecteur pour modifier position, taille et couleur de l'objet sélectionné.
