@@ -126,3 +126,7 @@ Une boîte de dialogue **Préférences > Raccourcis…** permet de modifier les
 combinaisons clavier associées aux principales commandes (ouvrir, enregistrer,
 etc.). Les raccourcis choisis sont sauvegardés et réappliqués au lancement de
 l'application.
+
+### Gestion des fenetres
+
+Un panneau lateral "Panneaux" permet d'activer ou non diverses fenetres : calques, proprietes, barre d'outils ou encore la liste des images importees.

@@ -51,7 +51,7 @@ class CanvasWidget(QGraphicsView):
 
         # sélection -> inspecteur
         self.scene.selectionChanged.connect(self._on_selection_changed)
-        self.scene.changed.connect(lambda _: self._mark_dirty())
+        self.scene.changed.connect(lambda _: self._on_scene_changed())
 
     def _draw_doc_frame(self):
         """Dessine le contour en pointillés de la zone de travail."""
@@ -109,6 +109,9 @@ class CanvasWidget(QGraphicsView):
             "color_mode": color_mode,
             "dpi": dpi,
         }
+        parent = self.parent()
+        if hasattr(parent, "layers"):
+            parent.layers.update_layers(self)
 
     def update_document_properties(
         self, width, height, unit, orientation, color_mode, dpi, name=""
@@ -159,6 +162,9 @@ class CanvasWidget(QGraphicsView):
                 continue
             self.scene.addItem(item)
         self.scene.blockSignals(False)
+        parent = self.parent()
+        if hasattr(parent, "layers"):
+            parent.layers.update_layers(self)
 
     def export_project(self):
         """
@@ -640,11 +646,19 @@ class CanvasWidget(QGraphicsView):
             items = self.scene.selectedItems()
             if items:
                 parent.inspector.set_target(items[0])
+                if hasattr(parent, "layers"):
+                    parent.layers.highlight_item(items[0])
 
     def _mark_dirty(self):
         parent = self.parent()
         if hasattr(parent, "set_dirty"):
             parent.set_dirty(True)
+
+    def _on_scene_changed(self):
+        self._mark_dirty()
+        parent = self.parent()
+        if hasattr(parent, "layers"):
+            parent.layers.update_layers(self)
 
     # --- Clipboard / editing helpers ---------------------------------
     def _serialize_item(self, item):
@@ -780,3 +794,4 @@ class CanvasWidget(QGraphicsView):
 
     def zoom_out(self):
         self.scale(0.8, 0.8)
+
