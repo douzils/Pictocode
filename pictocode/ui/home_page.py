@@ -116,6 +116,7 @@ class HomePage(QWidget):
             QLineEdit {
                 border-radius: 6px;
                 padding: 4px 8px;
+            }
 
             QListWidget#project_list::item {
                 padding: 6px;

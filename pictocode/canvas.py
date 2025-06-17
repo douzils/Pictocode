@@ -4,7 +4,8 @@ import math
 from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QAction
 from .ui.animated_menu import AnimatedMenu
 from PyQt5.QtCore import Qt, QRectF, QPointF
-from PyQt5.QtGui import QPainter, QColor, QPen, QImage
+from PyQt5.QtGui import QPainter, QColor, QPen, QImage, QPainterPath
+
 from .shapes import Rect, Ellipse, Line, FreehandPath, TextItem
 from .utils import to_pixels
 
@@ -22,6 +23,9 @@ class CanvasWidget(QGraphicsView):
         self._freehand_points = None
         self._temp_item = None
         self._current_path_item = None
+        self._polygon_points = None
+        self._polygon_item = None
+        self._poly_preview_line = None
         self.pen_color = QColor("black")
 
         # Grille et magnétisme
@@ -68,6 +72,13 @@ class CanvasWidget(QGraphicsView):
             if self._current_path_item:
                 self.scene.removeItem(self._current_path_item)
                 self._current_path_item = None
+        if tool_name != "polygon" and self._polygon_item:
+            self.scene.removeItem(self._polygon_item)
+            self._polygon_item = None
+            if self._poly_preview_line:
+                self.scene.removeItem(self._poly_preview_line)
+                self._poly_preview_line = None
+            self._polygon_points = None
         if self._temp_item:
             self.scene.removeItem(self._temp_item)
             self._temp_item = None
@@ -281,6 +292,22 @@ class CanvasWidget(QGraphicsView):
                 if self._temp_item:
                     self._temp_item.setOpacity(0.6)
                     self.scene.addItem(self._temp_item)
+            elif self.current_tool == "polygon":
+                if self._polygon_points is None:
+                    self._polygon_points = [scene_pos]
+                    path = QPainterPath(scene_pos)
+                    self._polygon_item = FreehandPath(path, self.pen_color, 2)
+                    self._polygon_item.setOpacity(0.6)
+                    self.scene.addItem(self._polygon_item)
+                    self._poly_preview_line = Line(scene_pos.x(), scene_pos.y(), scene_pos.x(), scene_pos.y(), self.pen_color)
+                    self._poly_preview_line.setOpacity(0.6)
+                    self.scene.addItem(self._poly_preview_line)
+                else:
+                    self._polygon_points.append(scene_pos)
+                    path = self._polygon_item.path()
+                    path.lineTo(scene_pos)
+                    self._polygon_item.setPath(path)
+                    self._poly_preview_line.setLine(scene_pos.x(), scene_pos.y(), scene_pos.x(), scene_pos.y())
             elif self.current_tool == "freehand":
                 self._freehand_points = [scene_pos]
                 self._current_path_item = FreehandPath.from_points(self._freehand_points, self.pen_color, 2)
@@ -301,7 +328,10 @@ class CanvasWidget(QGraphicsView):
             grid = self.grid_size / scale
             scene_pos.setX(round(scene_pos.x() / grid) * grid)
             scene_pos.setY(round(scene_pos.y() / grid) * grid)
-        if self.current_tool == "freehand" and self._freehand_points is not None:
+        if self.current_tool == "polygon" and self._polygon_points:
+            last = self._polygon_points[-1]
+            self._poly_preview_line.setLine(last.x(), last.y(), scene_pos.x(), scene_pos.y())
+        elif self.current_tool == "freehand" and self._freehand_points is not None:
             self._freehand_points.append(scene_pos)
             if self._current_path_item:
                 path = self._current_path_item.path()
@@ -329,7 +359,13 @@ class CanvasWidget(QGraphicsView):
             grid = self.grid_size / scale
             scene_pos.setX(round(scene_pos.x() / grid) * grid)
             scene_pos.setY(round(scene_pos.y() / grid) * grid)
-        if self.current_tool == "freehand" and self._freehand_points:
+        if self.current_tool == "polygon" and self._polygon_points:
+            self._polygon_points.append(scene_pos)
+            path = self._polygon_item.path()
+            path.lineTo(scene_pos)
+            self._polygon_item.setPath(path)
+            self._poly_preview_line.setLine(scene_pos.x(), scene_pos.y(), scene_pos.x(), scene_pos.y())
+        elif self.current_tool == "freehand" and self._freehand_points:
             self._freehand_points.append(scene_pos)
             if self._current_path_item:
                 path = self._current_path_item.path()
@@ -361,7 +397,19 @@ class CanvasWidget(QGraphicsView):
             scene_pos.setX(round(scene_pos.x() / grid) * grid)
             scene_pos.setY(round(scene_pos.y() / grid) * grid)
         items = self.scene.items(scene_pos)
-        if items and isinstance(items[0], TextItem):
+        if self.current_tool == "polygon" and self._polygon_points:
+            self._polygon_points.append(scene_pos)
+            path = self._polygon_item.path()
+            path.lineTo(scene_pos)
+            path.closeSubpath()
+            self._polygon_item.setPath(path)
+            self._polygon_item.setOpacity(1.0)
+            self.scene.removeItem(self._poly_preview_line)
+            self._poly_preview_line = None
+            self._polygon_item = None
+            self._polygon_points = None
+            self._mark_dirty()
+        elif items and isinstance(items[0], TextItem):
             ti = items[0]
             ti.setTextInteractionFlags(Qt.TextEditorInteraction)
             ti.setFocus()
