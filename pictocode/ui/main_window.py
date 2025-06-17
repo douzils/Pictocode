@@ -496,6 +496,12 @@ class MainWindow(QMainWindow):
     def back_to_home(self):
         if not self.maybe_save():
             return
+        # Réinitialise le canvas et oublie le projet courant
+        self.canvas.scene.clear()
+        self.current_project_path = None
+        if hasattr(self.canvas, "current_meta"):
+            self.canvas.current_meta = {}
+        self.setWindowTitle("Pictocode")
         self._switch_page(self.home)
         self.toolbar.setVisible(False)
         self.inspector_dock.setVisible(False)
