@@ -58,6 +58,50 @@ class ResizableMixin:
         self._active_handle = None  # 0: TL, 1: TR, 2: BR, 3: BL, 4: T, 5: R, 6: B, 7: L, 8: rotation
         self._start_angle = 0.0
 
+    # -- Geometry ----------------------------------------------------
+    def boundingRect(self):
+        """Extend the base bounding rect so handles are always repainted."""
+        br = super().boundingRect()
+        pad = self.handle_size
+        rot_pad = self.rotation_offset + self.rotation_handle_size
+        return br.adjusted(-pad, -rot_pad, pad, pad)
+
+    def shape(self):
+        """Extend the shape with resize and rotation handles for hit tests."""
+        path = super().shape()
+        r = self.rect()
+        s = self.handle_size
+        extra = QPainterPath()
+        handles = [
+            QRectF(r.left() - s / 2, r.top() - s / 2, s, s),
+            QRectF(r.right() - s / 2, r.top() - s / 2, s, s),
+            QRectF(r.right() - s / 2, r.bottom() - s / 2, s, s),
+            QRectF(r.left() - s / 2, r.bottom() - s / 2, s, s),
+            QRectF(r.center().x() - s / 2, r.top() - s / 2, s, s),
+            QRectF(r.right() - s / 2, r.center().y() - s / 2, s, s),
+            QRectF(r.center().x() - s / 2, r.bottom() - s / 2, s, s),
+            QRectF(r.left() - s / 2, r.center().y() - s / 2, s, s),
+        ]
+        for h in handles:
+            if self.handle_shape == "circle":
+                extra.addEllipse(h)
+            else:
+                extra.addRect(h)
+
+        rot_s = self.rotation_handle_size
+        rot_handle = QRectF(
+            r.center().x() - rot_s / 2,
+            r.top() - self.rotation_offset - rot_s / 2,
+            rot_s,
+            rot_s,
+        )
+        if self.rotation_handle_shape == "circle":
+            extra.addEllipse(rot_handle)
+        else:
+            extra.addRect(rot_handle)
+
+        return path.united(extra)
+
     def paint(self, painter, option, widget=None):
         super().paint(painter, option, widget)
         if self.isSelected():
