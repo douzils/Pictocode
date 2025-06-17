@@ -642,8 +642,8 @@ class CanvasWidget(QGraphicsView):
             r = item.rect()
             return {
                 "type": "rect",
-                "x": r.x(),
-                "y": r.y(),
+                "x": item.x(),
+                "y": item.y(),
                 "w": r.width(),
                 "h": r.height(),
                 "color": item.pen().color().name(),
@@ -656,8 +656,8 @@ class CanvasWidget(QGraphicsView):
             e = item.rect()
             return {
                 "type": "ellipse",
-                "x": e.x(),
-                "y": e.y(),
+                "x": item.x(),
+                "y": item.y(),
                 "w": e.width(),
                 "h": e.height(),
                 "color": item.pen().color().name(),
@@ -670,6 +670,8 @@ class CanvasWidget(QGraphicsView):
             line = item.line()
             return {
                 "type": "line",
+                "x": item.x(),
+                "y": item.y(),
                 "x1": line.x1(),
                 "y1": line.y1(),
                 "x2": line.x2(),
@@ -687,6 +689,8 @@ class CanvasWidget(QGraphicsView):
             ]
             return {
                 "type": "path",
+                "x": item.x(),
+                "y": item.y(),
                 "points": pts,
                 "color": item.pen().color().name(),
                 "pen_width": item.pen().width(),
@@ -754,6 +758,7 @@ class CanvasWidget(QGraphicsView):
             pen = item.pen()
             pen.setWidth(int(data.get("pen_width", pen.width())))
             item.setPen(pen)
+            item.setPos(float(data.get("x", 0)), float(data.get("y", 0)))
             item.setRotation(float(data.get("rotation", 0)))
             item.setZValue(float(data.get("z", 0)))
         elif t == "path":
@@ -765,6 +770,7 @@ class CanvasWidget(QGraphicsView):
             brush = item.brush()
             brush.setColor(QColor(data.get("fill", brush.color().name())))
             item.setBrush(brush)
+            item.setPos(float(data.get("x", 0)), float(data.get("y", 0)))
             item.setRotation(float(data.get("rotation", 0)))
             item.setZValue(float(data.get("z", 0)))
         elif t == "text":
