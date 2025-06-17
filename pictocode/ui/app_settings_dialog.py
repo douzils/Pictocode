@@ -29,6 +29,10 @@ class AppSettingsDialog(QDialog):
         toolbar_font_size: Optional[int] = None,
         dock_font_size: Optional[int] = None,
         show_splash: bool = True,
+        handle_size: int = 8,
+        rotation_offset: int = 20,
+        handle_color: Optional[Union[QColor, str]] = None,
+        rotation_handle_color: Optional[Union[QColor, str]] = None,
         parent=None,
     ):
 
@@ -103,6 +107,29 @@ class AppSettingsDialog(QDialog):
         self.show_splash_chk.setChecked(bool(show_splash))
         form.addRow("Afficher l'écran de démarrage :", self.show_splash_chk)
 
+        # Handle appearance
+        self.handle_size_spin = QSpinBox()
+        self.handle_size_spin.setRange(4, 32)
+        self.handle_size_spin.setValue(int(handle_size))
+        form.addRow("Taille poignées :", self.handle_size_spin)
+
+        self.handle_color = QColor(handle_color or Qt.black)
+        self.handle_color_edit = QLineEdit(self.handle_color.name())
+        self.handle_color_edit.setReadOnly(True)
+        self.handle_color_edit.mousePressEvent = lambda e: self._choose_color("handle")
+        form.addRow("Couleur poignées :", self.handle_color_edit)
+
+        self.rotation_offset_spin = QSpinBox()
+        self.rotation_offset_spin.setRange(0, 100)
+        self.rotation_offset_spin.setValue(int(rotation_offset))
+        form.addRow("Décalage rotation :", self.rotation_offset_spin)
+
+        self.rotation_handle_color = QColor(rotation_handle_color or Qt.red)
+        self.rotation_handle_color_edit = QLineEdit(self.rotation_handle_color.name())
+        self.rotation_handle_color_edit.setReadOnly(True)
+        self.rotation_handle_color_edit.mousePressEvent = lambda e: self._choose_color("rotation_handle")
+        form.addRow("Couleur rotation :", self.rotation_handle_color_edit)
+
         buttons = QDialogButtonBox(
             QDialogButtonBox.Ok | QDialogButtonBox.Cancel, Qt.Horizontal, self
         )
@@ -147,3 +174,15 @@ class AppSettingsDialog(QDialog):
 
     def get_show_splash(self) -> bool:
         return self.show_splash_chk.isChecked()
+
+    def get_handle_size(self) -> int:
+        return self.handle_size_spin.value()
+
+    def get_rotation_offset(self) -> int:
+        return self.rotation_offset_spin.value()
+
+    def get_handle_color(self) -> QColor:
+        return self.handle_color
+
+    def get_rotation_handle_color(self) -> QColor:
+        return self.rotation_handle_color

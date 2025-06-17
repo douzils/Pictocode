@@ -57,6 +57,8 @@ Ce dépôt contient **l'intégralité du code source** de l'application. Les mod
 
 #### Transformations et déplacements
 - Déplacer les objets dans le canvas à la souris.
+- Redimensionner une forme depuis n'importe quel bord ou coin.
+- Faire pivoter une forme grâce à la poignée de rotation placée au-dessus.
 
 #### Précision et aides
 - Grille visible avec magnétisme optionnel.

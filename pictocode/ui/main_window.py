@@ -162,6 +162,12 @@ class MainWindow(QMainWindow):
         )
         self.dock_font_size = int(self.settings.value("dock_font_size", self.font_size))
         self.show_splash = self.settings.value("show_splash", True, type=bool)
+        self.handle_size = int(self.settings.value("handle_size", 8))
+        self.rotation_offset = int(self.settings.value("rotation_offset", 20))
+        self.handle_color = QColor(self.settings.value("handle_color", "#000000"))
+        self.rotation_handle_color = QColor(
+            self.settings.value("rotation_handle_color", "#ff0000")
+        )
         self.apply_theme(
             self.current_theme,
             self.accent_color,
@@ -173,6 +179,7 @@ class MainWindow(QMainWindow):
             self.toolbar_font_size,
             self.dock_font_size,
         )
+        self._apply_handle_settings()
         self._load_shortcuts()
         self._set_project_actions_enabled(False)
         self._update_view_checks()
@@ -606,6 +613,10 @@ class MainWindow(QMainWindow):
             self.toolbar_font_size,
             self.dock_font_size,
             self.show_splash,
+            self.handle_size,
+            self.rotation_offset,
+            self.handle_color,
+            self.rotation_handle_color,
             self,
         )
         if dlg.exec_() == QDialog.Accepted:
@@ -618,6 +629,10 @@ class MainWindow(QMainWindow):
             menu_fs = dlg.get_menu_font_size()
             toolbar_fs = dlg.get_toolbar_font_size()
             dock_fs = dlg.get_dock_font_size()
+            self.handle_size = dlg.get_handle_size()
+            self.rotation_offset = dlg.get_rotation_offset()
+            self.handle_color = dlg.get_handle_color()
+            self.rotation_handle_color = dlg.get_rotation_handle_color()
             self.show_splash = dlg.get_show_splash()
             self.apply_theme(
                 theme,
@@ -630,7 +645,14 @@ class MainWindow(QMainWindow):
                 toolbar_fs,
                 dock_fs,
             )
+            self._apply_handle_settings()
             self.settings.setValue("show_splash", self.show_splash)
+            self.settings.setValue("handle_size", self.handle_size)
+            self.settings.setValue("rotation_offset", self.rotation_offset)
+            self.settings.setValue("handle_color", self.handle_color.name())
+            self.settings.setValue(
+                "rotation_handle_color", self.rotation_handle_color.name()
+            )
 
     def open_shortcut_settings(self):
         current = {
@@ -772,6 +794,14 @@ class MainWindow(QMainWindow):
             )
             if seq:
                 action.setShortcut(QKeySequence(seq))
+
+    def _apply_handle_settings(self):
+        from ..shapes import ResizableMixin
+
+        ResizableMixin.handle_size = self.handle_size
+        ResizableMixin.rotation_offset = self.rotation_offset
+        ResizableMixin.handle_color = self.handle_color
+        ResizableMixin.rotation_handle_color = self.rotation_handle_color
 
     def _set_project_actions_enabled(self, enabled: bool):
         for name in (

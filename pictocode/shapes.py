@@ -18,6 +18,7 @@ from PyQt5.QtGui import (
     QPixmap,
     QTransform,
 )
+import math
 from PyQt5.QtCore import Qt, QPointF, QRectF
 
 
@@ -39,13 +40,23 @@ class ResizableMixin:
     """Ajoute des poignées de redimensionnement et la logique associée."""
 
     handle_size = 8
+    handle_color = Qt.black
+    handle_shape = "square"  # or "circle"
+
+    rotation_handle_size = 10
+    rotation_handle_color = Qt.red
+    rotation_handle_shape = "circle"
+    rotation_offset = 20
 
     def __init__(self):
         super().__init__()
         self._resizing = False
+        self._rotating = False
         self._start_pos = QPointF()
         self._start_rect = QRectF()
-        self._active_handle = None  # 0: TL, 1: TR, 2: BR, 3: BL
+        self._start_scene_rect = QRectF()
+        self._active_handle = None  # 0: TL, 1: TR, 2: BR, 3: BL, 4: T, 5: R, 6: B, 7: L, 8: rotation
+        self._start_angle = 0.0
 
     def paint(self, painter, option, widget=None):
         super().paint(painter, option, widget)
@@ -53,43 +64,83 @@ class ResizableMixin:
             r = self.rect()
             s = self.handle_size
             painter.setBrush(QBrush(Qt.white))
-            painter.setPen(QPen(Qt.black))
+            painter.setPen(QPen(self.handle_color))
             handles = [
                 QRectF(r.left() - s / 2, r.top() - s / 2, s, s),
                 QRectF(r.right() - s / 2, r.top() - s / 2, s, s),
                 QRectF(r.right() - s / 2, r.bottom() - s / 2, s, s),
                 QRectF(r.left() - s / 2, r.bottom() - s / 2, s, s),
+                QRectF(r.center().x() - s / 2, r.top() - s / 2, s, s),
+                QRectF(r.right() - s / 2, r.center().y() - s / 2, s, s),
+                QRectF(r.center().x() - s / 2, r.bottom() - s / 2, s, s),
+                QRectF(r.left() - s / 2, r.center().y() - s / 2, s, s),
             ]
             for handle in handles:
-                painter.drawRect(handle)
+                if self.handle_shape == 'circle':
+                    painter.drawEllipse(handle)
+                else:
+                    painter.drawRect(handle)
+
+            rot_s = self.rotation_handle_size
+            rot_handle = QRectF(
+                r.center().x() - rot_s / 2,
+                r.top() - self.rotation_offset - rot_s / 2,
+                rot_s,
+                rot_s,
+            )
+            painter.setPen(QPen(self.rotation_handle_color))
+            painter.setBrush(QBrush(Qt.white))
+            if self.rotation_handle_shape == 'circle':
+                painter.drawEllipse(rot_handle)
+            else:
+                painter.drawRect(rot_handle)
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton and self.isSelected():
             r = self.rect()
             s = self.handle_size
             handles = [
-                QRectF(r.left() - s / 2, r.top() - s / 2, s, s),
-                QRectF(r.right() - s / 2, r.top() - s / 2, s, s),
-                QRectF(r.right() - s / 2, r.bottom() - s / 2, s, s),
-                QRectF(r.left() - s / 2, r.bottom() - s / 2, s, s),
+                QRectF(r.left() - s / 2, r.top() - s / 2, s, s),  # 0 TL
+                QRectF(r.right() - s / 2, r.top() - s / 2, s, s),  # 1 TR
+                QRectF(r.right() - s / 2, r.bottom() - s / 2, s, s),  # 2 BR
+                QRectF(r.left() - s / 2, r.bottom() - s / 2, s, s),  # 3 BL
+                QRectF(r.center().x() - s / 2, r.top() - s / 2, s, s),  # 4 T
+                QRectF(r.right() - s / 2, r.center().y() - s / 2, s, s),  # 5 R
+                QRectF(r.center().x() - s / 2, r.bottom() - s / 2, s, s),  # 6 B
+                QRectF(r.left() - s / 2, r.center().y() - s / 2, s, s),  # 7 L
             ]
+            rot_s = self.rotation_handle_size
+            rot_handle = QRectF(
+                r.center().x() - rot_s / 2,
+                r.top() - self.rotation_offset - rot_s / 2,
+                rot_s,
+                rot_s,
+            )
             for idx, handle in enumerate(handles):
                 if handle.contains(event.pos()):
                     self._resizing = True
                     self._active_handle = idx
                     self._start_pos = event.scenePos()
                     self._start_rect = QRectF(r)
+                    self._start_scene_rect = QRectF(self.sceneBoundingRect())
                     event.accept()
                     return
+            if rot_handle.contains(event.pos()):
+                self._rotating = True
+                self._active_handle = 8
+                self._start_pos = event.scenePos()
+                self._start_angle = self.rotation()
+                event.accept()
+                return
         super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event):
         if self._resizing:
             delta = event.scenePos() - self._start_pos
-            x = self._start_rect.x()
-            y = self._start_rect.y()
-            w = self._start_rect.width()
-            h = self._start_rect.height()
+            x = self._start_scene_rect.x()
+            y = self._start_scene_rect.y()
+            w = self._start_scene_rect.width()
+            h = self._start_scene_rect.height()
             if self._active_handle == 0:  # top-left
                 x += delta.x()
                 y += delta.y()
@@ -106,12 +157,18 @@ class ResizableMixin:
                 x += delta.x()
                 w -= delta.x()
                 h += delta.y()
-            if event.modifiers() & Qt.ShiftModifier:
-                aspect = (
-                    self._start_rect.width() / self._start_rect.height()
-                    if self._start_rect.height()
-                    else 1
-                )
+            elif self._active_handle == 4:  # top
+                y += delta.y()
+                h -= delta.y()
+            elif self._active_handle == 5:  # right
+                w += delta.x()
+            elif self._active_handle == 6:  # bottom
+                h += delta.y()
+            elif self._active_handle == 7:  # left
+                x += delta.x()
+                w -= delta.x()
+            if event.modifiers() & Qt.ShiftModifier and w and h:
+                aspect = self._start_scene_rect.width() / self._start_scene_rect.height()
                 if abs(w) / aspect > abs(h):
                     h = abs(w) / aspect * (1 if h >= 0 else -1)
                 else:
@@ -119,11 +176,21 @@ class ResizableMixin:
             self.setRect(x, y, w, h)
             event.accept()
             return
+        if self._rotating:
+            center = self._start_scene_rect.center()
+            start_vec = self._start_pos - center
+            current_vec = event.scenePos() - center
+            start_angle = math.degrees(math.atan2(start_vec.y(), start_vec.x()))
+            curr_angle = math.degrees(math.atan2(current_vec.y(), current_vec.x()))
+            self.setRotation(self._start_angle + curr_angle - start_angle)
+            event.accept()
+            return
         super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event):
-        if self._resizing:
+        if self._resizing or self._rotating:
             self._resizing = False
+            self._rotating = False
             self._active_handle = None
             event.accept()
             return
@@ -159,6 +226,7 @@ class Rect(ResizableMixin, SnapToGridMixin, QGraphicsRectItem):
         r = QRectF(x, y, w, h).normalized()
         QGraphicsRectItem.setRect(self, 0, 0, r.width(), r.height())
         self.setPos(r.x(), r.y())
+        self.setTransformOriginPoint(r.width() / 2, r.height() / 2)
 
 
 class Ellipse(ResizableMixin, SnapToGridMixin, QGraphicsEllipseItem):
@@ -187,6 +255,7 @@ class Ellipse(ResizableMixin, SnapToGridMixin, QGraphicsEllipseItem):
         r = QRectF(x, y, w, h).normalized()
         QGraphicsEllipseItem.setRect(self, 0, 0, r.width(), r.height())
         self.setPos(r.x(), r.y())
+        self.setTransformOriginPoint(r.width() / 2, r.height() / 2)
 
 
 class LineResizableMixin:
@@ -314,6 +383,7 @@ class FreehandPath(ResizableMixin, SnapToGridMixin, QGraphicsPathItem):
         new_path = transform.map(self.path())
         self.setPath(new_path)
         self.setPos(x, y)
+        self.setTransformOriginPoint(w / 2, h / 2)
 
     @classmethod
     def from_points(
@@ -377,6 +447,7 @@ class TextItem(ResizableMixin, SnapToGridMixin, QGraphicsTextItem):
         br = self.boundingRect()
         if br.height() != 0:
             self.setScale(h / br.height())
+        self.setTransformOriginPoint(w / 2, h / 2)
 
 
 class ImageItem(ResizableMixin, SnapToGridMixin, QGraphicsPixmapItem):
@@ -409,3 +480,4 @@ class ImageItem(ResizableMixin, SnapToGridMixin, QGraphicsPixmapItem):
                 Qt.SmoothTransformation,
             )
             self.setPixmap(scaled)
+        self.setTransformOriginPoint(w / 2, h / 2)
