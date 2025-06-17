@@ -2,11 +2,14 @@
 
 Pictocode est une application permettant de composer visuellement des formes pour ensuite générer du code. Son interface rappelle les logiciels de dessin comme Illustrator.
 
+Ce dépôt contient **l'intégralité du code source** de l'application. Les modules Python se trouvent dans le package `pictocode` et implémentent l'ensemble des fonctionnalités décrites ci-dessous.
+
 ## Fonctionnalités principales
 
 ### Écran d'accueil
+- Interface modernisée avec en‑tête coloré.
 - Bouton **Nouveau projet** pour créer un canvas vierge.
-- Liste des projets sauvegardés dans le dossier `Projects`.
+- Liste des projets sauvegardés dans le dossier `Projects` avec icônes.
 - Liste de modèles et formats disponibles.
 - Recherche et filtres pour retrouver rapidement un projet.
 
@@ -23,7 +26,8 @@ Pictocode est une application permettant de composer visuellement des formes pou
 
 ### Fenêtre de paramètres
 - **Général** : choix de la langue.
-- **Apparence** : personnalisation des couleurs, bordures, etc.
+- **Apparence** : personnalisation fine de l'interface. Chaque zone (menu, barre d'outils, inspecteur) peut
+  avoir sa propre couleur d'accent et sa taille de police.
 
 ### Dans un projet
 - Canvas avec grille optionnelle et magnétisme.
@@ -187,3 +191,25 @@ Deux méthodes sont possibles :
    ```
 
 Ces commandes ouvrent la fenêtre principale de l'éditeur.
+
+### Exporter une image
+
+Depuis un projet ouvert, utilisez le menu **Fichier > Exporter en image…**
+pour enregistrer le contenu du canvas au format PNG ou JPEG.
+
+### Exporter en SVG
+
+Le menu **Fichier > Exporter en SVG…** permet d'enregistrer un fichier `.svg`
+contenant toutes les formes vectorielles du canvas.
+
+### Exporter le code Python
+
+Utilisez **Fichier > Exporter en code Python…** pour générer un script
+`PyQt5` reproduisant les formes de votre projet.
+
+### Personnaliser l'apparence
+
+Dans le menu **Préférences**, vous pouvez choisir le thème (clair ou sombre),
+définir une couleur et une taille de police spécifique pour la barre de menu,
+la barre d'outils et l'inspecteur. Les menus disposent d'une animation
+d'ouverture pour un rendu plus élégant.
