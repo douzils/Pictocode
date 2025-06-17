@@ -424,12 +424,30 @@ class MainWindow(QMainWindow):
         if not self.maybe_save():
             return
         path, _ = QFileDialog.getOpenFileName(
-            self, "Ouvrir un projet", PROJECTS_DIR, "Pictocode (*.json)"
+            self,
+            "Ouvrir un projet",
+            PROJECTS_DIR,
+            "Pictocode (*.json *.ptc)",
         )
         if path:
             try:
-                with open(path, "r", encoding="utf-8") as f:
-                    data = json.load(f)
+                if path.lower().endswith(".ptc"):
+                    import zipfile
+                    import tempfile
+
+                    with zipfile.ZipFile(path, "r") as zf:
+                        with zf.open("project.json") as f:
+                            data = json.load(f)
+                        tmp = tempfile.mkdtemp(prefix="pictocode_")
+                        for name in zf.namelist():
+                            if name.startswith("images/"):
+                                zf.extract(name, tmp)
+                        for shp in data.get("shapes", []):
+                            if shp.get("type") == "image":
+                                shp["path"] = os.path.join(tmp, shp["path"])
+                else:
+                    with open(path, "r", encoding="utf-8") as f:
+                        data = json.load(f)
                 params = {
                     k: data[k]
                     for k in (
@@ -473,8 +491,33 @@ class MainWindow(QMainWindow):
             return self.save_as_project()
         data = self.canvas.export_project()
         try:
-            with open(self.current_project_path, "w", encoding="utf-8") as f:
-                json.dump(data, f, indent=2, ensure_ascii=False)
+            if self.current_project_path.lower().endswith(".ptc"):
+                import zipfile, tempfile
+
+                tmp_thumb = tempfile.mkstemp(suffix=".png")[1]
+                self.canvas.export_image(tmp_thumb, "PNG")
+
+                images = []
+                for shp in data.get("shapes", []):
+                    if shp.get("type") == "image" and os.path.exists(shp["path"]):
+                        images.append((shp["path"], os.path.basename(shp["path"])))
+                        shp["path"] = f"images/{os.path.basename(shp['path'])}"
+
+                with zipfile.ZipFile(self.current_project_path, "w") as zf:
+                    zf.writestr(
+                        "project.json",
+                        json.dumps(data, indent=2, ensure_ascii=False),
+                    )
+                    zf.write(tmp_thumb, "thumbnail.png")
+                    os.remove(tmp_thumb)
+                    for src, name in images:
+                        zf.write(src, f"images/{name}")
+            else:
+                with open(self.current_project_path, "w", encoding="utf-8") as f:
+                    json.dump(data, f, indent=2, ensure_ascii=False)
+                # also save preview
+                thumb = os.path.splitext(self.current_project_path)[0] + ".png"
+                self.canvas.export_image(thumb, "PNG")
             self.set_dirty(False)
             self.add_recent_project(self.current_project_path)
             self.home.populate_lists()
@@ -483,14 +526,18 @@ class MainWindow(QMainWindow):
 
     def save_as_project(self):
         path, _ = QFileDialog.getSaveFileName(
-            self, "Enregistrer sous", PROJECTS_DIR, "Pictocode (*.json)"
+            self,
+            "Enregistrer sous",
+            PROJECTS_DIR,
+            "Pictocode (*.json *.ptc)",
         )
         if path:
-            if not path.endswith(".json"):
-                path += ".json"
+            if not path.lower().endswith(('.json', '.ptc')):
+                path += '.json'
             self.current_project_path = path
             self.save_project()
-            self.setWindowTitle(f"Pictocode — {os.path.basename(path)[:-5]}")
+            base = os.path.basename(os.path.splitext(path)[0])
+            self.setWindowTitle(f"Pictocode — {base}")
 
     def export_image(self):
         path, _ = QFileDialog.getSaveFileName(

@@ -2,6 +2,7 @@
 
 import os
 import json
+import tempfile
 from PyQt5.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -187,13 +188,22 @@ class HomePage(QWidget):
             if not os.path.exists(path):
                 continue
             try:
-                with open(path, "r", encoding="utf-8") as f:
-                    meta = json.load(f)
-                display = meta.get("name", os.path.basename(path)[:-5])
+                meta = self._load_metadata(path)
+                display = meta.get("name", os.path.basename(path))
             except Exception:
-                display = os.path.basename(path)[:-5]
+                display = os.path.basename(path)
+                meta = {}
             thumb = self._thumbnail_for(path, style)
-            tile = ProjectTile(thumb, display, 128)
+            w = int(meta.get("width", 128))
+            h = int(meta.get("height", 128))
+            if w <= 0 or h <= 0:
+                w = h = 128
+            if w >= h:
+                ratio_h = int(128 * h / w)
+                tile = ProjectTile(thumb, display, 128, ratio_h)
+            else:
+                ratio_w = int(128 * w / h)
+                tile = ProjectTile(thumb, display, ratio_w, 128)
             item = QListWidgetItem()
             item.setSizeHint(tile.sizeHint())
             item.setData(Qt.UserRole, path)
@@ -204,7 +214,28 @@ class HomePage(QWidget):
             widget.addItem(empty_text)
         return valid
 
+    def _load_metadata(self, path: str) -> dict:
+        if path.lower().endswith(".ptc"):
+            import zipfile, io
+
+            with zipfile.ZipFile(path, "r") as zf:
+                with zf.open("project.json") as f:
+                    data = json.load(f)
+            return data
+        else:
+            with open(path, "r", encoding="utf-8") as f:
+                return json.load(f)
+
     def _thumbnail_for(self, path: str, style) -> QIcon:
+        if path.lower().endswith(".ptc"):
+            import zipfile, io
+
+            with zipfile.ZipFile(path, "r") as zf:
+                if "thumbnail.png" in zf.namelist():
+                    data = zf.read("thumbnail.png")
+                    pix = QPixmap()
+                    pix.loadFromData(data)
+                    return QIcon(pix)
         base = os.path.splitext(path)[0]
         for ext in (".png", ".jpg", ".jpeg"):
             img = base + ext
@@ -219,10 +250,24 @@ class HomePage(QWidget):
             QMessageBox.warning(self, "Erreur", "Impossible de trouver le projet.")
             return
 
-        # Charge les paramètres depuis le JSON
+        # Charge les paramètres depuis le fichier
         try:
-            with open(path, "r", encoding="utf-8") as f:
-                data = json.load(f)
+            if path.lower().endswith(".ptc"):
+                import zipfile
+
+                with zipfile.ZipFile(path, "r") as zf:
+                    with zf.open("project.json") as f:
+                        data = json.load(f)
+                    tmp = tempfile.mkdtemp(prefix="pictocode_")
+                    for name in zf.namelist():
+                        if name.startswith("images/"):
+                            zf.extract(name, tmp)
+                    for shp in data.get("shapes", []):
+                        if shp.get("type") == "image":
+                            shp["path"] = os.path.join(tmp, shp["path"])
+            else:
+                with open(path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
         except Exception as e:
             QMessageBox.critical(self, "Erreur", f"Échec de lecture de {path} :\n{e}")
             return
@@ -253,9 +298,17 @@ class HomePage(QWidget):
         if path:
             # open existing project as template
             try:
-                with open(path, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-                params = data
+                if path.lower().endswith(".ptc"):
+                    import zipfile
+
+                    with zipfile.ZipFile(path, "r") as zf:
+                        with zf.open("project.json") as f:
+                            data = json.load(f)
+                        params = data
+                else:
+                    with open(path, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                    params = data
             except Exception:
                 return
             if "name" in params:
