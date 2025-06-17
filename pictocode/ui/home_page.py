@@ -16,6 +16,8 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtCore import Qt, QSize
 
+from .project_tile import ProjectTile
+
 
 class ProjectList(QListWidget):
     """List widget capable of drag and drop between sections."""
@@ -24,10 +26,13 @@ class ProjectList(QListWidget):
         super().__init__(home)
         self.home = home
         self.kind = kind
+        self.setViewMode(QListWidget.IconMode)
+        self.setResizeMode(QListWidget.Adjust)
         self.setAcceptDrops(True)
         self.setDragEnabled(True)
         self.setDragDropMode(QListWidget.InternalMove)
-        self.setIconSize(QSize(96, 96))
+        self.setIconSize(QSize(128, 128))
+        self.setSpacing(10)
 
     def dropEvent(self, event):
         source = event.source()
@@ -151,13 +156,15 @@ class HomePage(QWidget):
                 background: rgba(255, 255, 255, 0.9);
                 border-radius: 10px;
                 padding: 8px;
+                outline: none;
             }
             QListWidget#template_list {
                 margin-top: 12px;
             }
             QListWidget#favorites_list::item,
             QListWidget#recent_list::item {
-                padding: 8px;
+                margin: 4px;
+                padding: 0px;
             }
             QLabel#section_label {
                 color: white;
@@ -186,9 +193,12 @@ class HomePage(QWidget):
             except Exception:
                 display = os.path.basename(path)[:-5]
             thumb = self._thumbnail_for(path, style)
-            item = QListWidgetItem(thumb, display)
+            tile = ProjectTile(thumb, display, 128)
+            item = QListWidgetItem()
+            item.setSizeHint(tile.sizeHint())
             item.setData(Qt.UserRole, path)
             widget.addItem(item)
+            widget.setItemWidget(item, tile)
             valid.append(path)
         if widget.count() == 0 and empty_text:
             widget.addItem(empty_text)
