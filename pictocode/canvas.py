@@ -392,14 +392,14 @@ class CanvasWidget(QGraphicsView):
         top = int(math.floor(rect.top()))
         bottom = int(math.ceil(rect.bottom()))
         # verticales
-        x = left - (left % gs)
+        x = left - int(left % gs)
         while x < right:
-            painter.drawLine(x, top, x, bottom)
+            painter.drawLine(int(x), top, int(x), bottom)
             x += gs
         # horizontales
-        y = top - (top % gs)
+        y = top - int(top % gs)
         while y < bottom:
-            painter.drawLine(left, y, right, y)
+            painter.drawLine(left, int(y), right, int(y))
             y += gs
 
     def _show_context_menu(self, event):

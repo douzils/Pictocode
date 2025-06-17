@@ -36,6 +36,7 @@ Ce dépôt contient **l'intégralité du code source** de l'application. Les mod
   avoir sa propre couleur d'accent et sa taille de police.
 
 
+
 - **Apparence** : personnalisation fine de l'interface. Chaque zone (menu, barre d'outils, inspecteur) peut
   avoir sa propre couleur d'accent et sa taille de police.
 
