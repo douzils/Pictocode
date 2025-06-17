@@ -36,8 +36,8 @@ Ce dépôt contient **l'intégralité du code source** de l'application. Les mod
 - Outils : rectangle, ellipse, ligne, polygone, tracé libre, texte, sélection et gomme.
 - Choix de la couleur des formes.
 - Clic droit sur une forme pour modifier couleur, remplissage ou bordure.
-- Zoom à la molette et déplacement (pan). Un clic molette permet de
-  déplacer temporairement la vue.
+- Zoom à la molette et déplacement (pan). Utilisez l'outil **Pan** de la barre
+  d'outils ou un clic molette pour déplacer temporairement la vue.
 - Inspecteur pour modifier position, taille et couleur de l'objet sélectionné.
 - Sauvegarde du projet au format JSON et génération de code Python.
 
