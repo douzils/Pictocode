@@ -3,7 +3,7 @@
 import math
 from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QMenu, QAction
 from PyQt5.QtCore import Qt, QRectF, QPointF
-from PyQt5.QtGui import QPainter, QColor, QPen
+from PyQt5.QtGui import QPainter, QColor, QPen, QImage
 from .shapes import Rect, Ellipse, Line, FreehandPath, TextItem
 from .utils import to_pixels
 
@@ -188,6 +188,64 @@ class CanvasWidget(QGraphicsView):
                 })
         meta = getattr(self, "current_meta", {})
         return {**meta, "shapes": shapes}
+
+    def export_image(self, path: str, img_format: str = "PNG"):
+        """Enregistre la scène actuelle dans un fichier image."""
+        w = int(self._doc_rect.width())
+        h = int(self._doc_rect.height())
+        image = QImage(w, h, QImage.Format_ARGB32)
+        image.fill(Qt.white)
+        painter = QPainter(image)
+        self.scene.render(painter, QRectF(0, 0, w, h), self._doc_rect)
+        painter.end()
+        image.save(path, img_format)
+
+    def export_svg(self, path: str):
+        """Enregistre la scène actuelle au format SVG (très basique)."""
+        from xml.etree.ElementTree import Element, SubElement, ElementTree
+
+        w = int(self._doc_rect.width())
+        h = int(self._doc_rect.height())
+        root = Element('svg', xmlns="http://www.w3.org/2000/svg",
+                       width=str(w), height=str(h))
+
+        for item in reversed(self.scene.items()):
+            if item is self._frame_item:
+                continue
+            cls = type(item).__name__
+            stroke = item.pen().color().name() if hasattr(item, 'pen') else '#000000'
+
+            if cls == 'Rect':
+                r = item.rect()
+                SubElement(root, 'rect', x=str(r.x()), y=str(r.y()),
+                           width=str(r.width()), height=str(r.height()),
+                           fill='none', stroke=stroke)
+            elif cls == 'Ellipse':
+                e = item.rect()
+                cx = e.x() + e.width()/2
+                cy = e.y() + e.height()/2
+                SubElement(root, 'ellipse', cx=str(cx), cy=str(cy),
+                           rx=str(e.width()/2), ry=str(e.height()/2),
+                           fill='none', stroke=stroke)
+            elif cls == 'Line':
+                line = item.line()
+                SubElement(root, 'line', x1=str(line.x1()), y1=str(line.y1()),
+                           x2=str(line.x2()), y2=str(line.y2()),
+                           stroke=stroke)
+            elif cls == 'FreehandPath':
+                path = item.path()
+                cmds = []
+                for i in range(path.elementCount()):
+                    ept = path.elementAt(i)
+                    cmd = 'M' if i == 0 else 'L'
+                    cmds.append(f"{cmd}{ept.x} {ept.y}")
+                SubElement(root, 'path', d=' '.join(cmds), fill='none', stroke=stroke)
+            elif cls == 'TextItem':
+                SubElement(root, 'text', x=str(item.x()),
+                           y=str(item.y() + item.font().pointSize()),
+                           fill=item.defaultTextColor().name()).text = item.toPlainText()
+
+        ElementTree(root).write(path, encoding='utf-8', xml_declaration=True)
 
     # ─── Pan & Zoom ────────────────────────────────────────────────────
     def wheelEvent(self, event):

@@ -7,6 +7,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt, QSettings
 from PyQt5.QtGui import QPalette, QColor
 from PyQt5.QtWidgets import QApplication
+from ..utils import generate_pycode
 from ..canvas import CanvasWidget
 from .toolbar import Toolbar
 from .inspector import Inspector
@@ -90,6 +91,18 @@ class MainWindow(QMainWindow):
         saveas_act = QAction("Enregistrer sous…", self)
         saveas_act.triggered.connect(self.save_as_project)
         filem.addAction(saveas_act)
+
+        export_img_act = QAction("Exporter en image…", self)
+        export_img_act.triggered.connect(self.export_image)
+        filem.addAction(export_img_act)
+
+        export_svg_act = QAction("Exporter en SVG…", self)
+        export_svg_act.triggered.connect(self.export_svg)
+        filem.addAction(export_svg_act)
+
+        export_code_act = QAction("Exporter en code Python…", self)
+        export_code_act.triggered.connect(self.export_pycode)
+        filem.addAction(export_code_act)
 
         filem.addSeparator()
 
@@ -225,6 +238,50 @@ class MainWindow(QMainWindow):
             self.current_project_path = path
             self.save_project()
             self.setWindowTitle(f"Pictocode — {os.path.basename(path)[:-5]}")
+
+    def export_image(self):
+        path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Exporter comme image",
+            PROJECTS_DIR,
+            "PNG (*.png);;JPEG (*.jpg *.jpeg)"
+        )
+        if path:
+            fmt = "PNG"
+            lower = path.lower()
+            if lower.endswith(".jpg") or lower.endswith(".jpeg"):
+                fmt = "JPEG"
+            self.canvas.export_image(path, fmt)
+
+    def export_svg(self):
+        path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Exporter comme SVG",
+            PROJECTS_DIR,
+            "SVG (*.svg)"
+        )
+        if path:
+            if not path.lower().endswith('.svg'):
+                path += '.svg'
+            self.canvas.export_svg(path)
+
+    def export_pycode(self):
+        path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Exporter en code Python",
+            PROJECTS_DIR,
+            "Python (*.py)"
+        )
+        if path:
+            if not path.lower().endswith('.py'):
+                path += '.py'
+            shapes = [it for it in self.canvas.scene.items() if it is not self.canvas._frame_item]
+            code = generate_pycode(shapes)
+            try:
+                with open(path, 'w', encoding='utf-8') as f:
+                    f.write(code)
+            except Exception as e:
+                QMessageBox.critical(self, "Erreur", f"Impossible d'exporter : {e}")
 
     def back_to_home(self):
         if not self.maybe_save():
