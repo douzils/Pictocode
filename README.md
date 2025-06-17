@@ -130,3 +130,7 @@ l'application.
 ### Gestion des fenetres
 
 Un panneau lateral "Panneaux" permet d'activer ou non diverses fenetres : calques, proprietes, barre d'outils ou encore la liste des images importees.
+
+### Rapport de bugs
+
+En cas d'erreur inattendue, Pictocode enregistre automatiquement la trace dans `~/pictocode_logs/pictocode.log`. Ce fichier peut être joint pour signaler un problème.

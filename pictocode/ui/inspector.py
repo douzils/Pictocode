@@ -101,9 +101,12 @@ class Inspector(QWidget):
             return
         col = QColorDialog.getColor(parent=self)
         if col.isValid():
-            pen = self._item.pen()
-            pen.setColor(col)
-            self._item.setPen(pen)
+            if hasattr(self._item, "pen"):
+                pen = self._item.pen()
+                pen.setColor(col)
+                self._item.setPen(pen)
+            elif hasattr(self._item, "setDefaultTextColor"):
+                self._item.setDefaultTextColor(col)
             self.color_btn.setText(col.name())
 
     def _set_font_size(self, size: int):
