@@ -1,7 +1,8 @@
 # pictocode/canvas.py
 
 import math
-from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QMenu, QAction
+from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QAction
+from .ui.animated_menu import AnimatedMenu
 from PyQt5.QtCore import Qt, QRectF, QPointF
 from PyQt5.QtGui import QPainter, QColor, QPen, QImage
 from .shapes import Rect, Ellipse, Line, FreehandPath, TextItem
@@ -376,7 +377,7 @@ class CanvasWidget(QGraphicsView):
             y += gs
 
     def _show_context_menu(self, event):
-        menu = QMenu(self)
+        menu = AnimatedMenu(self)
         scene_pos = self.mapToScene(event.pos())
         items = self.scene.items(scene_pos)
         if items:
