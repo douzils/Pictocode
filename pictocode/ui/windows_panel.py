@@ -14,10 +14,27 @@ class WindowsPanel(QWidget):
         self.chk_imports = QCheckBox('Imports')
         for chk in (self.chk_layers, self.chk_props, self.chk_toolbar, self.chk_imports):
             layout.addWidget(chk)
-        self.chk_layers.stateChanged.connect(lambda s: self.main.layers_dock.setVisible(s == Qt.Checked))
-        self.chk_props.stateChanged.connect(lambda s: self.main.inspector_dock.setVisible(s == Qt.Checked))
-        self.chk_toolbar.stateChanged.connect(lambda s: self.main.toolbar.setVisible(s == Qt.Checked))
-        self.chk_imports.stateChanged.connect(lambda s: self.main.imports_dock.setVisible(s == Qt.Checked))
-        # états initiaux
-        self.chk_props.setChecked(True)
-        self.chk_toolbar.setChecked(True)
+
+        self.chk_layers.stateChanged.connect(
+            lambda s: self.main.layers_dock.setVisible(s == Qt.Checked)
+        )
+        self.chk_props.stateChanged.connect(
+            lambda s: self.main.inspector_dock.setVisible(s == Qt.Checked)
+        )
+        self.chk_toolbar.stateChanged.connect(
+            lambda s: self.main.toolbar.setVisible(s == Qt.Checked)
+        )
+        self.chk_imports.stateChanged.connect(
+            lambda s: self.main.imports_dock.setVisible(s == Qt.Checked)
+        )
+
+        # synchronise les cases avec l'état courant sans déclencher de signal
+        for chk, visible in (
+            (self.chk_layers, self.main.layers_dock.isVisible()),
+            (self.chk_props, self.main.inspector_dock.isVisible()),
+            (self.chk_toolbar, self.main.toolbar.isVisible()),
+            (self.chk_imports, self.main.imports_dock.isVisible()),
+        ):
+            chk.blockSignals(True)
+            chk.setChecked(visible)
+            chk.blockSignals(False)

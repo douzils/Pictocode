@@ -89,40 +89,38 @@ class HomePage(QWidget):
         self.setStyleSheet(
             """
             QWidget#home {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #4e54c8, stop:1 #8f94fb);
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                    stop:0 #374ABE, stop:1 #64B6FF);
             }
             QLabel#title_label {
-                font-size: 24px;
+                font-size: 26px;
                 font-weight: bold;
                 color: white;
-                padding: 16px;
+                padding: 20px;
             }
             QLabel#subtitle_label {
-                font-size: 14px;
+                font-size: 16px;
                 color: white;
-                padding-bottom: 12px;
+                padding-bottom: 16px;
             }
             QListWidget#favorites_list,
-            QListWidget#recent_list {
-                background: rgba(255, 255, 255, 0.85);
-                border-radius: 8px;
-                padding: 6px;
+            QListWidget#recent_list,
+            QListWidget#template_list {
+                background: rgba(255, 255, 255, 0.9);
+                border-radius: 10px;
+                padding: 8px;
             }
             QListWidget#template_list {
-                background: rgba(255, 255, 255, 0.6);
-                border-radius: 8px;
-                padding: 4px;
-                margin-top: 8px;
+                margin-top: 12px;
             }
             QListWidget#favorites_list::item,
             QListWidget#recent_list::item {
-                padding: 6px;
+                padding: 8px;
             }
             QLabel#section_label {
                 color: white;
                 font-weight: bold;
-                margin-top: 8px;
+                margin-top: 12px;
             }
             """
         )
