@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QAction
 from .ui.animated_menu import AnimatedMenu
 from PyQt5.QtCore import Qt, QRectF, QPointF
 from PyQt5.QtGui import QPainter, QColor, QPen, QImage, QPainterPath
-from .shapes import Rect, Ellipse, Line, FreehandPath, TextItem
+from .shapes import Rect, Ellipse, Line, FreehandPath, TextItem, ImageItem
 from .utils import to_pixels
 
 
@@ -160,6 +160,8 @@ class CanvasWidget(QGraphicsView):
                 item = TextItem(
                     s["x"], s["y"], s["text"], s["font_size"], QColor(s["color"])
                 )
+            elif t == "image":
+                item = ImageItem(s["x"], s["y"], s["path"])
             else:
                 continue
             self.scene.addItem(item)
@@ -230,6 +232,18 @@ class CanvasWidget(QGraphicsView):
                         "text": item.toPlainText(),
                         "font_size": item.font().pointSize(),
                         "color": item.defaultTextColor().name(),
+                    }
+                )
+            elif cls == "ImageItem":
+                r = item.rect()
+                shapes.append(
+                    {
+                        "type": "image",
+                        "x": item.x(),
+                        "y": item.y(),
+                        "w": r.width(),
+                        "h": r.height(),
+                        "path": item.path,
                     }
                 )
         meta = getattr(self, "current_meta", {})
@@ -383,6 +397,12 @@ class CanvasWidget(QGraphicsView):
                 if self._temp_item:
                     self._temp_item.setOpacity(0.6)
                     self.scene.addItem(self._temp_item)
+            elif self.current_tool == "text":
+                item = TextItem(scene_pos.x(), scene_pos.y(), "Texte", 12, self.pen_color)
+                self.scene.addItem(item)
+                item.setSelected(True)
+                item.setTextInteractionFlags(Qt.TextEditorInteraction)
+                self._mark_dirty()
             elif self.current_tool == "polygon":
                 if self._polygon_points is None:
                     self._polygon_points = [scene_pos]
@@ -638,6 +658,16 @@ class CanvasWidget(QGraphicsView):
             brush.setStyle(Qt.SolidPattern)
             item.setBrush(brush)
 
+    def insert_image(self, path: str, pos: QPointF | None = None):
+        if not path:
+            return None
+        if pos is None:
+            pos = QPointF(0, 0)
+        item = ImageItem(pos.x(), pos.y(), path)
+        self.scene.addItem(item)
+        self._mark_dirty()
+        return item
+
     def _change_pen_width(self, item):
         from PyQt5.QtWidgets import QInputDialog
 
@@ -732,6 +762,16 @@ class CanvasWidget(QGraphicsView):
                 "font_size": item.font().pointSize(),
                 "color": item.defaultTextColor().name(),
             }
+        if cls == "ImageItem":
+            r = item.rect()
+            return {
+                "type": "image",
+                "x": item.x(),
+                "y": item.y(),
+                "w": r.width(),
+                "h": r.height(),
+                "path": item.path,
+            }
         return None
 
     def _create_item(self, data):
@@ -758,6 +798,12 @@ class CanvasWidget(QGraphicsView):
                 data.get("text", ""),
                 data.get("font_size", 12),
                 QColor(data.get("color", "black")),
+            )
+        elif t == "image":
+            item = ImageItem(
+                data.get("x", 0),
+                data.get("y", 0),
+                data.get("path", ""),
             )
         else:
             return None

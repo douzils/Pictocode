@@ -36,6 +36,10 @@ class Toolbar(QToolBar):
         text_act.triggered.connect(lambda: self.canvas.set_tool("text"))
         self.addAction(text_act)
 
+        img_act = QAction("Image...", self)
+        img_act.triggered.connect(self.import_image)
+        self.addAction(img_act)
+
         # Pan / déplacement du plan de travail
         pan_act = QAction("Pan", self)
         pan_act.triggered.connect(lambda: self.canvas.set_tool("pan"))
@@ -58,6 +62,17 @@ class Toolbar(QToolBar):
         color_act = QAction("Couleur...", self)
         color_act.triggered.connect(self.choose_color)
         self.addAction(color_act)
+
+    def import_image(self):
+        from PyQt5.QtWidgets import QFileDialog
+
+        path, _ = QFileDialog.getOpenFileName(
+            self.parent(), "Importer une image", "", "Images (*.png *.jpg *.jpeg *.bmp *.gif)"
+        )
+        if path:
+            item = self.canvas.insert_image(path)
+            if item:
+                self.parent().add_imported_image(path)
 
     def choose_color(self):
         """Ouvre une palette, récupère la couleur et la passe au canvas."""
