@@ -18,7 +18,21 @@ from PyQt5.QtGui import (
 from PyQt5.QtCore import Qt, QPointF
 
 
-class Rect(QGraphicsRectItem):
+class SnapToGridMixin:
+    """Mixin ajoutant l'alignement à la grille lors du déplacement."""
+
+    def itemChange(self, change, value):
+        if change == QGraphicsItem.ItemPositionChange and self.scene():
+            view = self.scene().views()[0] if self.scene().views() else None
+            if view and getattr(view, "snap_to_grid", False):
+                scale = view.transform().m11() or 1
+                grid = view.grid_size / scale
+                value.setX(round(value.x() / grid) * grid)
+                value.setY(round(value.y() / grid) * grid)
+        return super().itemChange(change, value)
+
+
+class Rect(SnapToGridMixin, QGraphicsRectItem):
     """Rectangle déplaçable, sélectionnable et redimensionnable."""
     def __init__(self, x, y, w, h, color: QColor = QColor('black')):
         super().__init__(x, y, w, h)
@@ -34,18 +48,9 @@ class Rect(QGraphicsRectItem):
         self.setAcceptHoverEvents(True)
         self.setToolTip("Clique droit pour modifier")
 
-    def itemChange(self, change, value):
-        if change == QGraphicsItem.ItemPositionChange and self.scene():
-            view = self.scene().views()[0] if self.scene().views() else None
-            if view and getattr(view, "snap_to_grid", False):
-                scale = view.transform().m11() or 1
-                grid = view.grid_size / scale
-                value.setX(round(value.x() / grid) * grid)
-                value.setY(round(value.y() / grid) * grid)
-        return super().itemChange(change, value)
 
 
-class Ellipse(QGraphicsEllipseItem):
+class Ellipse(SnapToGridMixin, QGraphicsEllipseItem):
     """Ellipse déplaçable, sélectionnable et redimensionnable."""
     def __init__(self, x, y, w, h, color: QColor = QColor('black')):
         super().__init__(x, y, w, h)
@@ -61,18 +66,9 @@ class Ellipse(QGraphicsEllipseItem):
         self.setAcceptHoverEvents(True)
         self.setToolTip("Clique droit pour modifier")
 
-    def itemChange(self, change, value):
-        if change == QGraphicsItem.ItemPositionChange and self.scene():
-            view = self.scene().views()[0] if self.scene().views() else None
-            if view and getattr(view, "snap_to_grid", False):
-                scale = view.transform().m11() or 1
-                grid = view.grid_size / scale
-                value.setX(round(value.x() / grid) * grid)
-                value.setY(round(value.y() / grid) * grid)
-        return super().itemChange(change, value)
 
 
-class Line(QGraphicsLineItem):
+class Line(SnapToGridMixin, QGraphicsLineItem):
     """Ligne déplaçable et sélectionnable."""
     def __init__(self, x1, y1, x2, y2, color: QColor = QColor('black')):
         super().__init__(x1, y1, x2, y2)
@@ -87,18 +83,9 @@ class Line(QGraphicsLineItem):
         self.setAcceptHoverEvents(True)
         self.setToolTip("Clique droit pour modifier")
 
-    def itemChange(self, change, value):
-        if change == QGraphicsItem.ItemPositionChange and self.scene():
-            view = self.scene().views()[0] if self.scene().views() else None
-            if view and getattr(view, "snap_to_grid", False):
-                scale = view.transform().m11() or 1
-                grid = view.grid_size / scale
-                value.setX(round(value.x() / grid) * grid)
-                value.setY(round(value.y() / grid) * grid)
-        return super().itemChange(change, value)
 
 
-class FreehandPath(QGraphicsPathItem):
+class FreehandPath(SnapToGridMixin, QGraphicsPathItem):
     """
     Tracé libre.  
     Utilisez `from_points` pour construire à partir d’une liste de QPointF.
@@ -118,15 +105,6 @@ class FreehandPath(QGraphicsPathItem):
         self.setAcceptHoverEvents(True)
         self.setToolTip("Clique droit pour modifier")
 
-    def itemChange(self, change, value):
-        if change == QGraphicsItem.ItemPositionChange and self.scene():
-            view = self.scene().views()[0] if self.scene().views() else None
-            if view and getattr(view, "snap_to_grid", False):
-                scale = view.transform().m11() or 1
-                grid = view.grid_size / scale
-                value.setX(round(value.x() / grid) * grid)
-                value.setY(round(value.y() / grid) * grid)
-        return super().itemChange(change, value)
 
     @classmethod
     def from_points(cls, points: list[QPointF], pen_color: QColor = QColor('black'), pen_width: int = 2):
