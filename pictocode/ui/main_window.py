@@ -7,7 +7,9 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt, QSettings
 from PyQt5.QtGui import QPalette, QColor
 from PyQt5.QtWidgets import QApplication
+
 from ..utils import generate_pycode
+
 from ..canvas import CanvasWidget
 from .toolbar import Toolbar
 from .inspector import Inspector
@@ -80,6 +82,7 @@ class MainWindow(QMainWindow):
         self.apply_theme(self.current_theme, self.accent_color, self.font_size,
                          self.menu_color, self.toolbar_color, self.dock_color,
                          self.menu_font_size, self.toolbar_font_size, self.dock_font_size)
+
 
     def _build_menu(self):
         mb = self.menuBar()
@@ -315,6 +318,7 @@ class MainWindow(QMainWindow):
     # ------------------------------------------------------------------
     def open_app_settings(self):
         from .app_settings_dialog import AppSettingsDialog
+
         dlg = AppSettingsDialog(
             self.current_theme,
             self.accent_color,
@@ -327,6 +331,7 @@ class MainWindow(QMainWindow):
             self.dock_font_size,
             self,
         )
+
         if dlg.exec_() == QDialog.Accepted:
             theme = dlg.get_theme()
             accent = dlg.get_accent_color()
@@ -376,7 +381,10 @@ class MainWindow(QMainWindow):
             pal.setColor(QPalette.Text, Qt.white)
             pal.setColor(QPalette.Button, QColor(53, 53, 53))
             pal.setColor(QPalette.ButtonText, Qt.white)
-            pal.setColor(QPalette.Highlight, accent)
+
+
+            pal.setColor(QPalette.Highlight, QColor(42, 130, 218))
+
             pal.setColor(QPalette.HighlightedText, Qt.black)
             app.setPalette(pal)
             app.setStyle("Fusion")
@@ -391,6 +399,7 @@ class MainWindow(QMainWindow):
         app.setFont(font)
 
         self.setStyleSheet(
+
             f"QToolBar {{ background: {toolbar_color.name()}; color: white; font-size: {toolbar_font_size}pt; }}\n"
             f"QMenuBar {{ background: {menu_color.name()}; color: white; font-size: {menu_font_size}pt; border-radius: 4px; }}\n"
             f"QMenuBar::item:selected {{ background: {menu_color.darker(120).name()}; }}\n"
@@ -402,11 +411,13 @@ class MainWindow(QMainWindow):
         )
         self.inspector.setStyleSheet(
             f"font-size: {dock_font_size}pt;"
+
         )
 
         self.current_theme = theme
         self.accent_color = accent
         self.font_size = font_size
+
         self.menu_color = menu_color
         self.toolbar_color = toolbar_color
         self.dock_color = dock_color
@@ -422,6 +433,7 @@ class MainWindow(QMainWindow):
         self.settings.setValue("menu_font_size", menu_font_size)
         self.settings.setValue("toolbar_font_size", toolbar_font_size)
         self.settings.setValue("dock_font_size", dock_font_size)
+
 
 
 
