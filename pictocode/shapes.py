@@ -15,7 +15,7 @@ from PyQt5.QtGui import (
     QPainterPath,
     QFont
 )
-from PyQt5.QtCore import Qt, QPointF
+from PyQt5.QtCore import Qt, QPointF, QRectF
 
 
 class SnapToGridMixin:
@@ -32,14 +32,70 @@ class SnapToGridMixin:
         return super().itemChange(change, value)
 
 
-class Rect(SnapToGridMixin, QGraphicsRectItem):
+class ResizableMixin:
+    """Ajoute une poignée de redimensionnement et la logique associée."""
+
+    handle_size = 8
+
+    def __init__(self):
+        super().__init__()
+        self._resizing = False
+        self._start_pos = QPointF()
+        self._start_rect = QRectF()
+
+    def paint(self, painter, option, widget=None):
+        super().paint(painter, option, widget)
+        if self.isSelected():
+            r = self.rect()
+            s = self.handle_size
+            painter.setBrush(QBrush(Qt.white))
+            painter.setPen(QPen(Qt.black))
+            painter.drawRect(r.right() - s, r.bottom() - s, s, s)
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton and self.isSelected():
+            r = self.rect()
+            handle = QRectF(r.right() - self.handle_size, r.bottom() - self.handle_size, self.handle_size, self.handle_size)
+            if handle.contains(event.pos()):
+                self._resizing = True
+                self._start_pos = event.scenePos()
+                self._start_rect = QRectF(r)
+                event.accept()
+                return
+        super().mousePressEvent(event)
+
+    def mouseMoveEvent(self, event):
+        if self._resizing:
+            delta = event.scenePos() - self._start_pos
+            w = self._start_rect.width() + delta.x()
+            h = self._start_rect.height() + delta.y()
+            if event.modifiers() & Qt.ShiftModifier:
+                aspect = self._start_rect.width() / self._start_rect.height() if self._start_rect.height() else 1
+                if abs(delta.x()) > abs(delta.y()):
+                    h = w / aspect
+                else:
+                    w = h * aspect
+            self.setRect(self._start_rect.x(), self._start_rect.y(), w, h)
+            event.accept()
+            return
+        super().mouseMoveEvent(event)
+
+    def mouseReleaseEvent(self, event):
+        if self._resizing:
+            self._resizing = False
+            event.accept()
+            return
+        super().mouseReleaseEvent(event)
+
+
+class Rect(ResizableMixin, SnapToGridMixin, QGraphicsRectItem):
     """Rectangle déplaçable, sélectionnable et redimensionnable."""
-    def __init__(self, x, y, w, h, color: QColor = QColor('black')):
+    def __init__(self, x, y, w, h, color: QColor = QColor('white')):
         super().__init__(x, y, w, h)
         pen = QPen(color)
         pen.setWidth(2)
         self.setPen(pen)
-        self.setBrush(QBrush(Qt.NoBrush))
+        self.setBrush(QBrush(Qt.white))
         self.setFlags(
             QGraphicsRectItem.ItemIsMovable
             | QGraphicsRectItem.ItemIsSelectable
@@ -50,14 +106,14 @@ class Rect(SnapToGridMixin, QGraphicsRectItem):
 
 
 
-class Ellipse(SnapToGridMixin, QGraphicsEllipseItem):
+class Ellipse(ResizableMixin, SnapToGridMixin, QGraphicsEllipseItem):
     """Ellipse déplaçable, sélectionnable et redimensionnable."""
-    def __init__(self, x, y, w, h, color: QColor = QColor('black')):
+    def __init__(self, x, y, w, h, color: QColor = QColor('white')):
         super().__init__(x, y, w, h)
         pen = QPen(color)
         pen.setWidth(2)
         self.setPen(pen)
-        self.setBrush(QBrush(Qt.NoBrush))
+        self.setBrush(QBrush(Qt.white))
         self.setFlags(
             QGraphicsEllipseItem.ItemIsMovable
             | QGraphicsEllipseItem.ItemIsSelectable
