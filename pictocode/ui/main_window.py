@@ -13,7 +13,7 @@ from .inspector import Inspector
 from .home_page import HomePage
 from .new_project_dialog import NewProjectDialog
 
-PROJECTS_DIR = os.path.join(os.getcwd(), "Projects")
+PROJECTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Projects")
 
 class MainWindow(QMainWindow):
     def __init__(self):
