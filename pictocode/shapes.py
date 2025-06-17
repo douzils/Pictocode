@@ -9,7 +9,15 @@ from PyQt5.QtWidgets import (
     QGraphicsPixmapItem,
     QGraphicsItem,
 )
-from PyQt5.QtGui import QPen, QBrush, QColor, QPainterPath, QFont, QPixmap
+from PyQt5.QtGui import (
+    QPen,
+    QBrush,
+    QColor,
+    QPainterPath,
+    QFont,
+    QPixmap,
+    QTransform,
+)
 from PyQt5.QtCore import Qt, QPointF, QRectF
 
 
@@ -194,7 +202,9 @@ class LineResizableMixin:
         self._start_line = None
 
     def paint(self, painter, option, widget=None):
-        super().paint(painter, option, widget)
+        # Draw the line without the default Qt selection rectangle.
+        painter.setPen(self.pen())
+        painter.drawLine(self.line())
         if self.isSelected():
             line = self.line()
             s = self.handle_size
@@ -289,6 +299,21 @@ class FreehandPath(ResizableMixin, SnapToGridMixin, QGraphicsPathItem):
         )
         self.setAcceptHoverEvents(True)
         self.setToolTip("Clique droit pour modifier")
+
+    def rect(self):
+        return self.path().boundingRect()
+
+    def setRect(self, x, y, w, h):
+        br = self.path().boundingRect()
+        if br.width() == 0 or br.height() == 0:
+            return
+        sx = w / br.width()
+        sy = h / br.height()
+        transform = QTransform()
+        transform.scale(sx, sy)
+        new_path = transform.map(self.path())
+        self.setPath(new_path)
+        self.setPos(x, y)
 
     @classmethod
     def from_points(

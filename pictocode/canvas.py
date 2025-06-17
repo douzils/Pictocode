@@ -101,7 +101,7 @@ class CanvasWidget(QGraphicsView):
         self._frame_item = None
         self._doc_rect = QRectF(0, 0, w, h)
         self._draw_doc_frame()
-        self.setSceneRect(self._doc_rect)
+        self.setSceneRect(self._doc_rect.adjusted(-500, -500, 500, 500))
         self.current_meta = {
             "name": name,
             "width": width,
@@ -127,7 +127,7 @@ class CanvasWidget(QGraphicsView):
             w, h = h, w
         self._doc_rect = QRectF(0, 0, w, h)
         self._draw_doc_frame()
-        self.setSceneRect(self._doc_rect)
+        self.setSceneRect(self._doc_rect.adjusted(-500, -500, 500, 500))
         if not hasattr(self, "current_meta"):
             self.current_meta = {}
         self.current_meta.update(
@@ -477,7 +477,9 @@ class CanvasWidget(QGraphicsView):
             x0, y0 = self._start_pos.x(), self._start_pos.y()
             if self.current_tool in ("rect", "ellipse"):
                 rect = QRectF(x0, y0, scene_pos.x() - x0, scene_pos.y() - y0).normalized()
-                self._temp_item.setRect(rect)
+                self._temp_item.setRect(
+                    rect.x(), rect.y(), rect.width(), rect.height()
+                )
             elif self.current_tool == "line":
                 self._temp_item.setLine(x0, y0, scene_pos.x(), scene_pos.y())
             return
@@ -521,7 +523,9 @@ class CanvasWidget(QGraphicsView):
             x0, y0 = self._start_pos.x(), self._start_pos.y()
             if self.current_tool in ("rect", "ellipse"):
                 rect = QRectF(x0, y0, scene_pos.x() - x0, scene_pos.y() - y0).normalized()
-                self._temp_item.setRect(rect)
+                self._temp_item.setRect(
+                    rect.x(), rect.y(), rect.width(), rect.height()
+                )
             elif self.current_tool == "line":
                 self._temp_item.setLine(x0, y0, scene_pos.x(), scene_pos.y())
             self._temp_item.setOpacity(1.0)
