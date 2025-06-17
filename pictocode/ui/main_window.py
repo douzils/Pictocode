@@ -60,6 +60,7 @@ class MainWindow(QMainWindow):
         self.settings = QSettings("pictocode", "pictocode")
         self.favorite_projects = self.settings.value("favorite_projects", [], type=list)
         self.recent_projects = self.settings.value("recent_projects", [], type=list)
+        self.imported_images = self.settings.value("imported_images", [], type=list)
 
         # Page accueil
         self.home = HomePage(self)
@@ -100,6 +101,8 @@ class MainWindow(QMainWindow):
         self.addDockWidget(Qt.LeftDockWidgetArea, i_dock)
         i_dock.setVisible(False)
         self.imports_dock = i_dock
+        for img in self.imported_images:
+            self.imports.add_image(img)
 
 
 
@@ -813,6 +816,13 @@ class MainWindow(QMainWindow):
         else:
             self.favorite_projects.insert(0, path)
         self.settings.setValue("favorite_projects", self.favorite_projects)
+
+    def add_imported_image(self, path: str):
+        if path in self.imported_images:
+            self.imported_images.remove(path)
+        self.imported_images.insert(0, path)
+        self.settings.setValue("imported_images", self.imported_images)
+        self.imports.add_image(path)
 
 
 def main(app, argv):

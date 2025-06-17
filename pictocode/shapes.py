@@ -6,9 +6,10 @@ from PyQt5.QtWidgets import (
     QGraphicsLineItem,
     QGraphicsPathItem,
     QGraphicsTextItem,
+    QGraphicsPixmapItem,
     QGraphicsItem,
 )
-from PyQt5.QtGui import QPen, QBrush, QColor, QPainterPath, QFont
+from PyQt5.QtGui import QPen, QBrush, QColor, QPainterPath, QFont, QPixmap
 from PyQt5.QtCore import Qt, QPointF, QRectF
 
 
@@ -142,6 +143,17 @@ class Rect(ResizableMixin, SnapToGridMixin, QGraphicsRectItem):
         self.setAcceptHoverEvents(True)
         self.setToolTip("Clique droit pour modifier")
 
+    def rect(self):
+        return self.boundingRect()
+
+    def setRect(self, x, y, w, h):
+        self.setPos(x, y)
+        br = self.boundingRect()
+        if br.width() and br.height():
+            sx = w / br.width()
+            sy = h / br.height()
+            self.setScale(min(sx, sy))
+
 
 class Ellipse(ResizableMixin, SnapToGridMixin, QGraphicsEllipseItem):
     """Ellipse déplaçable, sélectionnable et redimensionnable."""
@@ -162,11 +174,79 @@ class Ellipse(ResizableMixin, SnapToGridMixin, QGraphicsEllipseItem):
         self.setToolTip("Clique droit pour modifier")
 
 
-class Line(SnapToGridMixin, QGraphicsLineItem):
-    """Ligne déplaçable et sélectionnable."""
+class LineResizableMixin:
+    """Ajoute des poignées de redimensionnement pour les lignes."""
+
+    handle_size = 8
+
+    def __init__(self):
+        super().__init__()
+        self._resizing = False
+        self._active = None
+        self._start_pos = QPointF()
+        self._start_line = None
+
+    def paint(self, painter, option, widget=None):
+        super().paint(painter, option, widget)
+        if self.isSelected():
+            line = self.line()
+            s = self.handle_size
+            painter.setBrush(QBrush(Qt.white))
+            painter.setPen(QPen(Qt.black))
+            handles = [
+                QRectF(line.p1().x() - s / 2, line.p1().y() - s / 2, s, s),
+                QRectF(line.p2().x() - s / 2, line.p2().y() - s / 2, s, s),
+            ]
+            for h in handles:
+                painter.drawRect(h)
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton and self.isSelected():
+            line = self.line()
+            s = self.handle_size
+            handles = [
+                QRectF(line.p1().x() - s / 2, line.p1().y() - s / 2, s, s),
+                QRectF(line.p2().x() - s / 2, line.p2().y() - s / 2, s, s),
+            ]
+            for idx, h in enumerate(handles):
+                if h.contains(event.pos()):
+                    self._resizing = True
+                    self._active = idx
+                    self._start_pos = event.scenePos()
+                    self._start_line = self.line()
+                    event.accept()
+                    return
+        super().mousePressEvent(event)
+
+    def mouseMoveEvent(self, event):
+        if self._resizing:
+            delta = event.scenePos() - self._start_pos
+            line = self._start_line
+            if self._active == 0:
+                p1 = line.p1() + delta
+                self.setLine(p1.x(), p1.y(), line.p2().x(), line.p2().y())
+            else:
+                p2 = line.p2() + delta
+                self.setLine(line.p1().x(), line.p1().y(), p2.x(), p2.y())
+            event.accept()
+            return
+        super().mouseMoveEvent(event)
+
+    def mouseReleaseEvent(self, event):
+        if self._resizing:
+            self._resizing = False
+            self._active = None
+            event.accept()
+            return
+        super().mouseReleaseEvent(event)
+
+
+class Line(LineResizableMixin, SnapToGridMixin, QGraphicsLineItem):
+    """Ligne déplaçable, sélectionnable et redimensionnable."""
 
     def __init__(self, x1, y1, x2, y2, color: QColor = QColor("black")):
-        super().__init__(x1, y1, x2, y2)
+        LineResizableMixin.__init__(self)
+        QGraphicsLineItem.__init__(self, x1, y1, x2, y2)
         pen = QPen(color)
         pen.setWidth(2)
         self.setPen(pen)
@@ -179,7 +259,7 @@ class Line(SnapToGridMixin, QGraphicsLineItem):
         self.setToolTip("Clique droit pour modifier")
 
 
-class FreehandPath(SnapToGridMixin, QGraphicsPathItem):
+class FreehandPath(ResizableMixin, SnapToGridMixin, QGraphicsPathItem):
     """
     Tracé libre.
     Utilisez `from_points` pour construire à partir d’une liste de QPointF.
@@ -188,7 +268,8 @@ class FreehandPath(SnapToGridMixin, QGraphicsPathItem):
     def __init__(
         self, path=None, pen_color: QColor = QColor("black"), pen_width: int = 2
     ):
-        super().__init__()
+        ResizableMixin.__init__(self)
+        QGraphicsPathItem.__init__(self)
         pen = QPen(pen_color)
         pen.setWidth(pen_width)
         self.setPen(pen)
@@ -217,8 +298,8 @@ class FreehandPath(SnapToGridMixin, QGraphicsPathItem):
         return cls(painter_path, pen_color, pen_width)
 
 
-class TextItem(QGraphicsTextItem):
-    """Bloc de texte éditable et déplaçable."""
+class TextItem(ResizableMixin, SnapToGridMixin, QGraphicsTextItem):
+    """Bloc de texte éditable, déplaçable et redimensionnable."""
 
     def __init__(
         self,
@@ -228,7 +309,8 @@ class TextItem(QGraphicsTextItem):
         font_size: int = 12,
         color: QColor = QColor("black"),
     ):
-        super().__init__(text)
+        ResizableMixin.__init__(self)
+        QGraphicsTextItem.__init__(self, text)
         font = QFont()
         font.setPointSize(font_size)
         self.setFont(font)
@@ -253,3 +335,45 @@ class TextItem(QGraphicsTextItem):
                 value.setX(round(value.x() / grid) * grid)
                 value.setY(round(value.y() / grid) * grid)
         return super().itemChange(change, value)
+
+    def rect(self):
+        return self.boundingRect()
+
+    def setRect(self, x, y, w, h):
+        self.setPos(x, y)
+        self.setTextWidth(w)
+        br = self.boundingRect()
+        if br.height() != 0:
+            self.setScale(h / br.height())
+
+
+class ImageItem(ResizableMixin, SnapToGridMixin, QGraphicsPixmapItem):
+    """Image insérée dans le canvas."""
+
+    def __init__(self, x: float, y: float, path: str):
+        self.path = path
+        pix = QPixmap(path)
+        ResizableMixin.__init__(self)
+        QGraphicsPixmapItem.__init__(self, pix)
+        self._orig_pixmap = pix
+        self.setPos(x, y)
+        self.setFlags(
+            QGraphicsPixmapItem.ItemIsMovable
+            | QGraphicsPixmapItem.ItemIsSelectable
+            | QGraphicsPixmapItem.ItemSendsGeometryChanges
+        )
+        self.setAcceptHoverEvents(True)
+
+    def rect(self):
+        return QRectF(0, 0, self.pixmap().width(), self.pixmap().height())
+
+    def setRect(self, x, y, w, h):
+        self.setPos(x, y)
+        if w > 0 and h > 0:
+            scaled = self._orig_pixmap.scaled(
+                w,
+                h,
+                Qt.KeepAspectRatio,
+                Qt.SmoothTransformation,
+            )
+            self.setPixmap(scaled)
