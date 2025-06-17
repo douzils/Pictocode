@@ -86,6 +86,16 @@ class MainWindow(QMainWindow):
             'project_props': 'Ctrl+P',
             'appearance': '',
             'shortcuts': '',
+            'copy': 'Ctrl+C',
+            'cut': 'Ctrl+X',
+            'paste': 'Ctrl+V',
+            'duplicate': 'Ctrl+D',
+            'delete': 'Delete',
+            'select_all': 'Ctrl+A',
+            'zoom_in': 'Ctrl++',
+            'zoom_out': 'Ctrl+-',
+            'toggle_grid': 'Ctrl+G',
+            'toggle_snap': 'Ctrl+Shift+G',
         }
 
         # Connexions
@@ -107,6 +117,7 @@ class MainWindow(QMainWindow):
         self.menu_font_size = int(self.settings.value("menu_font_size", self.font_size))
         self.toolbar_font_size = int(self.settings.value("toolbar_font_size", self.font_size))
         self.dock_font_size = int(self.settings.value("dock_font_size", self.font_size))
+        self.show_splash = self.settings.value("show_splash", True, type=bool)
         self.apply_theme(self.current_theme, self.accent_color, self.font_size,
                          self.menu_color, self.toolbar_color, self.dock_color,
                          self.menu_font_size, self.toolbar_font_size, self.dock_font_size)
@@ -118,6 +129,61 @@ class MainWindow(QMainWindow):
         filem = AnimatedMenu("Fichier", self)
         mb.addMenu(filem)
         self.actions = {}
+
+        editm = AnimatedMenu("Édition", self)
+        mb.addMenu(editm)
+
+        copy_act = QAction("Copier", self)
+        copy_act.triggered.connect(self.copy_selection)
+        editm.addAction(copy_act)
+        self.actions['copy'] = copy_act
+
+        cut_act = QAction("Couper", self)
+        cut_act.triggered.connect(self.cut_selection)
+        editm.addAction(cut_act)
+        self.actions['cut'] = cut_act
+
+        paste_act = QAction("Coller", self)
+        paste_act.triggered.connect(self.paste_clipboard)
+        editm.addAction(paste_act)
+        self.actions['paste'] = paste_act
+
+        dup_act = QAction("Dupliquer", self)
+        dup_act.triggered.connect(self.duplicate_selection)
+        editm.addAction(dup_act)
+        self.actions['duplicate'] = dup_act
+
+        del_act = QAction("Supprimer", self)
+        del_act.triggered.connect(self.delete_selection)
+        editm.addAction(del_act)
+        self.actions['delete'] = del_act
+
+        sel_all_act = QAction("Tout sélectionner", self)
+        sel_all_act.triggered.connect(self.select_all)
+        editm.addAction(sel_all_act)
+        self.actions['select_all'] = sel_all_act
+
+        editm.addSeparator()
+
+        zoom_in_act = QAction("Zoom avant", self)
+        zoom_in_act.triggered.connect(self.zoom_in)
+        editm.addAction(zoom_in_act)
+        self.actions['zoom_in'] = zoom_in_act
+
+        zoom_out_act = QAction("Zoom arrière", self)
+        zoom_out_act.triggered.connect(self.zoom_out)
+        editm.addAction(zoom_out_act)
+        self.actions['zoom_out'] = zoom_out_act
+
+        grid_act = QAction("Afficher/Masquer grille", self)
+        grid_act.triggered.connect(self.toggle_grid)
+        editm.addAction(grid_act)
+        self.actions['toggle_grid'] = grid_act
+
+        snap_act = QAction("Magnétisme grille", self)
+        snap_act.triggered.connect(self.toggle_snap)
+        editm.addAction(snap_act)
+        self.actions['toggle_snap'] = snap_act
 
         new_act = QAction("Nouveau…", self)
         new_act.triggered.connect(self.open_new_project_dialog)
@@ -353,6 +419,52 @@ class MainWindow(QMainWindow):
         self.toolbar.setVisible(False)
         self.inspector_dock.setVisible(False)
 
+    # --- Edit actions -------------------------------------------------
+    def copy_selection(self):
+        from PyQt5.QtWidgets import QApplication
+        import json
+        data = self.canvas.copy_selected()
+        if data:
+            QApplication.clipboard().setText(json.dumps(data))
+
+    def cut_selection(self):
+        from PyQt5.QtWidgets import QApplication
+        import json
+        data = self.canvas.cut_selected()
+        if data:
+            QApplication.clipboard().setText(json.dumps(data))
+
+    def paste_clipboard(self):
+        from PyQt5.QtWidgets import QApplication
+        import json
+        try:
+            data = json.loads(QApplication.clipboard().text())
+        except Exception:
+            data = None
+        if data:
+            self.canvas.paste_item(data)
+
+    def duplicate_selection(self):
+        self.canvas.duplicate_selected()
+
+    def delete_selection(self):
+        self.canvas.delete_selected()
+
+    def select_all(self):
+        self.canvas.select_all()
+
+    def zoom_in(self):
+        self.canvas.zoom_in()
+
+    def zoom_out(self):
+        self.canvas.zoom_out()
+
+    def toggle_grid(self):
+        self.canvas._toggle_grid()
+
+    def toggle_snap(self):
+        self.canvas._toggle_snap()
+
     # ------------------------------------------------------------------
     def closeEvent(self, event):
         if self.maybe_save():
@@ -373,6 +485,7 @@ class MainWindow(QMainWindow):
             self.menu_font_size,
             self.toolbar_font_size,
             self.dock_font_size,
+            self.show_splash,
             self,
         )
         if dlg.exec_() == QDialog.Accepted:
@@ -385,11 +498,13 @@ class MainWindow(QMainWindow):
             menu_fs = dlg.get_menu_font_size()
             toolbar_fs = dlg.get_toolbar_font_size()
             dock_fs = dlg.get_dock_font_size()
+            self.show_splash = dlg.get_show_splash()
             self.apply_theme(
                 theme, accent, font_size,
                 menu_col, toolbar_col, dock_col,
                 menu_fs, toolbar_fs, dock_fs,
             )
+            self.settings.setValue("show_splash", self.show_splash)
 
     def open_shortcut_settings(self):
         current = {name: act.shortcut().toString() for name, act in self.actions.items()}
