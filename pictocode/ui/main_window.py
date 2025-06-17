@@ -16,6 +16,9 @@ from .home_page import HomePage
 from .new_project_dialog import NewProjectDialog
 from .animated_menu import AnimatedMenu
 from .shortcut_settings_dialog import ShortcutSettingsDialog
+from .layers_dock import LayersWidget
+from .imports_dock import ImportsWidget
+from .windows_panel import WindowsPanel
 
 PROJECTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Projects")
 
@@ -65,6 +68,33 @@ class MainWindow(QMainWindow):
         self.addDockWidget(Qt.RightDockWidgetArea, dock)
         dock.setVisible(False)
         self.inspector_dock = dock
+
+        # Calques
+        self.layers = LayersWidget(self)
+        l_dock = QDockWidget("Calques", self)
+        l_dock.setWidget(self.layers)
+        l_dock.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
+        self.addDockWidget(Qt.LeftDockWidgetArea, l_dock)
+        l_dock.setVisible(False)
+        self.layers_dock = l_dock
+
+        # Images importées
+        self.imports = ImportsWidget(self)
+        i_dock = QDockWidget("Imports", self)
+        i_dock.setWidget(self.imports)
+        i_dock.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
+        self.addDockWidget(Qt.LeftDockWidgetArea, i_dock)
+        i_dock.setVisible(False)
+        self.imports_dock = i_dock
+
+        # Panneau d'activation
+        self.windows_panel = WindowsPanel(self)
+        p_dock = QDockWidget("Panneaux", self)
+        p_dock.setWidget(self.windows_panel)
+        p_dock.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
+        self.addDockWidget(Qt.LeftDockWidgetArea, p_dock)
+        p_dock.setVisible(True)
+        self.panel_dock = p_dock
 
         # Dialog nouveau projet
         self.new_proj_dlg = NewProjectDialog(self)
@@ -244,6 +274,10 @@ class MainWindow(QMainWindow):
         # affiche toolbar & inspector
         self.toolbar.setVisible(True)
         self.inspector_dock.setVisible(True)
+        self.layers_dock.setVisible(True)
+        self.imports_dock.setVisible(True)
+        self.windows_panel.chk_layers.setChecked(True)
+        self.windows_panel.chk_imports.setChecked(True)
         # bascule sur le canvas
         self._switch_page(self.canvas)
         self.current_project_path = None
@@ -276,6 +310,10 @@ class MainWindow(QMainWindow):
         # bascule UI
         self.toolbar.setVisible(True)
         self.inspector_dock.setVisible(True)
+        self.layers_dock.setVisible(True)
+        self.imports_dock.setVisible(True)
+        self.windows_panel.chk_layers.setChecked(True)
+        self.windows_panel.chk_imports.setChecked(True)
         self._switch_page(self.canvas)
         self.setWindowTitle(f"Pictocode — {params.get('name','')}")
         self.set_dirty(False)
@@ -493,6 +531,10 @@ class MainWindow(QMainWindow):
         self.inspector.setStyleSheet(
             f"font-size: {dock_font_size}pt;"
         )
+        for dock in (self.layers_dock, self.imports_dock, self.panel_dock):
+            dock.setStyleSheet(f"QDockWidget {{ background: {dock_color.name()}; }}")
+        for widget in (self.layers, self.imports, self.windows_panel):
+            widget.setStyleSheet(f"font-size: {dock_font_size}pt;")
 
         self.current_theme = theme
         self.accent_color = accent
