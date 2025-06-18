@@ -7,6 +7,7 @@ from PyQt5.QtWidgets import (
     QAbstractItemView,
     QGraphicsItem,
     QGraphicsItemGroup,
+    QHeaderView,
 )
 from PyQt5.QtCore import Qt
 from .animated_menu import AnimatedMenu
@@ -23,6 +24,8 @@ class LayersWidget(QWidget):
         self.tree.setHeaderLabels(["Nom", "Visible", "Verrou"])
         self.tree.setSelectionMode(QAbstractItemView.SingleSelection)
         self.tree.setDragDropMode(QAbstractItemView.InternalMove)
+        self.tree.setAlternatingRowColors(True)
+        self.tree.header().setSectionResizeMode(QHeaderView.Stretch)
         layout = QVBoxLayout(self)
         layout.addWidget(self.tree)
 
@@ -122,6 +125,13 @@ class LayersWidget(QWidget):
         menu = AnimatedMenu(self)
         act_delete = QAction("Supprimer", menu)
         menu.addAction(act_delete)
+        act_dup = QAction("Dupliquer", menu)
+        menu.addAction(act_dup)
+        menu.addSeparator()
+        act_up = QAction("Monter", menu)
+        menu.addAction(act_up)
+        act_down = QAction("Descendre", menu)
+        menu.addAction(act_down)
         act_group = QAction("Grouper la sélection", menu)
         menu.addAction(act_group)
         if isinstance(gitem, QGraphicsItemGroup):
@@ -133,6 +143,27 @@ class LayersWidget(QWidget):
         if action is act_delete:
             self.canvas.scene.removeItem(gitem)
             self.update_layers(self.canvas)
+        elif action is act_dup:
+            self.canvas.scene.clearSelection()
+            gitem.setSelected(True)
+            self.canvas.duplicate_selected()
+            new_item = self.canvas.scene.selectedItems()[0]
+            self.update_layers(self.canvas)
+            self.highlight_item(new_item)
+        elif action is act_up:
+            parent = item.parent() or self.tree.invisibleRootItem().child(0)
+            idx = parent.indexOfChild(item)
+            if idx > 0:
+                parent.takeChild(idx)
+                parent.insertChild(idx - 1, item)
+                self._assign_z_values()
+        elif action is act_down:
+            parent = item.parent() or self.tree.invisibleRootItem().child(0)
+            idx = parent.indexOfChild(item)
+            if idx < parent.childCount() - 1:
+                parent.takeChild(idx)
+                parent.insertChild(idx + 1, item)
+                self._assign_z_values()
         elif action is act_group:
             group = self.canvas.group_selected()
             if group:
@@ -154,7 +185,7 @@ class LayersWidget(QWidget):
         if root.childCount() == 1 and root.child(0).data(0, Qt.UserRole) is None:
             root = root.child(0)
         for i in range(root.childCount()):
-            item = root.child(root.childCount() - 1 - i)
+            item = root.child(i)
             gitem = item.data(0, Qt.UserRole)
             if gitem:
                 gitem.setZValue(i)
