@@ -35,12 +35,29 @@ class TransparentItemGroup(QGraphicsItemGroup):
         if hasattr(self, "setHandlesChildEvents"):
             self.setHandlesChildEvents(False)
 
+
     def itemChange(self, change, value):
         if change == QGraphicsItem.ItemSelectedHasChanged and hasattr(
             self, "setHandlesChildEvents"
         ):
             self.setHandlesChildEvents(bool(value))
         return super().itemChange(change, value)
+
+    def _forward_or_handle(self, event, handler):
+        if self.isSelected():
+            handler(event)
+        else:
+            event.ignore()
+
+    def mousePressEvent(self, event):
+        self._forward_or_handle(event, super().mousePressEvent)
+
+    def mouseMoveEvent(self, event):
+        self._forward_or_handle(event, super().mouseMoveEvent)
+
+    def mouseReleaseEvent(self, event):
+        self._forward_or_handle(event, super().mouseReleaseEvent)
+
 
 
 class CanvasScene(QGraphicsScene):
