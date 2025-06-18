@@ -118,6 +118,11 @@ class LayersWidget(QWidget):
 
         self._apply_styles()
 
+        # Keep track of ongoing z-value animations to avoid repeatedly
+        # re-triggering them when scene updates occur while an
+        # animation is already running.
+        self._z_anims = {}
+
     def apply_theme(self):
         """Re-apply styles when the application theme changes."""
         self._apply_styles()
@@ -406,14 +411,26 @@ class LayersWidget(QWidget):
         apply_children(root, None)
 
     def _animate_z(self, gitem, z):
-        """Set the z-value only when it actually changes."""
+        """Animate z-value changes while avoiding animation loops."""
         if gitem.zValue() == z:
             return
         if isinstance(gitem, QGraphicsObject):
+            # Do not restart an animation that is already running towards
+            # the same target value, otherwise the opacity effect will keep
+            # toggling and the items will appear to bounce indefinitely.
+            current_target = self._z_anims.get(gitem)
+            if current_target == z:
+                return
             anim = QPropertyAnimation(gitem, b"zValue", self)
             anim.setDuration(150)
             anim.setStartValue(gitem.zValue())
             anim.setEndValue(z)
+
+            def _cleanup():
+                self._z_anims.pop(gitem, None)
+
+            anim.finished.connect(_cleanup)
+            self._z_anims[gitem] = z
             anim.start(QPropertyAnimation.DeleteWhenStopped)
         else:
             gitem.setZValue(z)
