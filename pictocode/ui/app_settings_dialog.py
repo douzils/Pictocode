@@ -20,7 +20,7 @@ class AppSettingsDialog(QDialog):
     def __init__(
         self,
         current_theme: str = "Light",
-        accent: Union[QColor, str] = QColor(42, 130, 218),
+        accent: Union[QColor, str] = QColor(0, 120, 215),
         font_size: int = 10,
         menu_color: Optional[Union[QColor, str]] = None,
         toolbar_color: Optional[Union[QColor, str]] = None,

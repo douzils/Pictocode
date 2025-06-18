@@ -12,6 +12,15 @@ def color_to_hex(qcolor):
     return f"#{r:02X}{g:02X}{b:02X}"
 
 
+def get_contrast_color(qcolor):
+    """Return '#000000' or '#ffffff' depending on brightness for readability."""
+    from PyQt5.QtGui import QColor
+
+    color = QColor(qcolor)
+    lum = 0.299 * color.red() + 0.587 * color.green() + 0.114 * color.blue()
+    return "#000000" if lum > 186 else "#ffffff"
+
+
 def generate_pycode(shapes):
     """Génère du code Python (PyQt5) reproduisant la scène fournie."""
 

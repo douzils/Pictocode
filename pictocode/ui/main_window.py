@@ -16,7 +16,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt, QSettings, QPropertyAnimation
 from PyQt5.QtGui import QPalette, QColor, QKeySequence
 from PyQt5.QtWidgets import QApplication
-from ..utils import generate_pycode
+from ..utils import generate_pycode, get_contrast_color
 from ..canvas import CanvasWidget
 from .toolbar import Toolbar
 from .title_bar import TitleBar
@@ -146,7 +146,7 @@ class MainWindow(QMainWindow):
 
         # Paramètres de thème et raccourcis
         self.current_theme = self.settings.value("theme", "Light")
-        self.accent_color = QColor(self.settings.value("accent_color", "#2a82da"))
+        self.accent_color = QColor(self.settings.value("accent_color", "#0078d7"))
         self.font_size = int(self.settings.value("font_size", 10))
         self.menu_color = QColor(
             self.settings.value("menu_color", self.accent_color.name())
@@ -158,10 +158,10 @@ class MainWindow(QMainWindow):
             self.settings.value("dock_color", self.accent_color.name())
         )
         self.flag_active_color = QColor(
-            self.settings.value("flag_active_color", "#da8a8a")
+            self.settings.value("flag_active_color", "#0078d7")
         )
         self.flag_inactive_color = QColor(
-            self.settings.value("flag_inactive_color", "#a95555")
+            self.settings.value("flag_inactive_color", "#3a3f44")
         )
         self.menu_font_size = int(self.settings.value("menu_font_size", self.font_size))
         self.toolbar_font_size = int(
@@ -792,12 +792,13 @@ class MainWindow(QMainWindow):
             pal.setColor(QPalette.Button, QColor(53, 53, 53))
             pal.setColor(QPalette.ButtonText, Qt.white)
             pal.setColor(QPalette.Highlight, accent)
-            pal.setColor(QPalette.HighlightedText, Qt.black)
+            pal.setColor(QPalette.HighlightedText, QColor(get_contrast_color(accent)))
             app.setPalette(pal)
             app.setStyle("Fusion")
         else:
             pal = app.style().standardPalette()
             pal.setColor(QPalette.Highlight, accent)
+            pal.setColor(QPalette.HighlightedText, QColor(get_contrast_color(accent)))
             app.setPalette(pal)
             app.setStyle("Fusion")
 
@@ -805,19 +806,23 @@ class MainWindow(QMainWindow):
         font.setPointSize(int(font_size))
         app.setFont(font)
 
-        active = getattr(self, "flag_active_color", QColor("#da8a8a"))
-        inactive = getattr(self, "flag_inactive_color", QColor("#a95555"))
+        active = getattr(self, "flag_active_color", QColor("#0078d7"))
+        inactive = getattr(self, "flag_inactive_color", QColor("#3a3f44"))
+
+        tb_text = get_contrast_color(toolbar_color)
+        menu_text = get_contrast_color(inactive)
+        menu_fg = get_contrast_color(menu_color)
 
         self.setStyleSheet(
-            f"QToolBar {{ background: {toolbar_color.name()}; color: white; font-size: {toolbar_font_size}pt; }}\n"
+            f"QToolBar {{ background: {toolbar_color.name()}; color: {tb_text}; font-size: {toolbar_font_size}pt; }}\n"
             f"QMenuBar {{ background: transparent; font-size: {menu_font_size}pt; padding: 2px; }}\n"
-            f"QMenuBar::item {{ background: {inactive.name()}; color: white; padding: 4px 8px; margin: 0 2px; border-top-left-radius:4px; border-top-right-radius:4px; }}\n"
+            f"QMenuBar::item {{ background: {inactive.name()}; color: {menu_text}; padding: 4px 8px; margin: 0 2px; border-top-left-radius:4px; border-top-right-radius:4px; }}\n"
             f"QMenuBar::item:selected {{ background: {active.name()}; margin-top: 2px; }}\n"
             f"QMenuBar::item:pressed {{ background: {active.name()}; margin-top: 2px; }}\n"
-            f"QWidget#title_bar {{ background: {toolbar_color.name()}; color: white; font-size: {toolbar_font_size}pt; }}\n"
-            f"QWidget#title_bar QPushButton {{ border: none; background: transparent; color: white; padding: 4px; }}\n"
+            f"QWidget#title_bar {{ background: {toolbar_color.name()}; color: {tb_text}; font-size: {toolbar_font_size}pt; }}\n"
+            f"QWidget#title_bar QPushButton {{ border: none; background: transparent; color: {tb_text}; padding: 4px; }}\n"
             f"QWidget#title_bar QPushButton:hover {{ background: {toolbar_color.darker(110).name()}; }}\n"
-            f"QMenu {{ background-color: {menu_color.name()}; color: white; border-radius: 6px; }}\n"
+            f"QMenu {{ background-color: {menu_color.name()}; color: {menu_fg}; border-radius: 6px; }}\n"
             f"QMenu::item:selected {{ background-color: {menu_color.darker(130).name()}; }}"
         )
         self.inspector_dock.setStyleSheet(

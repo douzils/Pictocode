@@ -118,6 +118,8 @@ Dans le menu **Préférences**, vous pouvez choisir le thème (clair ou sombre),
 définir une couleur et une taille de police spécifique pour la barre de menu,
 la barre d'outils et l'inspecteur. Les menus disposent d'une animation
 d'ouverture pour un rendu plus élégant.
+Les couleurs par défaut du menu ont été modernisées pour offrir un meilleur contraste
+et restent lisibles lors du passage d'un thème clair à sombre.
 Une barre de titre personnalisée adopte également ces réglages, avec les boutons
 de réduction, plein écran et fermeture.
 Les passages entre l'accueil et le canvas utilisent désormais un effet de fondu.
@@ -132,6 +134,9 @@ l'application.
 ### Gestion des fenetres
 
 Un panneau lateral "Panneaux" permet d'activer ou non diverses fenetres : calques, proprietes, barre d'outils ou encore la liste des images importees.
+La barre de titre personnalisée prend désormais en charge le déplacement système
+pour profiter des raccourcis de redimensionnement Windows (snap et agrandissement
+au bord de l'écran).
 
 ### Rapport de bugs
 
