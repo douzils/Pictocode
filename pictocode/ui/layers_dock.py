@@ -194,6 +194,9 @@ class LayersWidget(QWidget):
         root_item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsDropEnabled)
         root_item.setFirstColumnSpanned(True)
 
+        def _sort_z(item):
+            return self._z_anims.get(item, item.zValue())
+
         def add_item(gitem, parent=root_item):
             if gitem is getattr(canvas, "_frame_item", None):
                 return
@@ -213,11 +216,11 @@ class LayersWidget(QWidget):
             qitem.setText(2, "🔒" if locked else "🔓")
             if isinstance(gitem, QGraphicsItemGroup):
                 qitem.setExpanded(True)
-                for child in reversed(gitem.childItems()):
+                for child in sorted(gitem.childItems(), key=_sort_z):
                     add_item(child, qitem)
 
         # ajoute seulement les top-level (pas déjà dans un groupe)
-        for it in reversed(canvas.scene.items()):
+        for it in sorted(canvas.scene.items(), key=_sort_z):
             if it is getattr(canvas, "_frame_item", None):
                 continue
             if it.parentItem() is None:
