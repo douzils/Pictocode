@@ -56,8 +56,14 @@ class CanvasWidget(QGraphicsView):
         # Scène
         self.scene = CanvasScene(self)
         self.setScene(self.scene)
-        self.scene.itemAdded.connect(self._on_scene_changed)
-        self.scene.itemRemoved.connect(self._on_scene_changed)
+        self.scene.itemAdded.connect(self._schedule_scene_changed)
+        self.scene.itemRemoved.connect(self._schedule_scene_changed)
+
+        # Timer to throttle layer updates when many changes occur
+        self._scene_changed_timer = QTimer(self)
+        self._scene_changed_timer.setSingleShot(True)
+        self._scene_changed_timer.setInterval(100)
+        self._scene_changed_timer.timeout.connect(self._on_scene_changed)
         self.setViewportUpdateMode(QGraphicsView.BoundingRectViewportUpdate)
 
         # Outil actif
@@ -98,7 +104,7 @@ class CanvasWidget(QGraphicsView):
 
         # sélection -> inspecteur
         self.scene.selectionChanged.connect(self._on_selection_changed)
-        self.scene.changed.connect(lambda _: self._on_scene_changed())
+        self.scene.changed.connect(lambda _: self._schedule_scene_changed())
 
         # Historique pour annuler/rétablir
         self._history = []
@@ -358,7 +364,7 @@ class CanvasWidget(QGraphicsView):
                 if items and items[0] is not self._frame_item:
                     self.scene.removeItem(items[0])
                     self._mark_dirty()
-                    self._on_scene_changed()
+                    self._schedule_scene_changed()
             elif self.current_tool in ("rect", "ellipse", "line"):
                 items = [
                     it
@@ -397,7 +403,7 @@ class CanvasWidget(QGraphicsView):
                 item.setSelected(True)
                 item.setTextInteractionFlags(Qt.TextEditorInteraction)
                 self._mark_dirty()
-                self._on_scene_changed()
+                self._schedule_scene_changed()
             elif self.current_tool == "polygon":
                 if self._polygon_points is None:
                     self._polygon_points = [scene_pos]
@@ -515,7 +521,7 @@ class CanvasWidget(QGraphicsView):
             self._current_path_item = None
             self._freehand_points = None
             self._mark_dirty()
-            self._on_scene_changed()
+            self._schedule_scene_changed()
         elif self._temp_item and self._start_pos:
             x0, y0 = self._start_pos.x(), self._start_pos.y()
             if self.current_tool in ("rect", "ellipse"):
@@ -529,7 +535,7 @@ class CanvasWidget(QGraphicsView):
             self._assign_layer_name(self._temp_item)
             self._temp_item = None
             self._mark_dirty()
-            self._on_scene_changed()
+            self._schedule_scene_changed()
             self._start_pos = None
             return
         self._start_pos = None
@@ -556,7 +562,7 @@ class CanvasWidget(QGraphicsView):
             self._polygon_item = None
             self._polygon_points = None
             self._mark_dirty()
-            self._on_scene_changed()
+            self._schedule_scene_changed()
         elif items and isinstance(items[0], TextItem):
             ti = items[0]
             ti.setTextInteractionFlags(Qt.TextEditorInteraction)
@@ -626,7 +632,7 @@ class CanvasWidget(QGraphicsView):
                 lambda: (
                     self.scene.removeItem(item),
                     self._mark_dirty(),
-                    self._on_scene_changed(),
+                    self._schedule_scene_changed(),
                 )
             )
             menu.addAction(act_delete)
@@ -680,7 +686,7 @@ class CanvasWidget(QGraphicsView):
         self.scene.addItem(item)
         self._assign_layer_name(item)
         self._mark_dirty()
-        self._on_scene_changed()
+        self._schedule_scene_changed()
         return item
 
     def _change_pen_width(self, item):
@@ -714,6 +720,10 @@ class CanvasWidget(QGraphicsView):
         window = self.window()
         if hasattr(window, "set_dirty"):
             window.set_dirty(True)
+
+    def _schedule_scene_changed(self):
+        """Debounce calls to _on_scene_changed to avoid UI freezes."""
+        self._scene_changed_timer.start()
 
     def _on_scene_changed(self):
         self._mark_dirty()
@@ -916,7 +926,7 @@ class CanvasWidget(QGraphicsView):
             for it in self.scene.selectedItems():
                 self.scene.removeItem(it)
             self._mark_dirty()
-            self._on_scene_changed()
+            self._schedule_scene_changed()
         return data
 
     def paste_item(self, data):
@@ -928,7 +938,7 @@ class CanvasWidget(QGraphicsView):
         if item:
             item.setSelected(True)
             self._mark_dirty()
-            self._on_scene_changed()
+            self._schedule_scene_changed()
 
     def duplicate_selected(self):
         data = self.copy_selected()
@@ -950,7 +960,7 @@ class CanvasWidget(QGraphicsView):
         for it in self.scene.selectedItems():
             self.scene.removeItem(it)
         self._mark_dirty()
-        self._on_scene_changed()
+        self._schedule_scene_changed()
 
     def select_all(self):
         for it in self.scene.items():
@@ -1030,7 +1040,7 @@ class CanvasWidget(QGraphicsView):
         self._assign_layer_name(group, "group")
         self.scene.clearSelection()
         group.setSelected(True)
-        self._on_scene_changed()
+        self._schedule_scene_changed()
         return group
 
     def ungroup_item(self, group):
@@ -1041,5 +1051,5 @@ class CanvasWidget(QGraphicsView):
         self.scene.destroyItemGroup(group)
         for ch in children:
             ch.setSelected(True)
-        self._on_scene_changed()
+        self._schedule_scene_changed()
 
