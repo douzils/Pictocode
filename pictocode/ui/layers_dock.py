@@ -37,10 +37,16 @@ class LayersTreeWidget(QTreeWidget):
             # drop operation. When this happens Qt deletes the underlying C++
             # object and calling methods on it raises a RuntimeError. Guard by
             # checking that the item still belongs to a tree before clearing
-            # its background colors.
-            if self._highlight_item.treeWidget() is not None:
-                for c in range(self.columnCount()):
-                    self._highlight_item.setBackground(c, QBrush())
+            # its background colors. The call to ``treeWidget`` itself can raise
+            # ``RuntimeError`` if the wrapped C++ object has been deleted, so we
+            # also protect against that case.
+            try:
+                if self._highlight_item.treeWidget() is not None:
+                    for c in range(self.columnCount()):
+                        self._highlight_item.setBackground(c, QBrush())
+            except RuntimeError:
+                # The underlying item was deleted; nothing to clear.
+                pass
             self._highlight_item = None
 
     def dragMoveEvent(self, event):
