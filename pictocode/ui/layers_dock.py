@@ -36,12 +36,37 @@ class LayersWidget(QWidget):
         layout = QVBoxLayout(self)
         layout.addWidget(self.tree)
 
+        self._apply_styles()
+
         self.tree.itemClicked.connect(self._on_item_clicked)
         self.tree.itemChanged.connect(self._on_item_changed)
         self.tree.itemSelectionChanged.connect(self._on_selection_changed)
         self.tree.setContextMenuPolicy(Qt.CustomContextMenu)
         self.tree.customContextMenuRequested.connect(self._open_menu)
         self.tree.viewport().setAcceptDrops(True)
+
+    def _apply_styles(self):
+        """Applique un style plus moderne a la liste des calques."""
+        self.tree.setStyleSheet(
+            """
+            QTreeWidget {
+                background: #f8f8f8;
+                alternate-background-color: #efefef;
+                border: 1px solid #c0c0c0;
+            }
+            QTreeWidget::item {
+                padding: 4px 2px;
+            }
+            QTreeWidget::item:selected {
+                background: #aadffd;
+            }
+            QHeaderView::section {
+                background: #dedede;
+                padding: 2px;
+                border: none;
+            }
+            """
+        )
 
     # ------------------------------------------------------------------
     def update_layers(self, canvas):
@@ -65,9 +90,12 @@ class LayersWidget(QWidget):
             name = getattr(gitem, "layer_name", type(gitem).__name__)
             qitem.setText(0, name)
             qitem.setData(0, Qt.UserRole, gitem)
-            flags = qitem.flags() | Qt.ItemIsEditable | Qt.ItemIsDragEnabled
-            if isinstance(gitem, QGraphicsItemGroup):
-                flags |= Qt.ItemIsDropEnabled
+            flags = (
+                qitem.flags()
+                | Qt.ItemIsEditable
+                | Qt.ItemIsDragEnabled
+                | Qt.ItemIsDropEnabled
+            )
             qitem.setFlags(flags)
             qitem.setText(1, "👁" if gitem.isVisible() else "🚫")
             locked = not (gitem.flags() & QGraphicsItem.ItemIsMovable)
@@ -198,6 +226,30 @@ class LayersWidget(QWidget):
 
     # ------------------------------------------------------------------
     def dropEvent(self, event):
+        target_item = self.tree.itemAt(event.pos())
+        drop_pos = self.tree.dropIndicatorPosition()
+        selected = [it.data(0, Qt.UserRole) for it in self.tree.selectedItems()]
+
+        if (
+            target_item
+            and drop_pos == QAbstractItemView.OnItem
+            and selected
+            and target_item not in self.tree.selectedItems()
+            and self.canvas
+        ):
+            target_gitem = target_item.data(0, Qt.UserRole)
+            if target_gitem and not isinstance(target_gitem, QGraphicsItemGroup):
+                self.canvas.scene.clearSelection()
+                target_gitem.setSelected(True)
+                for g in selected:
+                    g.setSelected(True)
+                group = self.canvas.group_selected()
+                if group:
+                    event.accept()
+                    self.update_layers(self.canvas)
+                    self.highlight_item(group)
+                    return
+
         super().dropEvent(event)
         self._sync_scene_from_tree()
 
