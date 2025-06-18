@@ -7,6 +7,7 @@ from PyQt5.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QMenuBar,
+    QLabel,
     QAction,
     QFileDialog,
     QMessageBox,
@@ -52,9 +53,15 @@ class MainWindow(QMainWindow):
         _ml.setSpacing(0)
         self.title_bar = TitleBar(self)
         _ml.addWidget(self.title_bar)
+        self.save_status = QLabel("", self._menu_container)
+        self.save_status.setObjectName("save_status")
+        self.save_status.setAlignment(Qt.AlignRight)
+        self.save_status.hide()
+        _ml.addWidget(self.save_status)
         self.menu_bar = QMenuBar(self._menu_container)
         _ml.addWidget(self.menu_bar)
         self.setMenuWidget(self._menu_container)
+        self._status_timer = None
 
         # Paramètres de l'application
         self.settings = QSettings("pictocode", "pictocode")
@@ -179,7 +186,7 @@ class MainWindow(QMainWindow):
         )
         self.dock_font_size = int(self.settings.value("dock_font_size", self.font_size))
         self.show_splash = self.settings.value("show_splash", True, type=bool)
-        self.handle_size = int(self.settings.value("handle_size", 8))
+        self.handle_size = int(self.settings.value("handle_size", 12))
         self.rotation_offset = int(self.settings.value("rotation_offset", 20))
         self.handle_color = QColor(self.settings.value("handle_color", "#000000"))
         self.rotation_handle_color = QColor(
@@ -522,7 +529,7 @@ class MainWindow(QMainWindow):
         if not self.current_project_path:
             return self.save_as_project()
         data = self.canvas.export_project()
-        self.title_bar.show_status("Enregistrement…")
+        self.show_status("Enregistrement…")
         try:
             if self.current_project_path.lower().endswith(".ptc"):
                 import zipfile, tempfile
@@ -552,7 +559,7 @@ class MainWindow(QMainWindow):
                 thumb = os.path.splitext(self.current_project_path)[0] + ".png"
                 self.canvas.export_image(thumb, "PNG")
             self.set_dirty(False)
-            self.title_bar.show_status("Projet enregistré")
+            self.show_status("Projet enregistré")
             self.add_recent_project(self.current_project_path)
             self.home.populate_lists()
         except Exception as e:
@@ -949,6 +956,18 @@ class MainWindow(QMainWindow):
         ResizableMixin.rotation_offset = self.rotation_offset
         ResizableMixin.handle_color = self.handle_color
         ResizableMixin.rotation_handle_color = self.rotation_handle_color
+        ResizableMixin.handle_shape = "circle"
+        ResizableMixin.rotation_handle_shape = "circle"
+
+    def show_status(self, text: str):
+        """Display a temporary status message below the title bar."""
+        from PyQt5.QtCore import QTimer
+
+        self.save_status.setText(text)
+        self.save_status.show()
+        if self._status_timer:
+            self._status_timer.stop()
+        self._status_timer = QTimer.singleShot(2000, self.save_status.hide)
 
     def _set_project_actions_enabled(self, enabled: bool):
         for name in (

@@ -39,11 +39,11 @@ class SnapToGridMixin:
 class ResizableMixin:
     """Ajoute des poignées de redimensionnement et la logique associée."""
 
-    handle_size = 8
+    handle_size = 12
     handle_color = Qt.black
-    handle_shape = "square"  # or "circle"
+    handle_shape = "circle"  # or "circle"
 
-    rotation_handle_size = 10
+    rotation_handle_size = 12
     rotation_handle_color = Qt.red
     rotation_handle_shape = "circle"
     rotation_offset = 20
@@ -331,7 +331,7 @@ class Ellipse(ResizableMixin, SnapToGridMixin, QGraphicsEllipseItem):
 class LineResizableMixin:
     """Ajoute des poignées de redimensionnement pour les lignes."""
 
-    handle_size = 8
+    handle_size = 12
 
     def __init__(self):
         super().__init__()

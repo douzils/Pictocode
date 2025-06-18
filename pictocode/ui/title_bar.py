@@ -19,10 +19,6 @@ class TitleBar(QWidget):
         self.title_label.setObjectName("titlebar_label")
         layout.addWidget(self.title_label)
 
-        self.status_label = QLabel("", self)
-        self.status_label.setObjectName("save_status")
-        self.status_label.hide()
-        layout.addWidget(self.status_label, 1, alignment=Qt.AlignRight)
 
         self.min_btn = QPushButton("–", self)
         self.min_btn.setObjectName("titlebar_min")
@@ -40,8 +36,6 @@ class TitleBar(QWidget):
         layout.addWidget(self.close_btn)
 
         self._maximized = False
-        
-        self._status_timer = None
 
     def _toggle_max(self):
         if self._maximized:
@@ -81,10 +75,6 @@ class TitleBar(QWidget):
         super().mouseDoubleClickEvent(event)
 
     def show_status(self, text: str):
-        from PyQt5.QtCore import QTimer
-
-        self.status_label.setText(text)
-        self.status_label.show()
-        if self._status_timer:
-            self._status_timer.stop()
-        self._status_timer = QTimer.singleShot(2000, self.status_label.hide)
+        """Delegate status display to the main window."""
+        if hasattr(self._parent, "show_status"):
+            self._parent.show_status(text)
