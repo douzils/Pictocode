@@ -18,6 +18,7 @@ class TitleBar(QWidget):
         self.title_label = QLabel("Pictocode", self)
         self.title_label.setObjectName("titlebar_label")
         layout.addWidget(self.title_label)
+        layout.addStretch(1)
 
 
         self.min_btn = QPushButton("–", self)

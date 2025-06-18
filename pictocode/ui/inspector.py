@@ -7,9 +7,11 @@ from PyQt5.QtWidgets import (
     QPushButton,
     QComboBox,
     QInputDialog,
+    QDialog,
 )
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QLinearGradient, QBrush
+from PyQt5.QtGui import QLinearGradient, QBrush, QColor
+from .gradient_editor import GradientEditorDialog
 from .step_spinbox import StepSpinBox
 
 
@@ -45,6 +47,7 @@ class Inspector(QWidget):
         self.fill_btn.clicked.connect(self._pick_fill)
         self.gradient_btn = QPushButton("…", self)
         self.gradient_btn.clicked.connect(self._pick_gradient)
+        self._update_gradient_button(QColor("white"), QColor("black"))
         self._update_fill_button("#ffffff")
         self.layout.addRow("X :", self.x_field)
         self.layout.addRow("Y :", self.y_field)
@@ -134,6 +137,7 @@ class Inspector(QWidget):
             self.var_field.setText("")
             self._update_color_button("#000000")
             self._update_fill_button("#ffffff")
+            self._update_gradient_button(QColor("white"), QColor("black"))
             self.text_field.hide()
             self.font_field.hide()
             return
@@ -159,7 +163,17 @@ class Inspector(QWidget):
         pen = item.pen().color().name() if hasattr(item, "pen") else "#000000"
         self._update_color_button(pen)
         if hasattr(item, "brush"):
-            self._update_fill_button(item.brush().color().name())
+            brush = item.brush()
+            grad = brush.gradient()
+            if grad and isinstance(grad, QLinearGradient):
+                stops = grad.stops()
+                if stops:
+                    self._update_gradient_button(stops[0][1], stops[-1][1])
+                else:
+                    self._update_gradient_button(QColor("white"), QColor("black"))
+            else:
+                self._update_gradient_button(QColor("white"), QColor("black"))
+            self._update_fill_button(brush.color().name())
         self.var_field.blockSignals(True)
         self.var_field.setText(getattr(item, "var_name", ""))
         self.var_field.blockSignals(False)
@@ -251,22 +265,35 @@ class Inspector(QWidget):
     def _pick_gradient(self, event=None):
         if not self._item or not hasattr(self._item, 'brush'):
             return
-        start = QColorDialog.getColor(parent=self, title="Couleur de départ")
-        if not start.isValid():
-            return
-        end = QColorDialog.getColor(parent=self, title="Couleur de fin")
-        if not end.isValid():
-            return
-        r = self._item.boundingRect()
-        grad = QLinearGradient(0, 0, r.width(), 0)
-        grad.setColorAt(0, start)
-        grad.setColorAt(1, end)
-        self._item.setBrush(QBrush(grad))
-        self._update_fill_button(start.name())
-        self._notify_change()
+        brush = self._item.brush()
+        start_col = QColor("white")
+        end_col = QColor("black")
+        p1, p2 = 0.0, 1.0
+        grad = brush.gradient()
+        if grad and isinstance(grad, QLinearGradient):
+            stops = grad.stops()
+            if stops:
+                p1, start_col = stops[0]
+                p2, end_col = stops[-1]
+        dlg = GradientEditorDialog(start_col, end_col, p1, p2, self)
+        if dlg.exec_() == QDialog.Accepted:
+            start_col, end_col, p1, p2 = dlg.get_gradient()
+            r = self._item.boundingRect()
+            grad = QLinearGradient(0, 0, r.width(), 0)
+            grad.setColorAt(p1, start_col)
+            grad.setColorAt(p2, end_col)
+            self._item.setBrush(QBrush(grad))
+            self._update_gradient_button(start_col, end_col)
+            self._notify_change()
 
     def _update_fill_button(self, color: str):
         self.fill_btn.setStyleSheet(f"background:{color};")
+
+    def _update_gradient_button(self, start: QColor, end: QColor):
+        self.gradient_btn.setStyleSheet(
+            "background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 %s, stop:1 %s);"
+            % (start.name(), end.name())
+        )
 
     def _set_rotation_axis(self):
         if not self._item:

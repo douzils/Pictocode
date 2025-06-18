@@ -204,13 +204,13 @@ class ResizableMixin:
 
     def mouseMoveEvent(self, event):
         if self._resizing:
-            # Convert the mouse movement to item coordinates to account for
-            # the current rotation. Using the item-space delta ensures that
-            # the resize handles follow the cursor correctly when the item
-            # is rotated.
+            # Compute movement both in item coordinates and scene coordinates
+            # to keep the handle aligned with the mouse even when the item is
+            # rotated.
             start_local = self.mapFromScene(self._start_scene_pos)
             current_local = self.mapFromScene(event.scenePos())
             delta_item = current_local - start_local
+            delta_scene = self.mapToScene(current_local) - self.mapToScene(start_local)
 
             x = self._start_item_pos.x()
             y = self._start_item_pos.y()
@@ -218,30 +218,30 @@ class ResizableMixin:
             h = self._start_rect.height()
 
             if self._active_handle == 0:  # top-left
-                x += delta_item.x()
-                y += delta_item.y()
+                x += delta_scene.x()
+                y += delta_scene.y()
                 w -= delta_item.x()
                 h -= delta_item.y()
             elif self._active_handle == 1:  # top-right
-                y += delta_item.y()
+                y += delta_scene.y()
                 w += delta_item.x()
                 h -= delta_item.y()
             elif self._active_handle == 2:  # bottom-right
                 w += delta_item.x()
                 h += delta_item.y()
             elif self._active_handle == 3:  # bottom-left
-                x += delta_item.x()
+                x += delta_scene.x()
                 w -= delta_item.x()
                 h += delta_item.y()
             elif self._active_handle == 4:  # top
-                y += delta_item.y()
+                y += delta_scene.y()
                 h -= delta_item.y()
             elif self._active_handle == 5:  # right
                 w += delta_item.x()
             elif self._active_handle == 6:  # bottom
                 h += delta_item.y()
             elif self._active_handle == 7:  # left
-                x += delta_item.x()
+                x += delta_scene.x()
                 w -= delta_item.x()
             if event.modifiers() & Qt.ShiftModifier and w and h:
                 aspect = self._start_rect.width() / self._start_rect.height()
