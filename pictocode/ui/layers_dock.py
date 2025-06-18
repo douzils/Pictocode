@@ -420,6 +420,14 @@ class LayersWidget(QWidget):
                     target_parent = gparent if isinstance(gparent, QGraphicsItemGroup) else None
                     if gitem.parentItem() is not target_parent:
                         gitem.setParentItem(target_parent)
+                        gitem.setFlag(
+                            QGraphicsItem.ItemIsMovable,
+                            gitem.flags() & QGraphicsItem.ItemIsMovable,
+                        )
+                        gitem.setFlag(
+                            QGraphicsItem.ItemIsSelectable,
+                            gitem.flags() & QGraphicsItem.ItemIsSelectable,
+                        )
                     self._animate_z(gitem, z_index)
                     z_index += 1
                 apply_children(child, gitem)
