@@ -65,12 +65,10 @@ class LayersWidget(QWidget):
             name = getattr(gitem, "layer_name", type(gitem).__name__)
             qitem.setText(0, name)
             qitem.setData(0, Qt.UserRole, gitem)
-            qitem.setFlags(
-                qitem.flags()
-                | Qt.ItemIsEditable
-                | Qt.ItemIsDragEnabled
-                | Qt.ItemIsDropEnabled
-            )
+            flags = qitem.flags() | Qt.ItemIsEditable | Qt.ItemIsDragEnabled
+            if isinstance(gitem, QGraphicsItemGroup):
+                flags |= Qt.ItemIsDropEnabled
+            qitem.setFlags(flags)
             qitem.setText(1, "👁" if gitem.isVisible() else "🚫")
             locked = not (gitem.flags() & QGraphicsItem.ItemIsMovable)
             qitem.setText(2, "🔒" if locked else "🔓")
@@ -213,8 +211,9 @@ class LayersWidget(QWidget):
                 child = tparent.child(idx)
                 gitem = child.data(0, Qt.UserRole)
                 if gitem:
-                    if gitem.parentItem() is not gparent:
-                        gitem.setParentItem(gparent)
+                    target_parent = gparent if isinstance(gparent, QGraphicsItemGroup) else None
+                    if gitem.parentItem() is not target_parent:
+                        gitem.setParentItem(target_parent)
                     self._animate_z(gitem, idx)
                 apply_children(child, gitem)
 
