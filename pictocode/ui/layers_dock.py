@@ -39,17 +39,27 @@ class LayersWidget(QWidget):
         if not canvas:
             return
 
-        def add_item(gitem, parent=None):
+        project_name = getattr(canvas, "current_meta", {}).get("name") or "Projet"
+        root_item = QTreeWidgetItem(self.tree)
+        root_item.setText(0, project_name)
+        root_item.setData(0, Qt.UserRole, None)
+        root_item.setExpanded(True)
+        root_item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsDropEnabled)
+        root_item.setFirstColumnSpanned(True)
+
+        def add_item(gitem, parent=root_item):
             if gitem is getattr(canvas, "_frame_item", None):
                 return
-            if parent is None:
-                qitem = QTreeWidgetItem(self.tree)
-            else:
-                qitem = QTreeWidgetItem(parent)
+            qitem = QTreeWidgetItem(parent)
             name = getattr(gitem, "layer_name", type(gitem).__name__)
             qitem.setText(0, name)
             qitem.setData(0, Qt.UserRole, gitem)
-            qitem.setFlags(qitem.flags() | Qt.ItemIsEditable | Qt.ItemIsDragEnabled | Qt.ItemIsDropEnabled)
+            qitem.setFlags(
+                qitem.flags()
+                | Qt.ItemIsEditable
+                | Qt.ItemIsDragEnabled
+                | Qt.ItemIsDropEnabled
+            )
             qitem.setCheckState(1, Qt.Checked if gitem.isVisible() else Qt.Unchecked)
             locked = not (gitem.flags() & QGraphicsItem.ItemIsMovable)
             qitem.setCheckState(2, Qt.Checked if locked else Qt.Unchecked)
@@ -107,6 +117,8 @@ class LayersWidget(QWidget):
         if not item or not self.canvas:
             return
         gitem = item.data(0, Qt.UserRole)
+        if gitem is None:
+            return
         menu = AnimatedMenu(self)
         act_delete = QAction("Supprimer", menu)
         menu.addAction(act_delete)
@@ -139,9 +151,10 @@ class LayersWidget(QWidget):
         if not self.canvas:
             return
         root = self.tree.invisibleRootItem()
+        if root.childCount() == 1 and root.child(0).data(0, Qt.UserRole) is None:
+            root = root.child(0)
         for i in range(root.childCount()):
             item = root.child(root.childCount() - 1 - i)
             gitem = item.data(0, Qt.UserRole)
             if gitem:
                 gitem.setZValue(i)
-
