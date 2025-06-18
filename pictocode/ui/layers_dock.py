@@ -10,6 +10,7 @@ from PyQt5.QtWidgets import (
     QHeaderView,
 )
 from PyQt5.QtCore import Qt, QPropertyAnimation, QObject
+from PyQt5.QtWidgets import QGraphicsObject
 from .animated_menu import AnimatedMenu
 
 
@@ -209,7 +210,7 @@ class LayersWidget(QWidget):
                 self._animate_z(gitem, i)
 
     def _animate_z(self, gitem, z):
-        if isinstance(gitem, QObject):
+        if isinstance(gitem, QGraphicsObject):
             anim = QPropertyAnimation(gitem, b"zValue", self)
             anim.setDuration(150)
             anim.setStartValue(gitem.zValue())
