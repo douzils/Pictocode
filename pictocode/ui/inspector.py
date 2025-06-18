@@ -156,6 +156,7 @@ class Inspector(QWidget):
             else:
                 value = fld.text()
             setter(value)
+            self._notify_change()
         except Exception:
             pass
 
@@ -171,26 +172,31 @@ class Inspector(QWidget):
             elif hasattr(self._item, "setDefaultTextColor"):
                 self._item.setDefaultTextColor(col)
             self._update_color_button(col.name())
+            self._notify_change()
 
     def _set_font_size(self, size: int):
         if hasattr(self._item, 'font'):
             f = self._item.font()
             f.setPointSize(size)
             self._item.setFont(f)
+            self._notify_change()
 
     def _set_pen_width(self, width: int):
         if hasattr(self._item, 'pen'):
             pen = self._item.pen()
             pen.setWidth(int(width))
             self._item.setPen(pen)
+            self._notify_change()
 
     def _set_var_name(self, name: str):
         if self._item is not None:
             setattr(self._item, 'var_name', name)
+            self._notify_change()
 
     def _set_alignment(self, _val):
         if hasattr(self._item, 'alignment'):
             self._item.alignment = self.align_field.currentText()
+            self._notify_change()
 
     def _update_color_button(self, color: str):
         self.color_btn.setStyleSheet(f"background:{color};")
@@ -205,7 +211,16 @@ class Inspector(QWidget):
             brush.setStyle(Qt.SolidPattern)
             self._item.setBrush(brush)
             self._update_fill_button(col.name())
+            self._notify_change()
 
     def _update_fill_button(self, color: str):
         self.fill_btn.setStyleSheet(f"background:{color};")
+
+    def _notify_change(self):
+        if self._item and self._item.scene():
+            views = self._item.scene().views()
+            if views:
+                view = views[0]
+                if hasattr(view, "_mark_dirty"):
+                    view._mark_dirty()
 

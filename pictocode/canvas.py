@@ -43,6 +43,10 @@ class CanvasWidget(QGraphicsView):
         self._poly_preview_line = None
         self.pen_color = QColor("black")
 
+        # Key modifier to allow drawing over an existing item
+        # (configurable via parent if needed)
+        self.override_select_modifier = Qt.ShiftModifier
+
         # Grille et magnétisme
         # grid_size correspond à l’écart en pixels à l’échelle 1:1
         self.grid_size = 50
@@ -313,7 +317,9 @@ class CanvasWidget(QGraphicsView):
                     for it in self.scene.items(scene_pos)
                     if it is not self._frame_item
                 ]
-                if items:
+                if items and not (
+                    event.modifiers() & self.override_select_modifier
+                ):
                     super().mousePressEvent(event)
                     return
                 self._start_pos = scene_pos
