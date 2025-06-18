@@ -1121,6 +1121,8 @@ class CanvasWidget(QGraphicsView):
         group.setFlags(
             QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable
         )
+        # Allow interacting with children individually
+        group.setHandlesChildEvents(False)
         self._assign_layer_name(group, "group")
         self.scene.clearSelection()
         group.setSelected(True)
@@ -1144,6 +1146,7 @@ class CanvasWidget(QGraphicsView):
         group.setFlags(
             QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable
         )
+        group.setHandlesChildEvents(False)
         self._assign_layer_name(group, name)
         self._schedule_scene_changed()
         return group
