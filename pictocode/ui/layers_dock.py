@@ -162,6 +162,12 @@ class LayersWidget(QWidget):
     # ------------------------------------------------------------------
     def update_layers(self, canvas):
         self.canvas = canvas
+        # Preserve current selection to restore it after rebuilding the tree
+        selected = None
+        if canvas:
+            items = canvas.scene.selectedItems()
+            selected = items[0] if items else None
+
         self.tree.clear()
         if not canvas:
             return
@@ -203,6 +209,8 @@ class LayersWidget(QWidget):
                 add_item(it)
 
         self._sync_scene_from_tree()
+        if selected:
+            self.highlight_item(selected)
 
     # ------------------------------------------------------------------
     def highlight_item(self, item):
