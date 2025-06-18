@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import (
     QGraphicsItemGroup,
     QHeaderView,
 )
-from PyQt5.QtCore import Qt, QPropertyAnimation
+from PyQt5.QtCore import Qt, QPropertyAnimation, QObject
 from .animated_menu import AnimatedMenu
 
 
@@ -209,8 +209,11 @@ class LayersWidget(QWidget):
                 self._animate_z(gitem, i)
 
     def _animate_z(self, gitem, z):
-        anim = QPropertyAnimation(gitem, b"zValue", self)
-        anim.setDuration(150)
-        anim.setStartValue(gitem.zValue())
-        anim.setEndValue(z)
-        anim.start(QPropertyAnimation.DeleteWhenStopped)
+        if isinstance(gitem, QObject):
+            anim = QPropertyAnimation(gitem, b"zValue", self)
+            anim.setDuration(150)
+            anim.setStartValue(gitem.zValue())
+            anim.setEndValue(z)
+            anim.start(QPropertyAnimation.DeleteWhenStopped)
+        else:
+            gitem.setZValue(z)
