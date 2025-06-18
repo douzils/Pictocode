@@ -913,6 +913,8 @@ class MainWindow(QMainWindow):
             dock.setStyleSheet(f"QDockWidget {{ background: {dock_color.name()}; }}")
         for widget in (self.layers, self.imports):
             widget.setStyleSheet(f"font-size: {dock_font_size}pt;")
+            if hasattr(widget, "apply_theme"):
+                widget.apply_theme()
 
 
         self.current_theme = theme
