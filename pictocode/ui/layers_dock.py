@@ -209,6 +209,21 @@ class LayersWidget(QWidget):
             selected = items[0] if items else None
 
         self._updating = True
+
+
+        expanded = {}
+
+        def record_state(tparent):
+            for i in range(tparent.childCount()):
+                child = tparent.child(i)
+                g = child.data(0, Qt.UserRole)
+                if g:
+                    expanded[g] = child.isExpanded()
+                record_state(child)
+
+        record_state(self.tree.invisibleRootItem())
+
+
         self.tree.clear()
         if not canvas:
             self._updating = False
@@ -219,7 +234,7 @@ class LayersWidget(QWidget):
         root_item = QTreeWidgetItem(self.tree)
         root_item.setText(0, project_name)
         root_item.setData(0, Qt.UserRole, None)
-        root_item.setExpanded(True)
+        root_item.setExpanded(expanded.get(None, True))
         root_item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsDropEnabled)
         root_item.setFirstColumnSpanned(True)
 
@@ -241,7 +256,12 @@ class LayersWidget(QWidget):
                 | Qt.ItemIsUserCheckable
             )
             qitem.setFlags(flags)
-            qitem.setCheckState(1, Qt.Checked if gitem.isVisible() else Qt.Unchecked)
+
+            qitem.setCheckState(
+                1,
+                Qt.Checked if gitem.isVisible() else Qt.Unchecked,
+            )
+
             locked = not (gitem.flags() & QGraphicsItem.ItemIsMovable)
             qitem.setCheckState(2, Qt.Unchecked if locked else Qt.Checked)
             if isinstance(gitem, QGraphicsItemGroup):
@@ -250,7 +270,7 @@ class LayersWidget(QWidget):
                 icon = self.style().standardIcon(QStyle.SP_FileIcon)
             qitem.setIcon(0, icon)
             if isinstance(gitem, QGraphicsItemGroup):
-                qitem.setExpanded(True)
+                qitem.setExpanded(expanded.get(gitem, True))
                 for child in sorted(gitem.childItems(), key=_sort_z):
                     add_item(child, qitem)
 
@@ -281,6 +301,20 @@ class LayersWidget(QWidget):
 
         walk(self.tree.invisibleRootItem())
 
+    def _propagate_state(self, tparent, *, visible=None, locked=None):
+        """Recursively apply visibility or lock state to children."""
+        for idx in range(tparent.childCount()):
+            child = tparent.child(idx)
+            gchild = child.data(0, Qt.UserRole)
+            if visible is not None and gchild:
+                gchild.setVisible(visible)
+                child.setCheckState(1, Qt.Checked if visible else Qt.Unchecked)
+            if locked is not None and gchild:
+                gchild.setFlag(QGraphicsItem.ItemIsMovable, not locked)
+                gchild.setFlag(QGraphicsItem.ItemIsSelectable, not locked)
+                child.setCheckState(2, Qt.Unchecked if locked else Qt.Checked)
+            self._propagate_state(child, visible=visible, locked=locked)
+
     # ------------------------------------------------------------------
     def _on_item_clicked(self, titem, column):
         self.tree.setCurrentItem(titem)
@@ -296,10 +330,18 @@ class LayersWidget(QWidget):
         elif column == 1:
             vis = titem.checkState(1) == Qt.Checked
             gitem.setVisible(vis)
+
+            if isinstance(gitem, QGraphicsItemGroup):
+                self._propagate_state(titem, visible=vis)
+
         elif column == 2:
             locked = titem.checkState(2) != Qt.Checked
             gitem.setFlag(QGraphicsItem.ItemIsMovable, not locked)
             gitem.setFlag(QGraphicsItem.ItemIsSelectable, not locked)
+
+            if isinstance(gitem, QGraphicsItemGroup):
+                self._propagate_state(titem, locked=locked)
+
 
     def _on_selection_changed(self):
         if not self.canvas:
@@ -401,8 +443,9 @@ class LayersWidget(QWidget):
     def _handle_tree_drop(self, event):
         target_item = self.tree.itemAt(event.pos())
         drop_pos = self.tree.dropIndicatorPosition()
-        selected = [it.data(0, Qt.UserRole)
-                            for it in self.tree.selectedItems()]
+        selected = [
+            it.data(0, Qt.UserRole) for it in self.tree.selectedItems()
+        ]
 
         if (
             target_item
