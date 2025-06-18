@@ -406,6 +406,9 @@ class LayersWidget(QWidget):
         apply_children(root, None)
 
     def _animate_z(self, gitem, z):
+        """Set the z-value only when it actually changes."""
+        if gitem.zValue() == z:
+            return
         if isinstance(gitem, QGraphicsObject):
             anim = QPropertyAnimation(gitem, b"zValue", self)
             anim.setDuration(150)
