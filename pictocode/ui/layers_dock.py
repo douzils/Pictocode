@@ -394,6 +394,9 @@ class LayersWidget(QWidget):
         act_dup = QAction("Dupliquer", menu)
         menu.addAction(act_dup)
         menu.addSeparator()
+        act_new_group = QAction("Nouvelle collection", menu)
+        menu.addAction(act_new_group)
+        menu.addSeparator()
         act_up = QAction("Monter", menu)
         menu.addAction(act_up)
         act_down = QAction("Descendre", menu)
@@ -416,6 +419,8 @@ class LayersWidget(QWidget):
             new_item = self.canvas.scene.selectedItems()[0]
             self.update_layers(self.canvas)
             self.highlight_item(new_item)
+        elif action is act_new_group:
+            insert_group(root.childCount())
         elif action is act_up:
             parent = item.parent() or self.tree.invisibleRootItem().child(0)
             idx = parent.indexOfChild(item)
