@@ -55,10 +55,10 @@ class MainWindow(QMainWindow):
         _ml.addWidget(self.title_bar)
         self.save_status = QLabel("", self._menu_container)
         self.save_status.setObjectName("save_status")
-        self.save_status.setAlignment(Qt.AlignRight)
+        self.save_status.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         self.save_status.hide()
-        _ml.addWidget(self.save_status)
         self.menu_bar = QMenuBar(self._menu_container)
+        self.menu_bar.setCornerWidget(self.save_status, Qt.TopRightCorner)
         _ml.addWidget(self.menu_bar)
         self.setMenuWidget(self._menu_container)
         self._status_timer = None
@@ -958,7 +958,7 @@ class MainWindow(QMainWindow):
         ResizableMixin.rotation_handle_shape = "circle"
 
     def show_status(self, text: str):
-        """Display a temporary status message below the title bar."""
+        """Display a temporary status message in the menu bar."""
         from PyQt5.QtCore import QTimer
 
         self.save_status.setText(text)
