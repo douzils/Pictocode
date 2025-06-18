@@ -210,7 +210,6 @@ class LayersWidget(QWidget):
 
         self._updating = True
 
-
         expanded = {}
 
         def record_state(tparent):
@@ -222,8 +221,6 @@ class LayersWidget(QWidget):
                 record_state(child)
 
         record_state(self.tree.invisibleRootItem())
-
-
         self.tree.clear()
         if not canvas:
             self._updating = False
@@ -342,7 +339,6 @@ class LayersWidget(QWidget):
             if isinstance(gitem, QGraphicsItemGroup):
                 self._propagate_state(titem, locked=locked)
 
-
     def _on_selection_changed(self):
         if not self.canvas:
             return
@@ -363,10 +359,11 @@ class LayersWidget(QWidget):
         def insert_group(index: int):
             group = self.canvas.create_collection()
             self.update_layers(self.canvas)
+            root_item = self.tree.invisibleRootItem().child(0)
             self.highlight_item(group)
             qitem = self.tree.currentItem()
-            root.takeChild(root.indexOfChild(qitem))
-            root.insertChild(index, qitem)
+            root_item.takeChild(root_item.indexOfChild(qitem))
+            root_item.insertChild(index, qitem)
             self._sync_scene_from_tree()
 
         if item is None:
