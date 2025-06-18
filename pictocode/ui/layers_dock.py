@@ -60,6 +60,10 @@ class LayersTreeWidget(QTreeWidget):
         else:
             self._clear_highlight()
 
+    def dropEvent(self, event):
+        """Handle a drop and notify the parent widget."""
+        self._handle_tree_drop(event)
+
     def _handle_tree_drop(self, event):
         self._drop_line.hide()
         self._clear_highlight()
