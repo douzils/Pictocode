@@ -1048,13 +1048,32 @@ class CanvasWidget(QGraphicsView):
         painter.end()
 
     # --- Group management -------------------------------------------
-    def group_selected(self):
-        """Regroupe les éléments sélectionnés dans un QGraphicsItemGroup."""
-        items = [it for it in self.scene.selectedItems() if it is not self._frame_item]
+    def group_selected(self, items=None, *, sort_items=True):
+        """Regroupe les éléments sélectionnés dans un QGraphicsItemGroup.
+
+        Parameters
+        ----------
+        items : list[QGraphicsItem] | None
+            Éléments à grouper. Si ``None`` (par défaut), les éléments
+            actuellement sélectionnés dans la scène seront utilisés.
+        sort_items : bool, optional
+            Si ``True``, les items seront triés de bas en haut en fonction de
+            leur ``zValue`` afin de préserver l'ordre d'empilement existant.
+            Lorsque ``False``, l'ordre fourni est conservé tel quel.
+        """
+        if items is None:
+            items = [
+                it
+                for it in self.scene.selectedItems()
+                if it is not self._frame_item
+            ]
+        else:
+            items = [it for it in items if it is not self._frame_item]
         if len(items) <= 1:
             return None
-        # Preserve stacking order by sorting the items from bottom to top
-        items.sort(key=lambda it: it.zValue())
+        if sort_items:
+            # Preserve stacking order by sorting the items from bottom to top
+            items.sort(key=lambda it: it.zValue())
         group = self.scene.createItemGroup(items)
         # Keep the group's z to match the highest child so layers don't bounce
         group.setZValue(max(it.zValue() for it in items))

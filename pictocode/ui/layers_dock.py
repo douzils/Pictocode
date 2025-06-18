@@ -375,11 +375,8 @@ class LayersWidget(QWidget):
         ):
             target_gitem = target_item.data(0, Qt.UserRole)
             if target_gitem and not isinstance(target_gitem, QGraphicsItemGroup):
-                self.canvas.scene.clearSelection()
-                target_gitem.setSelected(True)
-                for g in selected:
-                    g.setSelected(True)
-                group = self.canvas.group_selected()
+                items = [target_gitem] + sorted(selected, key=lambda g: g.zValue())
+                group = self.canvas.group_selected(items, sort_items=False)
                 if group:
                     event.accept()
                     self.update_layers(self.canvas)
