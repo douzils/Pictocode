@@ -26,21 +26,21 @@ from .utils import to_pixels
 
 
 class TransparentItemGroup(QGraphicsItemGroup):
-    """Item group that lets its children handle mouse events under Qt5."""
+    """Item group that lets its children handle events unless selected."""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # ItemHasNoContents avoids painting the group while keeping a bounding rect
         self.setFlag(QGraphicsItem.ItemHasNoContents, True)
+        if hasattr(self, "setHandlesChildEvents"):
+            self.setHandlesChildEvents(False)
 
-    def mousePressEvent(self, event):
-        event.ignore()
-
-    def mouseMoveEvent(self, event):
-        event.ignore()
-
-    def mouseReleaseEvent(self, event):
-        event.ignore()
+    def itemChange(self, change, value):
+        if change == QGraphicsItem.ItemSelectedHasChanged and hasattr(
+            self, "setHandlesChildEvents"
+        ):
+            self.setHandlesChildEvents(bool(value))
+        return super().itemChange(change, value)
 
 
 class CanvasScene(QGraphicsScene):
@@ -1134,14 +1134,10 @@ class CanvasWidget(QGraphicsView):
         if sort_items:
             # Preserve stacking order by sorting the items from bottom to top
             items.sort(key=lambda it: it.zValue())
-        if hasattr(QGraphicsItemGroup, "setHandlesChildEvents"):
-            group = self.scene.createItemGroup(items)
-            group.setHandlesChildEvents(False)
-        else:
-            group = TransparentItemGroup()
-            self.scene.addItem(group)
-            for it in items:
-                group.addToGroup(it)
+        group = TransparentItemGroup()
+        self.scene.addItem(group)
+        for it in items:
+            group.addToGroup(it)
         # Keep the group's z to match the highest child so layers don't bounce
         group.setZValue(max(it.zValue() for it in items))
         group.setFlags(
@@ -1158,20 +1154,21 @@ class CanvasWidget(QGraphicsView):
         if not isinstance(group, QGraphicsItemGroup):
             return
         children = group.childItems()
-        self.scene.destroyItemGroup(group)
-        for ch in children:
-            ch.setSelected(True)
+        if isinstance(group, TransparentItemGroup):
+            for ch in children:
+                group.removeFromGroup(ch)
+                ch.setSelected(True)
+            self.scene.removeItem(group)
+        else:
+            self.scene.destroyItemGroup(group)
+            for ch in children:
+                ch.setSelected(True)
         self._schedule_scene_changed()
 
     def create_collection(self, name: str = "collection"):
         """Crée un groupe vide (collection) dans la scène."""
-        if hasattr(QGraphicsItemGroup, "setHandlesChildEvents"):
-            group = QGraphicsItemGroup()
-            self.scene.addItem(group)
-            group.setHandlesChildEvents(False)
-        else:
-            group = TransparentItemGroup()
-            self.scene.addItem(group)
+        group = TransparentItemGroup()
+        self.scene.addItem(group)
         group.setFlags(
             QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable
         )
