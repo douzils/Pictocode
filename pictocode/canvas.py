@@ -26,21 +26,27 @@ from .utils import to_pixels
 
 
 class TransparentItemGroup(QGraphicsItemGroup):
-    """Item group that lets its children handle mouse events under Qt5."""
+    """Item group that lets its children handle events unless selected."""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # ItemHasNoContents avoids painting the group while keeping a bounding rect
         self.setFlag(QGraphicsItem.ItemHasNoContents, True)
 
+    def _forward_or_handle(self, event, handler):
+        if self.isSelected():
+            handler(event)
+        else:
+            event.ignore()
+
     def mousePressEvent(self, event):
-        event.ignore()
+        self._forward_or_handle(event, super().mousePressEvent)
 
     def mouseMoveEvent(self, event):
-        event.ignore()
+        self._forward_or_handle(event, super().mouseMoveEvent)
 
     def mouseReleaseEvent(self, event):
-        event.ignore()
+        self._forward_or_handle(event, super().mouseReleaseEvent)
 
 
 class CanvasScene(QGraphicsScene):
