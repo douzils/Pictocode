@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import (
     QGraphicsItemGroup,
 )
 from .ui.animated_menu import AnimatedMenu
-from PyQt5.QtCore import Qt, QRectF, QPointF, QSizeF, pyqtSignal
+from PyQt5.QtCore import Qt, QRectF, QPointF, QSizeF, pyqtSignal, QTimer
 from PyQt5.QtGui import (
     QPainter,
     QColor,
@@ -30,13 +30,23 @@ class CanvasScene(QGraphicsScene):
     itemAdded = pyqtSignal()
     itemRemoved = pyqtSignal()
 
+    def __init__(self, *args, throttle_interval: int = 100, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._throttle_interval = throttle_interval
+        self._add_timer = QTimer(self)
+        self._add_timer.setSingleShot(True)
+        self._add_timer.timeout.connect(self.itemAdded)
+        self._remove_timer = QTimer(self)
+        self._remove_timer.setSingleShot(True)
+        self._remove_timer.timeout.connect(self.itemRemoved)
+
     def addItem(self, item):
         super().addItem(item)
-        self.itemAdded.emit()
+        self._add_timer.start(self._throttle_interval)
 
     def removeItem(self, item):
         super().removeItem(item)
-        self.itemRemoved.emit()
+        self._remove_timer.start(self._throttle_interval)
 
 
 class CanvasWidget(QGraphicsView):
