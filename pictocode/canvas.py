@@ -180,9 +180,9 @@ class CanvasWidget(QGraphicsView):
             "color_mode": color_mode,
             "dpi": dpi,
         }
-        parent = self.parent()
-        if hasattr(parent, "layers"):
-            parent.layers.update_layers(self)
+        window = self.window()
+        if hasattr(window, "layers"):
+            window.layers.update_layers(self)
 
         if not self._loading_snapshot:
             self._snapshot()
@@ -220,9 +220,9 @@ class CanvasWidget(QGraphicsView):
         for s in shapes:
             self._create_item(s)
         self.scene.blockSignals(False)
-        parent = self.parent()
-        if hasattr(parent, "layers"):
-            parent.layers.update_layers(self)
+        window = self.window()
+        if hasattr(window, "layers"):
+            window.layers.update_layers(self)
 
     def export_project(self):
         """
@@ -700,26 +700,26 @@ class CanvasWidget(QGraphicsView):
         self.pen_color = color
 
     def _on_selection_changed(self):
-        parent = self.parent()
-        if hasattr(parent, "inspector"):
+        window = self.window()
+        if hasattr(window, "inspector"):
             items = self.scene.selectedItems()
             if items:
-                parent.inspector.set_target(items[0])
-                if hasattr(parent, "layers"):
-                    parent.layers.highlight_item(items[0])
+                window.inspector.set_target(items[0])
+                if hasattr(window, "layers"):
+                    window.layers.highlight_item(items[0])
             else:
-                parent.inspector.set_target(None)
+                window.inspector.set_target(None)
 
     def _mark_dirty(self):
-        parent = self.parent()
-        if hasattr(parent, "set_dirty"):
-            parent.set_dirty(True)
+        window = self.window()
+        if hasattr(window, "set_dirty"):
+            window.set_dirty(True)
 
     def _on_scene_changed(self):
         self._mark_dirty()
-        parent = self.parent()
-        if hasattr(parent, "layers"):
-            parent.layers.update_layers(self)
+        window = self.window()
+        if hasattr(window, "layers"):
+            window.layers.update_layers(self)
 
         # Agrandit automatiquement la zone de la scène pour permettre
         # le déplacement libre des formes en dehors du document initial.
