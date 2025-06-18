@@ -4,8 +4,15 @@
 import math
 from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QAction
 from .ui.animated_menu import AnimatedMenu
-from PyQt5.QtCore import Qt, QRectF, QPointF
-from PyQt5.QtGui import QPainter, QColor, QPen, QImage, QPainterPath
+from PyQt5.QtCore import Qt, QRectF, QPointF, QSizeF
+from PyQt5.QtGui import (
+    QPainter,
+    QColor,
+    QPen,
+    QImage,
+    QPainterPath,
+    QPdfWriter,
+)
 from .shapes import Rect, Ellipse, Line, FreehandPath, TextItem, ImageItem
 from .utils import to_pixels
 
@@ -54,6 +61,11 @@ class CanvasWidget(QGraphicsView):
         # sélection -> inspecteur
         self.scene.selectionChanged.connect(self._on_selection_changed)
         self.scene.changed.connect(lambda _: self._on_scene_changed())
+
+        # Historique pour annuler/rétablir
+        self._history = []
+        self._history_index = -1
+        self._loading_snapshot = False
 
     def _draw_doc_frame(self):
         """Dessine le contour en pointillés de la zone de travail."""
@@ -114,6 +126,9 @@ class CanvasWidget(QGraphicsView):
         parent = self.parent()
         if hasattr(parent, "layers"):
             parent.layers.update_layers(self)
+
+        if not self._loading_snapshot:
+            self._snapshot()
 
     def update_document_properties(
         self, width, height, unit, orientation, color_mode, dpi, name=""
@@ -561,6 +576,10 @@ class CanvasWidget(QGraphicsView):
     def _toggle_snap(self):
         self.snap_to_grid = not self.snap_to_grid
 
+    def set_grid_size(self, size: int):
+        self.grid_size = max(1, int(size))
+        self.viewport().update()
+
     def _change_pen_color(self, item):
         from PyQt5.QtWidgets import QColorDialog
 
@@ -634,6 +653,9 @@ class CanvasWidget(QGraphicsView):
         if not bounds.contains(self._doc_rect):
             bounds = bounds.united(self._doc_rect)
             self.setSceneRect(bounds)
+
+        if not self._loading_snapshot:
+            self._snapshot()
 
     # --- Clipboard / editing helpers ---------------------------------
     def _serialize_item(self, item):
@@ -857,4 +879,50 @@ class CanvasWidget(QGraphicsView):
             self._start_pos = None
             return
         super().keyPressEvent(event)
+
+    # --- Historique --------------------------------------------------
+    def _snapshot(self):
+        data = self.export_project()
+        self._history = self._history[: self._history_index + 1]
+        self._history.append(data)
+        self._history_index += 1
+
+    def _load_snapshot(self, snap):
+        self._loading_snapshot = True
+        self.new_document(
+            snap.get("width", 0),
+            snap.get("height", 0),
+            snap.get("unit", "px"),
+            snap.get("orientation", "portrait"),
+            snap.get("color_mode", "RGB"),
+            snap.get("dpi", 72),
+            name=snap.get("name", ""),
+        )
+        self.load_shapes(snap.get("shapes", []))
+        self._loading_snapshot = False
+
+    def undo(self):
+        if self._history_index > 0:
+            self._history_index -= 1
+            self._load_snapshot(self._history[self._history_index])
+
+    def redo(self):
+        if self._history_index + 1 < len(self._history):
+            self._history_index += 1
+            self._load_snapshot(self._history[self._history_index])
+
+    # --- Export supplémentaires --------------------------------------
+    def export_pdf(self, path: str):
+        writer = QPdfWriter(path)
+        writer.setResolution(96)
+        writer.setPageSizeMM(
+            QSizeF(self._doc_rect.width(), self._doc_rect.height())
+        )
+        painter = QPainter(writer)
+        self.scene.render(
+            painter,
+            QRectF(0, 0, self._doc_rect.width(), self._doc_rect.height()),
+            self._doc_rect,
+        )
+        painter.end()
 
