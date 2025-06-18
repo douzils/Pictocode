@@ -11,6 +11,7 @@ from PyQt5.QtWidgets import (
     QGraphicsItemGroup,
     QHeaderView,
     QFrame,
+    QStyle,
 )
 from PyQt5.QtCore import Qt, QPropertyAnimation
 from PyQt5.QtWidgets import QGraphicsObject
@@ -123,7 +124,7 @@ class LayersWidget(QWidget):
         self.canvas = None
         self.tree = LayersTreeWidget(self)
         self.tree.setColumnCount(3)
-        self.tree.setHeaderLabels(["Nom", "👁", "🔒"])
+        self.tree.setHeaderLabels(["Nom", "Vis", "Lock"])
         self.tree.setSelectionMode(QAbstractItemView.SingleSelection)
         self.tree.setDragDropMode(QAbstractItemView.InternalMove)
         self.tree.setDragEnabled(True)
@@ -139,6 +140,8 @@ class LayersWidget(QWidget):
         layout.addWidget(self.tree)
 
         self._apply_styles()
+
+        self._updating = False
 
         # Keep track of ongoing z-value animations to avoid repeatedly
         # re-triggering them when scene updates occur while an
@@ -162,14 +165,14 @@ class LayersWidget(QWidget):
         self.tree.setCurrentItem(titem)
 
     def _apply_styles(self):
-        """Applique un style plus moderne a la liste des calques."""
+        """Apply a darker style reminiscent of Blender's Outliner."""
         pal = self.tree.palette()
-        base = pal.base().color().name()
-        alt = pal.alternateBase().color().name()
-        text = pal.text().color().name()
+        base = "#2b2b2b"
+        alt = "#313131"
+        text = "#f0f0f0"
         highlight = pal.highlight().color().name()
         highlight_text = pal.highlightedText().color().name()
-        header_bg = pal.window().color().name()
+        header_bg = "#2b2b2b"
         border = pal.mid().color().name()
 
         self.tree.setStyleSheet(
@@ -205,8 +208,23 @@ class LayersWidget(QWidget):
             items = canvas.scene.selectedItems()
             selected = items[0] if items else None
 
+        self._updating = True
+
+        expanded = {}
+
+        def record_state(tparent):
+            for i in range(tparent.childCount()):
+                child = tparent.child(i)
+                g = child.data(0, Qt.UserRole)
+                if g:
+                    expanded[g] = child.isExpanded()
+                record_state(child)
+
+        record_state(self.tree.invisibleRootItem())
+
         self.tree.clear()
         if not canvas:
+            self._updating = False
             return
 
         project_name = getattr(canvas, "current_meta",
@@ -214,7 +232,7 @@ class LayersWidget(QWidget):
         root_item = QTreeWidgetItem(self.tree)
         root_item.setText(0, project_name)
         root_item.setData(0, Qt.UserRole, None)
-        root_item.setExpanded(True)
+        root_item.setExpanded(expanded.get(None, True))
         root_item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsDropEnabled)
         root_item.setFirstColumnSpanned(True)
 
@@ -233,13 +251,22 @@ class LayersWidget(QWidget):
                 | Qt.ItemIsEditable
                 | Qt.ItemIsDragEnabled
                 | Qt.ItemIsDropEnabled
+                | Qt.ItemIsUserCheckable
             )
             qitem.setFlags(flags)
-            qitem.setText(1, "👁" if gitem.isVisible() else "🚫")
+            qitem.setCheckState(
+                1,
+                Qt.Checked if gitem.isVisible() else Qt.Unchecked,
+            )
             locked = not (gitem.flags() & QGraphicsItem.ItemIsMovable)
-            qitem.setText(2, "🔒" if locked else "🔓")
+            qitem.setCheckState(2, Qt.Unchecked if locked else Qt.Checked)
             if isinstance(gitem, QGraphicsItemGroup):
-                qitem.setExpanded(True)
+                icon = self.style().standardIcon(QStyle.SP_DirIcon)
+            else:
+                icon = self.style().standardIcon(QStyle.SP_FileIcon)
+            qitem.setIcon(0, icon)
+            if isinstance(gitem, QGraphicsItemGroup):
+                qitem.setExpanded(expanded.get(gitem, True))
                 for child in sorted(gitem.childItems(), key=_sort_z):
                     add_item(child, qitem)
 
@@ -253,6 +280,7 @@ class LayersWidget(QWidget):
         self._sync_scene_from_tree()
         if selected:
             self.highlight_item(selected)
+        self._updating = False
 
     # ------------------------------------------------------------------
     def highlight_item(self, item):
@@ -269,28 +297,43 @@ class LayersWidget(QWidget):
 
         walk(self.tree.invisibleRootItem())
 
+    def _propagate_state(self, tparent, *, visible=None, locked=None):
+        """Recursively apply visibility or lock state to children."""
+        for idx in range(tparent.childCount()):
+            child = tparent.child(idx)
+            gchild = child.data(0, Qt.UserRole)
+            if visible is not None and gchild:
+                gchild.setVisible(visible)
+                child.setCheckState(1, Qt.Checked if visible else Qt.Unchecked)
+            if locked is not None and gchild:
+                gchild.setFlag(QGraphicsItem.ItemIsMovable, not locked)
+                gchild.setFlag(QGraphicsItem.ItemIsSelectable, not locked)
+                child.setCheckState(2, Qt.Unchecked if locked else Qt.Checked)
+            self._propagate_state(child, visible=visible, locked=locked)
+
     # ------------------------------------------------------------------
     def _on_item_clicked(self, titem, column):
         self.tree.setCurrentItem(titem)
+
+    def _on_item_changed(self, titem, column):
+        if self._updating:
+            return
         gitem = titem.data(0, Qt.UserRole)
         if not gitem:
             return
-        if column == 1:
-            vis = not gitem.isVisible()
+        if column == 0:
+            gitem.layer_name = titem.text(0)
+        elif column == 1:
+            vis = titem.checkState(1) == Qt.Checked
             gitem.setVisible(vis)
-            titem.setText(1, "👁" if vis else "🚫")
+            if isinstance(gitem, QGraphicsItemGroup):
+                self._propagate_state(titem, visible=vis)
         elif column == 2:
-            locked = not (gitem.flags() & QGraphicsItem.ItemIsMovable)
-            locked = not locked
+            locked = titem.checkState(2) != Qt.Checked
             gitem.setFlag(QGraphicsItem.ItemIsMovable, not locked)
             gitem.setFlag(QGraphicsItem.ItemIsSelectable, not locked)
-            titem.setText(2, "🔒" if locked else "🔓")
-
-    def _on_item_changed(self, titem, column):
-        if column == 0:
-            gitem = titem.data(0, Qt.UserRole)
-            if gitem:
-                gitem.layer_name = titem.text(0)
+            if isinstance(gitem, QGraphicsItemGroup):
+                self._propagate_state(titem, locked=locked)
 
     def _on_selection_changed(self):
         if not self.canvas:
@@ -392,8 +435,9 @@ class LayersWidget(QWidget):
     def _handle_tree_drop(self, event):
         target_item = self.tree.itemAt(event.pos())
         drop_pos = self.tree.dropIndicatorPosition()
-        selected = [it.data(0, Qt.UserRole)
-                            for it in self.tree.selectedItems()]
+        selected = [
+            it.data(0, Qt.UserRole) for it in self.tree.selectedItems()
+        ]
 
         if (
             target_item
