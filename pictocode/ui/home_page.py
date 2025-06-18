@@ -176,9 +176,27 @@ class HomePage(QWidget):
         )
 
     def populate_lists(self):
-        self._populate_list(self.fav_list, self.parent.favorite_projects, "(Aucun favori)")
-        self._populate_list(self.recent_list, self.parent.recent_projects, "(Aucun projet récent)")
-        self._populate_list(self.template_list, self.parent.template_projects, "")
+        fav = self._populate_list(
+            self.fav_list, self.parent.favorite_projects, "(Aucun favori)"
+        )
+        recent = self._populate_list(
+            self.recent_list, self.parent.recent_projects, "(Aucun projet récent)"
+        )
+        templates = self._populate_list(
+            self.template_list, self.parent.template_projects, ""
+        )
+
+        if fav != self.parent.favorite_projects:
+            self.parent.favorite_projects = fav
+            self.parent.settings.setValue("favorite_projects", fav)
+
+        if recent != self.parent.recent_projects:
+            self.parent.recent_projects = recent
+            self.parent.settings.setValue("recent_projects", recent)
+
+        if templates != self.parent.template_projects:
+            self.parent.template_projects = templates
+            self.parent.settings.setValue("template_projects", templates)
 
     def _populate_list(self, widget: QListWidget, paths: list, empty_text: str):
         widget.clear()
@@ -216,7 +234,7 @@ class HomePage(QWidget):
 
     def _load_metadata(self, path: str) -> dict:
         if path.lower().endswith(".ptc"):
-            import zipfile, io
+            import zipfile
 
             with zipfile.ZipFile(path, "r") as zf:
                 with zf.open("project.json") as f:
@@ -228,7 +246,7 @@ class HomePage(QWidget):
 
     def _thumbnail_for(self, path: str, style) -> QIcon:
         if path.lower().endswith(".ptc"):
-            import zipfile, io
+            import zipfile
 
             with zipfile.ZipFile(path, "r") as zf:
                 if "thumbnail.png" in zf.namelist():
