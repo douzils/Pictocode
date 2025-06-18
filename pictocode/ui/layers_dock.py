@@ -26,6 +26,7 @@ class LayersWidget(QWidget):
         self.tree.setSelectionMode(QAbstractItemView.SingleSelection)
         self.tree.setDragDropMode(QAbstractItemView.InternalMove)
         self.tree.setDragEnabled(True)
+        self.tree.setAcceptDrops(True)
         self.tree.setEditTriggers(
             QAbstractItemView.DoubleClicked
             | QAbstractItemView.EditKeyPressed
@@ -47,24 +48,35 @@ class LayersWidget(QWidget):
 
     def _apply_styles(self):
         """Applique un style plus moderne a la liste des calques."""
+        pal = self.tree.palette()
+        base = pal.base().color().name()
+        alt = pal.alternateBase().color().name()
+        text = pal.text().color().name()
+        highlight = pal.highlight().color().name()
+        highlight_text = pal.highlightedText().color().name()
+        header_bg = pal.window().color().name()
+        border = pal.mid().color().name()
+
         self.tree.setStyleSheet(
-            """
-            QTreeWidget {
-                background: #f8f8f8;
-                alternate-background-color: #efefef;
-                border: 1px solid #c0c0c0;
-            }
-            QTreeWidget::item {
+            f"""
+            QTreeWidget {{
+                background: {base};
+                alternate-background-color: {alt};
+                color: {text};
+                border: 1px solid {border};
+            }}
+            QTreeWidget::item {{
                 padding: 4px 2px;
-            }
-            QTreeWidget::item:selected {
-                background: #aadffd;
-            }
-            QHeaderView::section {
-                background: #dedede;
+            }}
+            QTreeWidget::item:selected {{
+                background: {highlight};
+                color: {highlight_text};
+            }}
+            QHeaderView::section {{
+                background: {header_bg};
                 padding: 2px;
                 border: none;
-            }
+            }}
             """
         )
 
