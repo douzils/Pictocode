@@ -74,6 +74,10 @@ class LayersTreeWidget(QTreeWidget):
 
     def dropEvent(self, event):
         """Handle a drop and notify the parent widget."""
+        # Force move semantics so the underlying QTreeWidget reorders items
+        # instead of duplicating them on some platforms.  The actual update of
+        # the QGraphicsScene hierarchy happens in ``_handle_tree_drop``.
+        event.setDropAction(Qt.MoveAction)
         self._handle_tree_drop(event)
 
     def _handle_tree_drop(self, event):
