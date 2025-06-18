@@ -52,9 +52,10 @@ class ResizableMixin:
         super().__init__()
         self._resizing = False
         self._rotating = False
-        self._start_pos = QPointF()
+        self._start_scene_pos = QPointF()
         self._start_rect = QRectF()
-        self._start_scene_rect = QRectF()
+        self._start_item_pos = QPointF()
+        self._start_center = QPointF()
         self._active_handle = None  # 0: TL, 1: TR, 2: BR, 3: BL, 4: T, 5: R, 6: B, 7: L, 8: rotation
         self._start_angle = 0.0
 
@@ -102,9 +103,30 @@ class ResizableMixin:
 
         return path.united(extra)
 
+    def _shape_path(self):
+        """Return a QPainterPath representing the pure shape (without handles)."""
+        if hasattr(self, "path"):
+            return QPainterPath(self.path())
+        if hasattr(self, "line"):
+            l = self.line()
+            p = QPainterPath()
+            p.moveTo(l.p1())
+            p.lineTo(l.p2())
+            return p
+        if hasattr(self, "rect"):
+            p = QPainterPath()
+            p.addRect(self.rect())
+            return p
+        return QPainterPath()
+
     def paint(self, painter, option, widget=None):
         super().paint(painter, option, widget)
         if self.isSelected():
+            # custom selection outline following the shape
+            painter.setPen(QPen(Qt.blue, 1, Qt.DashLine))
+            painter.setBrush(Qt.NoBrush)
+            painter.drawPath(self._shape_path())
+
             r = self.rect()
             s = self.handle_size
             painter.setBrush(QBrush(Qt.white))
@@ -164,27 +186,29 @@ class ResizableMixin:
                 if handle.contains(event.pos()):
                     self._resizing = True
                     self._active_handle = idx
-                    self._start_pos = event.scenePos()
+                    self._start_scene_pos = event.scenePos()
                     self._start_rect = QRectF(r)
-                    self._start_scene_rect = QRectF(self.sceneBoundingRect())
+                    self._start_item_pos = QPointF(self.pos())
+                    self._start_center = self.mapToScene(r.center())
                     event.accept()
                     return
             if rot_handle.contains(event.pos()):
                 self._rotating = True
                 self._active_handle = 8
-                self._start_pos = event.scenePos()
+                self._start_scene_pos = event.scenePos()
                 self._start_angle = self.rotation()
+                self._start_center = self.mapToScene(r.center())
                 event.accept()
                 return
         super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event):
         if self._resizing:
-            delta = event.scenePos() - self._start_pos
-            x = self._start_scene_rect.x()
-            y = self._start_scene_rect.y()
-            w = self._start_scene_rect.width()
-            h = self._start_scene_rect.height()
+            delta = event.scenePos() - self._start_scene_pos
+            x = self._start_item_pos.x()
+            y = self._start_item_pos.y()
+            w = self._start_rect.width()
+            h = self._start_rect.height()
             if self._active_handle == 0:  # top-left
                 x += delta.x()
                 y += delta.y()
@@ -212,7 +236,7 @@ class ResizableMixin:
                 x += delta.x()
                 w -= delta.x()
             if event.modifiers() & Qt.ShiftModifier and w and h:
-                aspect = self._start_scene_rect.width() / self._start_scene_rect.height()
+                aspect = self._start_rect.width() / self._start_rect.height()
                 if abs(w) / aspect > abs(h):
                     h = abs(w) / aspect * (1 if h >= 0 else -1)
                 else:
@@ -221,8 +245,8 @@ class ResizableMixin:
             event.accept()
             return
         if self._rotating:
-            center = self._start_scene_rect.center()
-            start_vec = self._start_pos - center
+            center = self._start_center
+            start_vec = self._start_scene_pos - center
             current_vec = event.scenePos() - center
             start_angle = math.degrees(math.atan2(start_vec.y(), start_vec.x()))
             curr_angle = math.degrees(math.atan2(current_vec.y(), current_vec.x()))
@@ -313,7 +337,7 @@ class LineResizableMixin:
         super().__init__()
         self._resizing = False
         self._active = None
-        self._start_pos = QPointF()
+        self._start_scene_pos = QPointF()
         self._start_line = None
 
     def paint(self, painter, option, widget=None):
@@ -344,7 +368,7 @@ class LineResizableMixin:
                 if h.contains(event.pos()):
                     self._resizing = True
                     self._active = idx
-                    self._start_pos = event.scenePos()
+                    self._start_scene_pos = event.scenePos()
                     self._start_line = self.line()
                     event.accept()
                     return
@@ -352,7 +376,7 @@ class LineResizableMixin:
 
     def mouseMoveEvent(self, event):
         if self._resizing:
-            delta = event.scenePos() - self._start_pos
+            delta = event.scenePos() - self._start_scene_pos
             line = self._start_line
             if self._active == 0:
                 p1 = line.p1() + delta
