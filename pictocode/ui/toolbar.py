@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import QToolBar, QAction, QColorDialog
-from PyQt5.QtGui import QIcon, QColor
+from PyQt5.QtGui import QColor
 
 
 class Toolbar(QToolBar):

@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import (
     QGraphicsItemGroup,
     QHeaderView,
 )
-from PyQt5.QtCore import Qt, QPropertyAnimation, QObject
+from PyQt5.QtCore import Qt, QPropertyAnimation
 from PyQt5.QtWidgets import QGraphicsObject
 from .animated_menu import AnimatedMenu
 

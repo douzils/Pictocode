@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import math
-import re
 from PyQt5.QtWidgets import (
     QGraphicsView,
     QGraphicsScene,

@@ -212,8 +212,6 @@ class MainWindow(QMainWindow):
 
     def _build_menu(self):
         mb = self.menu_bar
-        from .animated_menu import AnimatedMenu
-
         filem = AnimatedMenu("Fichier", self)
         mb.addMenu(filem)
         self.actions = {}
