@@ -122,12 +122,17 @@ class LayersWidget(QWidget):
         """Re-apply styles when the application theme changes."""
         self._apply_styles()
 
+        self.tree.itemPressed.connect(self._on_item_pressed)
         self.tree.itemClicked.connect(self._on_item_clicked)
         self.tree.itemChanged.connect(self._on_item_changed)
         self.tree.itemSelectionChanged.connect(self._on_selection_changed)
         self.tree.setContextMenuPolicy(Qt.CustomContextMenu)
         self.tree.customContextMenuRequested.connect(self._open_menu)
         self.tree.viewport().setAcceptDrops(True)
+
+    def _on_item_pressed(self, titem, column):
+        """Ensure the pressed item becomes current before dragging."""
+        self.tree.setCurrentItem(titem)
 
     def _apply_styles(self):
         """Applique un style plus moderne a la liste des calques."""
@@ -202,6 +207,7 @@ class LayersWidget(QWidget):
             locked = not (gitem.flags() & QGraphicsItem.ItemIsMovable)
             qitem.setText(2, "🔒" if locked else "🔓")
             if isinstance(gitem, QGraphicsItemGroup):
+                qitem.setExpanded(True)
                 for child in reversed(gitem.childItems()):
                     add_item(child, qitem)
 
