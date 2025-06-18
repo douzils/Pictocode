@@ -1,3 +1,5 @@
+"""UI widgets for browsing and editing the layer hierarchy."""
+
 from PyQt5.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -19,7 +21,15 @@ from .animated_menu import AnimatedMenu
 class LayersTreeWidget(QTreeWidget):
     """QTreeWidget with custom drag preview highlighting."""
 
-    def __init__(self, parent=None, *, drop_color: QColor | None = None, group_color: QColor | None = None, **kwargs):
+    def __init__(
+        self,
+        parent=None,
+        *,
+        drop_color: QColor | None = None,
+        group_color: QColor | None = None,
+        **kwargs,
+    ):
+        """Initialize the tree and set up drop highlighting colors."""
         super().__init__(parent, **kwargs)
         self._parent = parent
         pal = self.palette()
@@ -50,6 +60,7 @@ class LayersTreeWidget(QTreeWidget):
             self._highlight_item = None
 
     def dragMoveEvent(self, event):
+        """Highlight potential drop targets while dragging."""
         super().dragMoveEvent(event)
         item = self.itemAt(event.pos())
         pos = self.dropIndicatorPosition()
@@ -88,6 +99,7 @@ class LayersTreeWidget(QTreeWidget):
             self._parent._handle_tree_drop(event)
 
     def dragLeaveEvent(self, event):
+        """Remove any drop indicators when the drag leaves the widget."""
         self._drop_line.hide()
         self._clear_highlight()
         super().dragLeaveEvent(event)
@@ -97,6 +109,7 @@ class LayersWidget(QWidget):
     """Affiche la liste des objets du canvas avec options de calque."""
 
     def __init__(self, parent=None):
+        """Create the widget and configure the tree view."""
         super().__init__(parent)
         self.canvas = None
         self.tree = LayersTreeWidget(self)
@@ -175,6 +188,7 @@ class LayersWidget(QWidget):
 
     # ------------------------------------------------------------------
     def update_layers(self, canvas):
+        """Rebuild the tree view to reflect the current scene layers."""
         self.canvas = canvas
         # Preserve current selection to restore it after rebuilding the tree
         selected = None
@@ -232,6 +246,7 @@ class LayersWidget(QWidget):
 
     # ------------------------------------------------------------------
     def highlight_item(self, item):
+        """Select ``item`` in the tree if it is present."""
         def walk(parent):
             for i in range(parent.childCount()):
                 child = parent.child(i)
