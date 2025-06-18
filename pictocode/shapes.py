@@ -56,7 +56,8 @@ class ResizableMixin:
         self._start_rect = QRectF()
         self._start_item_pos = QPointF()
         self._start_center = QPointF()
-        self._active_handle = None  # 0: TL, 1: TR, 2: BR, 3: BL, 4: T, 5: R, 6: B, 7: L, 8: rotation
+        # 0: TL, 1: TR, 2: BR, 3: BL, 4: T, 5: R, 6: B, 7: L, 8: rotation
+        self._active_handle = None
         self._start_angle = 0.0
 
     # -- Geometry ----------------------------------------------------
@@ -104,7 +105,8 @@ class ResizableMixin:
         return path.united(extra)
 
     def _shape_path(self):
-        """Return a QPainterPath representing the pure shape (without handles)."""
+        """Return a QPainterPath representing the pure shape (without
+        handles)."""
         if hasattr(self, "path"):
             return QPainterPath(self.path())
         if hasattr(self, "line"):
@@ -172,7 +174,8 @@ class ResizableMixin:
                 QRectF(r.left() - s / 2, r.bottom() - s / 2, s, s),  # 3 BL
                 QRectF(r.center().x() - s / 2, r.top() - s / 2, s, s),  # 4 T
                 QRectF(r.right() - s / 2, r.center().y() - s / 2, s, s),  # 5 R
-                QRectF(r.center().x() - s / 2, r.bottom() - s / 2, s, s),  # 6 B
+                QRectF(r.center().x() - s / 2,
+                       r.bottom() - s / 2, s, s),  # 6 B
                 QRectF(r.left() - s / 2, r.center().y() - s / 2, s, s),  # 7 L
             ]
             rot_s = self.rotation_handle_size
@@ -210,7 +213,8 @@ class ResizableMixin:
             start_local = self.mapFromScene(self._start_scene_pos)
             current_local = self.mapFromScene(event.scenePos())
             delta_item = current_local - start_local
-            delta_scene = self.mapToScene(current_local) - self.mapToScene(start_local)
+            delta_scene = self.mapToScene(
+                current_local) - self.mapToScene(start_local)
 
             x = self._start_item_pos.x()
             y = self._start_item_pos.y()
@@ -256,8 +260,10 @@ class ResizableMixin:
             center = self._start_center
             start_vec = self._start_scene_pos - center
             current_vec = event.scenePos() - center
-            start_angle = math.degrees(math.atan2(start_vec.y(), start_vec.x()))
-            curr_angle = math.degrees(math.atan2(current_vec.y(), current_vec.x()))
+            start_angle = math.degrees(
+                math.atan2(start_vec.y(), start_vec.x()))
+            curr_angle = math.degrees(math.atan2(
+                current_vec.y(), current_vec.x()))
             self.setRotation(self._start_angle + curr_angle - start_angle)
             event.accept()
             return
@@ -431,7 +437,10 @@ class FreehandPath(ResizableMixin, SnapToGridMixin, QGraphicsPathItem):
     """
 
     def __init__(
-        self, path=None, pen_color: QColor = QColor("black"), pen_width: int = 2
+        self,
+        path=None,
+        pen_color: QColor = QColor("black"),
+        pen_width: int = 2,
     ):
         ResizableMixin.__init__(self)
         QGraphicsPathItem.__init__(self)

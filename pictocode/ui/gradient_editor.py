@@ -86,7 +86,8 @@ class GradientEditorDialog(QDialog):
         slider_layout.addWidget(self.slider2)
         layout.addLayout(slider_layout)
 
-        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)

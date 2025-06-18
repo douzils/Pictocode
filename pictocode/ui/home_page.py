@@ -61,7 +61,8 @@ class HomePage(QWidget):
     - Double-clic sur un projet pour l’ouvrir
     """
 
-    PROJECTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Projects")
+    PROJECTS_DIR = os.path.join(os.path.dirname(
+        os.path.abspath(__file__)), "Projects")
 
     def __init__(self, parent):
         super().__init__(parent)
@@ -94,9 +95,11 @@ class HomePage(QWidget):
         rec_col.addWidget(recent_label)
         self.recent_list = ProjectList(self, "recent")
         self.recent_list.setObjectName("recent_list")
-        self.recent_list.itemDoubleClicked.connect(self._on_project_double_click)
+        self.recent_list.itemDoubleClicked.connect(
+            self._on_project_double_click)
         self.recent_list.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.recent_list.customContextMenuRequested.connect(self._on_recent_menu)
+        self.recent_list.customContextMenuRequested.connect(
+            self._on_recent_menu)
         rec_col.addWidget(self.recent_list)
         body.addLayout(rec_col, 1)
 
@@ -121,9 +124,11 @@ class HomePage(QWidget):
         self.template_list.addItem("A4 Portrait (210×297 mm)")
         self.template_list.addItem("A4 Paysage (297×210 mm)")
         self.template_list.addItem("HD 1080p (1920×1080 px)")
-        self.template_list.itemDoubleClicked.connect(self._on_template_double_click)
+        self.template_list.itemDoubleClicked.connect(
+            self._on_template_double_click)
         self.template_list.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.template_list.customContextMenuRequested.connect(self._on_template_menu)
+        self.template_list.customContextMenuRequested.connect(
+            self._on_template_menu)
         right_col.addWidget(self.template_list)
 
         body.addLayout(right_col, 1)
@@ -180,7 +185,9 @@ class HomePage(QWidget):
             self.fav_list, self.parent.favorite_projects, "(Aucun favori)"
         )
         recent = self._populate_list(
-            self.recent_list, self.parent.recent_projects, "(Aucun projet récent)"
+            self.recent_list,
+            self.parent.recent_projects,
+            "(Aucun projet récent)",
         )
         templates = self._populate_list(
             self.template_list, self.parent.template_projects, ""
@@ -198,7 +205,9 @@ class HomePage(QWidget):
             self.parent.template_projects = templates
             self.parent.settings.setValue("template_projects", templates)
 
-    def _populate_list(self, widget: QListWidget, paths: list, empty_text: str):
+    def _populate_list(
+        self, widget: QListWidget, paths: list, empty_text: str
+    ):
         widget.clear()
         style = self.style()
         valid = []
@@ -265,7 +274,8 @@ class HomePage(QWidget):
         """Ouvre le projet sélectionné."""
         path = item.data(Qt.UserRole)
         if not path or not os.path.exists(path):
-            QMessageBox.warning(self, "Erreur", "Impossible de trouver le projet.")
+            QMessageBox.warning(
+                self, "Erreur", "Impossible de trouver le projet.")
             return
 
         # Charge les paramètres depuis le fichier
@@ -287,7 +297,8 @@ class HomePage(QWidget):
                 with open(path, "r", encoding="utf-8") as f:
                     data = json.load(f)
         except Exception as e:
-            QMessageBox.critical(self, "Erreur", f"Échec de lecture de {path} :\n{e}")
+            QMessageBox.critical(
+                self, "Erreur", f"Échec de lecture de {path} :\n{e}")
             return
 
         # Sépare métadonnées et formes
@@ -335,7 +346,8 @@ class HomePage(QWidget):
             dlg.height_spin.setValue(params.get("height", 600))
             dlg.unit_combo.setCurrentText(params.get("unit", "px"))
             dlg.orient_combo.setCurrentText(
-                "Portrait" if params.get("orientation", "portrait") == "portrait" else "Paysage"
+                "Portrait" if params.get(
+                    "orientation", "portrait") == "portrait" else "Paysage"
             )
             dlg.color_combo.setCurrentText(params.get("color_mode", "RGB"))
             dlg.dpi_spin.setValue(params.get("dpi", 72))
@@ -390,5 +402,6 @@ class HomePage(QWidget):
         if menu.exec_(self.template_list.mapToGlobal(pos)) == act:
             if path in self.parent.template_projects:
                 self.parent.template_projects.remove(path)
-                self.parent.settings.setValue("template_projects", self.parent.template_projects)
+                self.parent.settings.setValue(
+                    "template_projects", self.parent.template_projects)
                 self.populate_lists()

@@ -95,26 +95,36 @@ class Inspector(QWidget):
                     0, 0, self._item.rect().width(), int(val)
                 ),
             ),
-            (self.rotation_field, lambda val: self._item.setRotation(int(val))),
+            (
+                self.rotation_field,
+                lambda val: self._item.setRotation(int(val)),
+            ),
             (self.z_field, lambda val: self._item.setZValue(int(val))),
             (self.border_field, self._set_pen_width),
-            (self.opacity_field, lambda val: self._item.setOpacity(int(val)/100)),
+            (
+                self.opacity_field,
+                lambda val: self._item.setOpacity(int(val) / 100),
+            ),
             (self.var_field, self._set_var_name),
             (self.align_field, self._set_alignment),
-            (self.text_field, lambda val: self._item.setPlainText(val) if hasattr(self._item, 'setPlainText') else None),
+            (self.text_field, lambda val: self._item.setPlainText(
+                val) if hasattr(self._item, 'setPlainText') else None),
             (self.font_field, lambda val: self._set_font_size(int(val))),
         ):
             if hasattr(fld, "valueChanged"):
                 fld.valueChanged.connect(
-                    lambda _val, fld=fld, st=setter: self._update_field(fld, st)
+                    lambda _val, fld=fld, st=setter: self._update_field(
+                        fld, st)
                 )
             elif hasattr(fld, "textEdited"):
                 fld.textEdited.connect(
-                    lambda _val, fld=fld, st=setter: self._update_field(fld, st)
+                    lambda _val, fld=fld, st=setter: self._update_field(
+                        fld, st)
                 )
             elif isinstance(fld, QComboBox):
                 fld.currentIndexChanged.connect(
-                    lambda _idx, fld=fld, st=setter: self._update_field(fld, st)
+                    lambda _idx, fld=fld, st=setter: self._update_field(
+                        fld, st)
                 )
 
         # Choix de couleur handled by clicked signal
@@ -170,7 +180,8 @@ class Inspector(QWidget):
                 if stops:
                     self._update_gradient_button(stops[0][1], stops[-1][1])
                 else:
-                    self._update_gradient_button(QColor("white"), QColor("black"))
+                    self._update_gradient_button(
+                        QColor("white"), QColor("black"))
             else:
                 self._update_gradient_button(QColor("white"), QColor("black"))
             self._update_fill_button(brush.color().name())
@@ -291,7 +302,8 @@ class Inspector(QWidget):
 
     def _update_gradient_button(self, start: QColor, end: QColor):
         self.gradient_btn.setStyleSheet(
-            "background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 %s, stop:1 %s);"
+            "background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 %s,"
+            " stop:1 %s);"
             % (start.name(), end.name())
         )
 

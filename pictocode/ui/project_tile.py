@@ -5,7 +5,14 @@ from PyQt5.QtCore import Qt
 class ProjectTile(QWidget):
     """Widget affichant une miniature de projet avec un overlay au survol."""
 
-    def __init__(self, icon: QIcon, title: str, width=128, height=None, parent=None):
+    def __init__(
+        self,
+        icon: QIcon,
+        title: str,
+        width=128,
+        height=None,
+        parent=None,
+    ):
         super().__init__(parent)
         self._width = int(width)
         self._height = int(height or width)

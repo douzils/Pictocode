@@ -14,7 +14,8 @@ def main():
     if os.name == "nt":
         import ctypes
 
-        ctypes.windll.user32.ShowWindow(ctypes.windll.kernel32.GetConsoleWindow(), 0)
+        ctypes.windll.user32.ShowWindow(
+            ctypes.windll.kernel32.GetConsoleWindow(), 0)
     app = QApplication(sys.argv)
     settings = QSettings("pictocode", "pictocode")
     show_splash = settings.value("show_splash", True, type=bool)

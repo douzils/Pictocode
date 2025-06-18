@@ -47,14 +47,20 @@ class TitleBar(QWidget):
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
-            handle = self.window().windowHandle() if hasattr(self.window(), "windowHandle") else None
+            handle = (
+                self.window().windowHandle()
+                if hasattr(self.window(), "windowHandle")
+                else None
+            )
             if handle:
                 try:
                     self._using_sys_move = handle.startSystemMove()
                 except Exception:
                     self._using_sys_move = False
             if not self._using_sys_move:
-                self._mouse_pos = event.globalPos() - self._parent.frameGeometry().topLeft()
+                self._mouse_pos = (
+                    event.globalPos() - self._parent.frameGeometry().topLeft()
+                )
         super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event):
