@@ -33,8 +33,14 @@ class LayersTreeWidget(QTreeWidget):
 
     def _clear_highlight(self):
         if self._highlight_item:
-            for c in range(self.columnCount()):
-                self._highlight_item.setBackground(c, QBrush())
+            # The QTreeWidgetItem may have been removed from the tree during a
+            # drop operation. When this happens Qt deletes the underlying C++
+            # object and calling methods on it raises a RuntimeError. Guard by
+            # checking that the item still belongs to a tree before clearing
+            # its background colors.
+            if self._highlight_item.treeWidget() is not None:
+                for c in range(self.columnCount()):
+                    self._highlight_item.setBackground(c, QBrush())
             self._highlight_item = None
 
     def dragMoveEvent(self, event):
