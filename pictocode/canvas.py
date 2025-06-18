@@ -2,7 +2,13 @@
 # -*- coding: utf-8 -*-
 
 import math
-from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QAction
+from PyQt5.QtWidgets import (
+    QGraphicsView,
+    QGraphicsScene,
+    QAction,
+    QGraphicsItem,
+    QGraphicsItemGroup,
+)
 from .ui.animated_menu import AnimatedMenu
 from PyQt5.QtCore import Qt, QRectF, QPointF, QSizeF
 from PyQt5.QtGui import (
@@ -925,4 +931,29 @@ class CanvasWidget(QGraphicsView):
             self._doc_rect,
         )
         painter.end()
+
+    # --- Group management -------------------------------------------
+    def group_selected(self):
+        """Regroupe les éléments sélectionnés dans un QGraphicsItemGroup."""
+        items = [it for it in self.scene.selectedItems() if it is not self._frame_item]
+        if len(items) <= 1:
+            return None
+        group = self.scene.createItemGroup(items)
+        group.setFlags(
+            QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable
+        )
+        self.scene.clearSelection()
+        group.setSelected(True)
+        self._on_scene_changed()
+        return group
+
+    def ungroup_item(self, group):
+        """Détruit un groupe et re-sélectionne ses enfants."""
+        if not isinstance(group, QGraphicsItemGroup):
+            return
+        children = group.childItems()
+        self.scene.destroyItemGroup(group)
+        for ch in children:
+            ch.setSelected(True)
+        self._on_scene_changed()
 
