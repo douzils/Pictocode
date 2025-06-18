@@ -391,7 +391,10 @@ class LayersWidget(QWidget):
         if not self.canvas:
             return
 
+        z_index = 0
+
         def apply_children(tparent, gparent):
+            nonlocal z_index
             for idx in range(tparent.childCount()):
                 child = tparent.child(idx)
                 gitem = child.data(0, Qt.UserRole)
@@ -399,7 +402,8 @@ class LayersWidget(QWidget):
                     target_parent = gparent if isinstance(gparent, QGraphicsItemGroup) else None
                     if gitem.parentItem() is not target_parent:
                         gitem.setParentItem(target_parent)
-                    self._animate_z(gitem, idx)
+                    self._animate_z(gitem, z_index)
+                    z_index += 1
                 apply_children(child, gitem)
 
         root = self.tree.invisibleRootItem()
