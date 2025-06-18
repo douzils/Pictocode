@@ -210,6 +210,7 @@ class LayersWidget(QWidget):
 
         self._updating = True
 
+
         expanded = {}
 
         def record_state(tparent):
@@ -221,6 +222,7 @@ class LayersWidget(QWidget):
                 record_state(child)
 
         record_state(self.tree.invisibleRootItem())
+
 
         self.tree.clear()
         if not canvas:
@@ -254,10 +256,12 @@ class LayersWidget(QWidget):
                 | Qt.ItemIsUserCheckable
             )
             qitem.setFlags(flags)
+
             qitem.setCheckState(
                 1,
                 Qt.Checked if gitem.isVisible() else Qt.Unchecked,
             )
+
             locked = not (gitem.flags() & QGraphicsItem.ItemIsMovable)
             qitem.setCheckState(2, Qt.Unchecked if locked else Qt.Checked)
             if isinstance(gitem, QGraphicsItemGroup):
@@ -326,14 +330,18 @@ class LayersWidget(QWidget):
         elif column == 1:
             vis = titem.checkState(1) == Qt.Checked
             gitem.setVisible(vis)
+
             if isinstance(gitem, QGraphicsItemGroup):
                 self._propagate_state(titem, visible=vis)
+
         elif column == 2:
             locked = titem.checkState(2) != Qt.Checked
             gitem.setFlag(QGraphicsItem.ItemIsMovable, not locked)
             gitem.setFlag(QGraphicsItem.ItemIsSelectable, not locked)
+
             if isinstance(gitem, QGraphicsItemGroup):
                 self._propagate_state(titem, locked=locked)
+
 
     def _on_selection_changed(self):
         if not self.canvas:
