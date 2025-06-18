@@ -33,6 +33,8 @@ class AppSettingsDialog(QDialog):
         rotation_offset: int = 20,
         handle_color: Optional[Union[QColor, str]] = None,
         rotation_handle_color: Optional[Union[QColor, str]] = None,
+        autosave_enabled: bool = False,
+        autosave_interval: int = 5,
         parent=None,
     ):
 
@@ -130,6 +132,15 @@ class AppSettingsDialog(QDialog):
         self.rotation_handle_color_edit.mousePressEvent = lambda e: self._choose_color("rotation_handle")
         form.addRow("Couleur rotation :", self.rotation_handle_color_edit)
 
+        self.autosave_chk = QCheckBox()
+        self.autosave_chk.setChecked(bool(autosave_enabled))
+        form.addRow("Sauvegarde auto :", self.autosave_chk)
+
+        self.autosave_spin = QSpinBox()
+        self.autosave_spin.setRange(1, 60)
+        self.autosave_spin.setValue(int(autosave_interval))
+        form.addRow("Intervalle (min) :", self.autosave_spin)
+
         buttons = QDialogButtonBox(
             QDialogButtonBox.Ok | QDialogButtonBox.Cancel, Qt.Horizontal, self
         )
@@ -186,3 +197,9 @@ class AppSettingsDialog(QDialog):
 
     def get_rotation_handle_color(self) -> QColor:
         return self.rotation_handle_color
+
+    def get_autosave_enabled(self) -> bool:
+        return self.autosave_chk.isChecked()
+
+    def get_autosave_interval(self) -> int:
+        return self.autosave_spin.value()

@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import (
     QGraphicsItemGroup,
     QHeaderView,
 )
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QPropertyAnimation
 from .animated_menu import AnimatedMenu
 
 
@@ -21,7 +21,7 @@ class LayersWidget(QWidget):
         self.canvas = None
         self.tree = QTreeWidget()
         self.tree.setColumnCount(3)
-        self.tree.setHeaderLabels(["Nom", "Visible", "Verrou"])
+        self.tree.setHeaderLabels(["Nom", "👁", "🔒"])
         self.tree.setSelectionMode(QAbstractItemView.SingleSelection)
         self.tree.setDragDropMode(QAbstractItemView.InternalMove)
         self.tree.setAlternatingRowColors(True)
@@ -29,6 +29,7 @@ class LayersWidget(QWidget):
         layout = QVBoxLayout(self)
         layout.addWidget(self.tree)
 
+        self.tree.itemClicked.connect(self._on_item_clicked)
         self.tree.itemChanged.connect(self._on_item_changed)
         self.tree.itemSelectionChanged.connect(self._on_selection_changed)
         self.tree.setContextMenuPolicy(Qt.CustomContextMenu)
@@ -63,9 +64,9 @@ class LayersWidget(QWidget):
                 | Qt.ItemIsDragEnabled
                 | Qt.ItemIsDropEnabled
             )
-            qitem.setCheckState(1, Qt.Checked if gitem.isVisible() else Qt.Unchecked)
+            qitem.setText(1, "👁" if gitem.isVisible() else "🚫")
             locked = not (gitem.flags() & QGraphicsItem.ItemIsMovable)
-            qitem.setCheckState(2, Qt.Checked if locked else Qt.Unchecked)
+            qitem.setText(2, "🔒" if locked else "🔓")
             if isinstance(gitem, QGraphicsItemGroup):
                 for child in reversed(gitem.childItems()):
                     add_item(child, qitem)
@@ -94,16 +95,26 @@ class LayersWidget(QWidget):
         walk(self.tree.invisibleRootItem())
 
     # ------------------------------------------------------------------
-    def _on_item_changed(self, titem, column):
+    def _on_item_clicked(self, titem, column):
         gitem = titem.data(0, Qt.UserRole)
         if not gitem:
             return
         if column == 1:
-            gitem.setVisible(titem.checkState(1) == Qt.Checked)
+            vis = not gitem.isVisible()
+            gitem.setVisible(vis)
+            titem.setText(1, "👁" if vis else "🚫")
         elif column == 2:
-            locked = titem.checkState(2) == Qt.Checked
+            locked = not (gitem.flags() & QGraphicsItem.ItemIsMovable)
+            locked = not locked
             gitem.setFlag(QGraphicsItem.ItemIsMovable, not locked)
             gitem.setFlag(QGraphicsItem.ItemIsSelectable, not locked)
+            titem.setText(2, "🔒" if locked else "🔓")
+
+    def _on_item_changed(self, titem, column):
+        if column == 0:
+            gitem = titem.data(0, Qt.UserRole)
+            if gitem:
+                gitem.layer_name = titem.text(0)
 
     def _on_selection_changed(self):
         if not self.canvas:
@@ -121,6 +132,13 @@ class LayersWidget(QWidget):
             return
         gitem = item.data(0, Qt.UserRole)
         if gitem is None:
+            menu = AnimatedMenu(self)
+            act_new_group = QAction("Nouvelle collection", menu)
+            menu.addAction(act_new_group)
+            if menu.exec_(self.tree.mapToGlobal(pos)) == act_new_group:
+                group = self.canvas.create_collection()
+                self.update_layers(self.canvas)
+                self.highlight_item(group)
             return
         menu = AnimatedMenu(self)
         act_delete = QAction("Supprimer", menu)
@@ -188,4 +206,11 @@ class LayersWidget(QWidget):
             item = root.child(i)
             gitem = item.data(0, Qt.UserRole)
             if gitem:
-                gitem.setZValue(i)
+                self._animate_z(gitem, i)
+
+    def _animate_z(self, gitem, z):
+        anim = QPropertyAnimation(gitem, b"zValue", self)
+        anim.setDuration(150)
+        anim.setStartValue(gitem.zValue())
+        anim.setEndValue(z)
+        anim.start(QPropertyAnimation.DeleteWhenStopped)

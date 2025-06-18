@@ -1074,3 +1074,14 @@ class CanvasWidget(QGraphicsView):
             ch.setSelected(True)
         self._schedule_scene_changed()
 
+    def create_collection(self, name: str = "collection"):
+        """Crée un groupe vide (collection) dans la scène."""
+        group = QGraphicsItemGroup()
+        self.scene.addItem(group)
+        group.setFlags(
+            QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable
+        )
+        self._assign_layer_name(group, name)
+        self._schedule_scene_changed()
+        return group
+

@@ -13,7 +13,7 @@ from PyQt5.QtWidgets import (
     QDialog,
     QGraphicsOpacityEffect,
 )
-from PyQt5.QtCore import Qt, QSettings, QPropertyAnimation
+from PyQt5.QtCore import Qt, QSettings, QPropertyAnimation, QTimer
 from PyQt5.QtGui import QPalette, QColor, QKeySequence
 from PyQt5.QtWidgets import QApplication
 from ..utils import generate_pycode, get_contrast_color
@@ -62,6 +62,12 @@ class MainWindow(QMainWindow):
         self.recent_projects = self.settings.value("recent_projects", [], type=list)
         self.imported_images = self.settings.value("imported_images", [], type=list)
         self.template_projects = self.settings.value("template_projects", [], type=list)
+        self.autosave_enabled = self.settings.value("autosave_enabled", False, type=bool)
+        self.autosave_interval = int(self.settings.value("autosave_interval", 5))
+        self._autosave_timer = QTimer(self)
+        self._autosave_timer.timeout.connect(self._autosave)
+        if self.autosave_enabled:
+            self._autosave_timer.start(self.autosave_interval * 60000)
 
         # Page accueil
         self.home = HomePage(self)
@@ -388,7 +394,7 @@ class MainWindow(QMainWindow):
             self.setWindowTitle(title)
 
     def maybe_save(self) -> bool:
-        if not self.unsaved_changes:
+        if self.stack.currentWidget() is self.home or not self.unsaved_changes:
             return True
         resp = QMessageBox.question(
             self,
@@ -516,6 +522,7 @@ class MainWindow(QMainWindow):
         if not self.current_project_path:
             return self.save_as_project()
         data = self.canvas.export_project()
+        self.title_bar.show_status("Enregistrement…")
         try:
             if self.current_project_path.lower().endswith(".ptc"):
                 import zipfile, tempfile
@@ -545,10 +552,15 @@ class MainWindow(QMainWindow):
                 thumb = os.path.splitext(self.current_project_path)[0] + ".png"
                 self.canvas.export_image(thumb, "PNG")
             self.set_dirty(False)
+            self.title_bar.show_status("Projet enregistré")
             self.add_recent_project(self.current_project_path)
             self.home.populate_lists()
         except Exception as e:
             QMessageBox.critical(self, "Erreur", f"Impossible d'enregistrer : {e}")
+
+    def _autosave(self):
+        if self.autosave_enabled and self.current_project_path and self.unsaved_changes:
+            self.save_project()
 
     def save_as_project(self):
         path, _ = QFileDialog.getSaveFileName(
@@ -723,6 +735,8 @@ class MainWindow(QMainWindow):
             self.rotation_offset,
             self.handle_color,
             self.rotation_handle_color,
+            self.autosave_enabled,
+            self.autosave_interval,
             self,
         )
         if dlg.exec_() == QDialog.Accepted:
@@ -740,6 +754,8 @@ class MainWindow(QMainWindow):
             self.handle_color = dlg.get_handle_color()
             self.rotation_handle_color = dlg.get_rotation_handle_color()
             self.show_splash = dlg.get_show_splash()
+            self.autosave_enabled = dlg.get_autosave_enabled()
+            self.autosave_interval = dlg.get_autosave_interval()
             self.apply_theme(
                 theme,
                 accent,
@@ -761,6 +777,12 @@ class MainWindow(QMainWindow):
             self.settings.setValue(
                 "rotation_handle_color", self.rotation_handle_color.name()
             )
+            self.settings.setValue("autosave_enabled", self.autosave_enabled)
+            self.settings.setValue("autosave_interval", self.autosave_interval)
+            if self.autosave_enabled:
+                self._autosave_timer.start(self.autosave_interval * 60000)
+            else:
+                self._autosave_timer.stop()
 
     def open_shortcut_settings(self):
         current = {
