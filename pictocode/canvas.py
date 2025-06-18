@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import math
+import re
 from PyQt5.QtWidgets import (
     QGraphicsView,
     QGraphicsScene,
@@ -76,6 +77,7 @@ class CanvasWidget(QGraphicsView):
         self._history = []
         self._history_index = -1
         self._loading_snapshot = False
+        self._name_counters = {}
 
     def _draw_doc_frame(self):
         """Dessine le contour en pointillés de la zone de travail."""
@@ -84,6 +86,23 @@ class CanvasWidget(QGraphicsView):
         pen = QPen(QColor(200, 200, 200), 2, Qt.DashLine)
         self._frame_item = self.scene.addRect(self._doc_rect, pen)
         self._frame_item.setZValue(-1)
+
+    # ------------------------------------------------------------------
+    def _register_name(self, name: str):
+        try:
+            base, num = name.rsplit(" ", 1)
+            num = int(num)
+        except ValueError:
+            base, num = name, 0
+        base = base.lower()
+        self._name_counters[base] = max(self._name_counters.get(base, 0), num)
+
+    def _assign_layer_name(self, item, base: str | None = None):
+        if base is None:
+            base = type(item).__name__.lower()
+        count = self._name_counters.get(base, 0) + 1
+        self._name_counters[base] = count
+        item.layer_name = f"{base} {count}"
 
     def set_tool(self, tool_name: str):
         """Définit l’outil courant depuis la toolbar."""
@@ -121,6 +140,7 @@ class CanvasWidget(QGraphicsView):
             w, h = h, w
         self.scene.clear()
         self._frame_item = None
+        self._name_counters = {}
         self._doc_rect = QRectF(0, 0, w, h)
         self._draw_doc_frame()
         self.setSceneRect(self._doc_rect.adjusted(-500, -500, 500, 500))
@@ -345,6 +365,7 @@ class CanvasWidget(QGraphicsView):
             elif self.current_tool == "text":
                 item = TextItem(scene_pos.x(), scene_pos.y(), "Texte", 12, self.pen_color)
                 self.scene.addItem(item)
+                self._assign_layer_name(item)
                 item.setSelected(True)
                 item.setTextInteractionFlags(Qt.TextEditorInteraction)
                 self._mark_dirty()
@@ -461,6 +482,7 @@ class CanvasWidget(QGraphicsView):
                 path.lineTo(scene_pos)
                 self._current_path_item.setPath(path)
                 self._current_path_item.setOpacity(1.0)
+                self._assign_layer_name(self._current_path_item)
             self._current_path_item = None
             self._freehand_points = None
             self._mark_dirty()
@@ -474,6 +496,7 @@ class CanvasWidget(QGraphicsView):
             elif self.current_tool == "line":
                 self._temp_item.setLine(x0, y0, scene_pos.x(), scene_pos.y())
             self._temp_item.setOpacity(1.0)
+            self._assign_layer_name(self._temp_item)
             self._temp_item = None
             self._mark_dirty()
             self._start_pos = None
@@ -496,6 +519,7 @@ class CanvasWidget(QGraphicsView):
             path.closeSubpath()
             self._polygon_item.setPath(path)
             self._polygon_item.setOpacity(1.0)
+            self._assign_layer_name(self._polygon_item)
             self.scene.removeItem(self._poly_preview_line)
             self._poly_preview_line = None
             self._polygon_item = None
@@ -618,6 +642,7 @@ class CanvasWidget(QGraphicsView):
             pos = QPointF(0, 0)
         item = ImageItem(pos.x(), pos.y(), path)
         self.scene.addItem(item)
+        self._assign_layer_name(item)
         self._mark_dirty()
         return item
 
@@ -676,6 +701,7 @@ class CanvasWidget(QGraphicsView):
             r = item.rect()
             return {
                 "type": "rect",
+                "name": getattr(item, "layer_name", ""),
                 "x": item.x(),
                 "y": item.y(),
                 "w": r.width(),
@@ -690,6 +716,7 @@ class CanvasWidget(QGraphicsView):
             e = item.rect()
             return {
                 "type": "ellipse",
+                "name": getattr(item, "layer_name", ""),
                 "x": item.x(),
                 "y": item.y(),
                 "w": e.width(),
@@ -704,6 +731,7 @@ class CanvasWidget(QGraphicsView):
             line = item.line()
             return {
                 "type": "line",
+                "name": getattr(item, "layer_name", ""),
                 "x": item.x(),
                 "y": item.y(),
                 "x1": line.x1(),
@@ -723,6 +751,7 @@ class CanvasWidget(QGraphicsView):
             ]
             return {
                 "type": "path",
+                "name": getattr(item, "layer_name", ""),
                 "x": item.x(),
                 "y": item.y(),
                 "points": pts,
@@ -735,6 +764,7 @@ class CanvasWidget(QGraphicsView):
         if cls == "TextItem":
             return {
                 "type": "text",
+                "name": getattr(item, "layer_name", ""),
                 "x": item.x(),
                 "y": item.y(),
                 "text": item.toPlainText(),
@@ -747,6 +777,7 @@ class CanvasWidget(QGraphicsView):
             r = item.rect()
             return {
                 "type": "image",
+                "name": getattr(item, "layer_name", ""),
                 "x": item.x(),
                 "y": item.y(),
                 "w": r.width(),
@@ -828,6 +859,12 @@ class CanvasWidget(QGraphicsView):
         else:
             return None
         self.scene.addItem(item)
+        name = data.get("name")
+        if name:
+            item.layer_name = name
+            self._register_name(name)
+        else:
+            self._assign_layer_name(item)
         return item
 
     def copy_selected(self):
@@ -847,6 +884,8 @@ class CanvasWidget(QGraphicsView):
     def paste_item(self, data):
         if not data:
             return
+        data = dict(data)
+        data.pop("name", None)
         item = self._create_item(data)
         if item:
             item.setSelected(True)
@@ -948,6 +987,7 @@ class CanvasWidget(QGraphicsView):
         group.setFlags(
             QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable
         )
+        self._assign_layer_name(group, "group")
         self.scene.clearSelection()
         group.setSelected(True)
         self._on_scene_changed()
