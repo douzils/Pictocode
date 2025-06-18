@@ -261,6 +261,7 @@ class Rect(ResizableMixin, SnapToGridMixin, QGraphicsRectItem):
             | QGraphicsRectItem.ItemSendsGeometryChanges
         )
         self.setAcceptHoverEvents(True)
+        self.var_name = ""
         self.setToolTip("Clique droit pour modifier")
 
     def rect(self):
@@ -290,6 +291,7 @@ class Ellipse(ResizableMixin, SnapToGridMixin, QGraphicsEllipseItem):
             | QGraphicsEllipseItem.ItemSendsGeometryChanges
         )
         self.setAcceptHoverEvents(True)
+        self.var_name = ""
         self.setToolTip("Clique droit pour modifier")
 
     def rect(self):
@@ -386,6 +388,7 @@ class Line(LineResizableMixin, SnapToGridMixin, QGraphicsLineItem):
             | QGraphicsLineItem.ItemSendsGeometryChanges
         )
         self.setAcceptHoverEvents(True)
+        self.var_name = ""
         self.setToolTip("Clique droit pour modifier")
 
 
@@ -411,6 +414,7 @@ class FreehandPath(ResizableMixin, SnapToGridMixin, QGraphicsPathItem):
             | QGraphicsPathItem.ItemSendsGeometryChanges
         )
         self.setAcceptHoverEvents(True)
+        self.var_name = ""
         self.setToolTip("Clique droit pour modifier")
 
     def rect(self):
@@ -470,6 +474,8 @@ class TextItem(ResizableMixin, SnapToGridMixin, QGraphicsTextItem):
             | QGraphicsTextItem.ItemSendsGeometryChanges
         )
         self.setAcceptHoverEvents(True)
+        self.var_name = ""
+        self.alignment = "left"
         self.setToolTip("Clique droit pour modifier")
 
     def itemChange(self, change, value):
@@ -510,6 +516,7 @@ class ImageItem(ResizableMixin, SnapToGridMixin, QGraphicsPixmapItem):
             | QGraphicsPixmapItem.ItemSendsGeometryChanges
         )
         self.setAcceptHoverEvents(True)
+        self.var_name = ""
 
     def rect(self):
         return QRectF(0, 0, self.pixmap().width(), self.pixmap().height())
