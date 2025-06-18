@@ -85,7 +85,7 @@ class LayersWidget(QWidget):
             if it.parentItem() is None:
                 add_item(it)
 
-        self._assign_z_values()
+        self._sync_scene_from_tree()
 
     # ------------------------------------------------------------------
     def highlight_item(self, item):
@@ -181,14 +181,14 @@ class LayersWidget(QWidget):
             if idx > 0:
                 parent.takeChild(idx)
                 parent.insertChild(idx - 1, item)
-                self._assign_z_values()
+                self._sync_scene_from_tree()
         elif action is act_down:
             parent = item.parent() or self.tree.invisibleRootItem().child(0)
             idx = parent.indexOfChild(item)
             if idx < parent.childCount() - 1:
                 parent.takeChild(idx)
                 parent.insertChild(idx + 1, item)
-                self._assign_z_values()
+                self._sync_scene_from_tree()
         elif action is act_group:
             group = self.canvas.group_selected()
             if group:
@@ -201,19 +201,27 @@ class LayersWidget(QWidget):
     # ------------------------------------------------------------------
     def dropEvent(self, event):
         super().dropEvent(event)
-        self._assign_z_values()
+        self._sync_scene_from_tree()
 
-    def _assign_z_values(self):
+    def _sync_scene_from_tree(self):
+        """Apply the current tree hierarchy to the QGraphicsScene."""
         if not self.canvas:
             return
+
+        def apply_children(tparent, gparent):
+            for idx in range(tparent.childCount()):
+                child = tparent.child(idx)
+                gitem = child.data(0, Qt.UserRole)
+                if gitem:
+                    if gitem.parentItem() is not gparent:
+                        gitem.setParentItem(gparent)
+                    self._animate_z(gitem, idx)
+                apply_children(child, gitem)
+
         root = self.tree.invisibleRootItem()
         if root.childCount() == 1 and root.child(0).data(0, Qt.UserRole) is None:
             root = root.child(0)
-        for i in range(root.childCount()):
-            item = root.child(i)
-            gitem = item.data(0, Qt.UserRole)
-            if gitem:
-                self._animate_z(gitem, i)
+        apply_children(root, None)
 
     def _animate_z(self, gitem, z):
         if isinstance(gitem, QGraphicsObject):
