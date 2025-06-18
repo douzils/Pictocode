@@ -88,9 +88,14 @@ class Inspector(QWidget):
             (self.text_field, lambda val: self._item.setPlainText(val) if hasattr(self._item, 'setPlainText') else None),
             (self.font_field, lambda val: self._set_font_size(int(val))),
         ):
-            fld.editingFinished.connect(
-                lambda fld=fld, st=setter: self._update_field(fld, st)
-            )
+            if hasattr(fld, "editingFinished"):
+                fld.editingFinished.connect(
+                    lambda fld=fld, st=setter: self._update_field(fld, st)
+                )
+            elif isinstance(fld, QComboBox):
+                fld.currentIndexChanged.connect(
+                    lambda _idx, fld=fld, st=setter: self._update_field(fld, st)
+                )
 
         # Choix de couleur handled by clicked signal
 
