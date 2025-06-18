@@ -8,10 +8,69 @@ from PyQt5.QtWidgets import (
     QGraphicsItem,
     QGraphicsItemGroup,
     QHeaderView,
+    QFrame,
 )
 from PyQt5.QtCore import Qt, QPropertyAnimation
 from PyQt5.QtWidgets import QGraphicsObject
+from PyQt5.QtGui import QBrush, QColor
 from .animated_menu import AnimatedMenu
+
+
+class LayersTreeWidget(QTreeWidget):
+    """QTreeWidget with custom drag preview highlighting."""
+
+    def __init__(self, parent=None, *, drop_color: QColor | None = None, group_color: QColor | None = None, **kwargs):
+        super().__init__(parent, **kwargs)
+        self._parent = parent
+        pal = self.palette()
+        self.drop_color = drop_color or pal.highlight().color()
+        self.group_color = group_color or pal.highlight().color()
+        self._drop_line = QFrame(self.viewport())
+        self._drop_line.setFixedHeight(2)
+        self._drop_line.setStyleSheet(f"background:{self.drop_color.name()};")
+        self._drop_line.hide()
+        self._highlight_item = None
+
+    def _clear_highlight(self):
+        if self._highlight_item:
+            for c in range(self.columnCount()):
+                self._highlight_item.setBackground(c, QBrush())
+            self._highlight_item = None
+
+    def dragMoveEvent(self, event):
+        super().dragMoveEvent(event)
+        item = self.itemAt(event.pos())
+        pos = self.dropIndicatorPosition()
+
+        if pos in (QAbstractItemView.AboveItem, QAbstractItemView.BelowItem) and item:
+            rect = self.visualItemRect(item)
+            y = rect.top() if pos == QAbstractItemView.AboveItem else rect.bottom()
+            self._drop_line.setGeometry(0, y, self.viewport().width(), 2)
+            self._drop_line.show()
+        else:
+            self._drop_line.hide()
+
+        if pos == QAbstractItemView.OnItem and item:
+            if self._highlight_item is not item:
+                self._clear_highlight()
+                self._highlight_item = item
+                brush = QBrush(self.group_color)
+                for c in range(self.columnCount()):
+                    item.setBackground(c, brush)
+        else:
+            self._clear_highlight()
+
+    def _handle_tree_drop(self, event):
+        self._drop_line.hide()
+        self._clear_highlight()
+        super().dropEvent(event)
+        if self._parent and hasattr(self._parent, "_handle_tree_drop"):
+            self._parent._handle_tree_drop(event)
+
+    def dragLeaveEvent(self, event):
+        self._drop_line.hide()
+        self._clear_highlight()
+        super().dragLeaveEvent(event)
 
 
 class LayersWidget(QWidget):
@@ -20,7 +79,7 @@ class LayersWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.canvas = None
-        self.tree = QTreeWidget()
+        self.tree = LayersTreeWidget(self)
         self.tree.setColumnCount(3)
         self.tree.setHeaderLabels(["Nom", "👁", "🔒"])
         self.tree.setSelectionMode(QAbstractItemView.SingleSelection)
@@ -172,18 +231,39 @@ class LayersWidget(QWidget):
                 gitem.setSelected(True)
 
     def _open_menu(self, pos):
-        item = self.tree.itemAt(pos)
-        if not item or not self.canvas:
+        if not self.canvas:
             return
+
+        item = self.tree.itemAt(pos)
+        root = self.tree.invisibleRootItem().child(0)
+
+        def insert_group(index: int):
+            group = self.canvas.create_collection()
+            self.update_layers(self.canvas)
+            self.highlight_item(group)
+            qitem = self.tree.currentItem()
+            root.takeChild(root.indexOfChild(qitem))
+            root.insertChild(index, qitem)
+            self._sync_scene_from_tree()
+
+        if item is None:
+            menu = AnimatedMenu(self)
+            act_new_group = QAction("Nouvelle collection", menu)
+            menu.addAction(act_new_group)
+            if menu.exec_(self.tree.mapToGlobal(pos)) == act_new_group:
+                idx = self.tree.indexAt(pos).row()
+                if idx < 0:
+                    idx = root.childCount()
+                insert_group(idx)
+            return
+
         gitem = item.data(0, Qt.UserRole)
         if gitem is None:
             menu = AnimatedMenu(self)
             act_new_group = QAction("Nouvelle collection", menu)
             menu.addAction(act_new_group)
             if menu.exec_(self.tree.mapToGlobal(pos)) == act_new_group:
-                group = self.canvas.create_collection()
-                self.update_layers(self.canvas)
-                self.highlight_item(group)
+                insert_group(root.childCount())
             return
         menu = AnimatedMenu(self)
         act_delete = QAction("Supprimer", menu)
@@ -237,7 +317,7 @@ class LayersWidget(QWidget):
             self.update_layers(self.canvas)
 
     # ------------------------------------------------------------------
-    def dropEvent(self, event):
+    def _handle_tree_drop(self, event):
         target_item = self.tree.itemAt(event.pos())
         drop_pos = self.tree.dropIndicatorPosition()
         selected = [it.data(0, Qt.UserRole) for it in self.tree.selectedItems()]
