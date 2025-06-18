@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import (
     QAction,
     QGraphicsItem,
     QGraphicsItemGroup,
+    QGraphicsObject,
 )
 from .ui.animated_menu import AnimatedMenu
 from PyQt5.QtCore import Qt, QRectF, QPointF, QSizeF, pyqtSignal, QTimer
@@ -22,6 +23,24 @@ from PyQt5.QtGui import (
 )
 from .shapes import Rect, Ellipse, Line, FreehandPath, TextItem, ImageItem
 from .utils import to_pixels
+
+
+class TransparentItemGroup(QGraphicsItemGroup):
+    """Item group that lets its children handle mouse events under Qt5."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # ItemHasNoContents avoids painting the group while keeping a bounding rect
+        self.setFlag(QGraphicsItem.ItemHasNoContents, True)
+
+    def mousePressEvent(self, event):
+        event.ignore()
+
+    def mouseMoveEvent(self, event):
+        event.ignore()
+
+    def mouseReleaseEvent(self, event):
+        event.ignore()
 
 
 class CanvasScene(QGraphicsScene):
@@ -1115,15 +1134,19 @@ class CanvasWidget(QGraphicsView):
         if sort_items:
             # Preserve stacking order by sorting the items from bottom to top
             items.sort(key=lambda it: it.zValue())
-        group = self.scene.createItemGroup(items)
+        if hasattr(QGraphicsItemGroup, "setHandlesChildEvents"):
+            group = self.scene.createItemGroup(items)
+            group.setHandlesChildEvents(False)
+        else:
+            group = TransparentItemGroup()
+            self.scene.addItem(group)
+            for it in items:
+                group.addToGroup(it)
         # Keep the group's z to match the highest child so layers don't bounce
         group.setZValue(max(it.zValue() for it in items))
         group.setFlags(
             QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable
         )
-        # Allow interacting with children individually if supported (Qt >= 6)
-        if hasattr(group, "setHandlesChildEvents"):
-            group.setHandlesChildEvents(False)
         self._assign_layer_name(group, "group")
         self.scene.clearSelection()
         group.setSelected(True)
@@ -1142,13 +1165,16 @@ class CanvasWidget(QGraphicsView):
 
     def create_collection(self, name: str = "collection"):
         """Crée un groupe vide (collection) dans la scène."""
-        group = QGraphicsItemGroup()
-        self.scene.addItem(group)
+        if hasattr(QGraphicsItemGroup, "setHandlesChildEvents"):
+            group = QGraphicsItemGroup()
+            self.scene.addItem(group)
+            group.setHandlesChildEvents(False)
+        else:
+            group = TransparentItemGroup()
+            self.scene.addItem(group)
         group.setFlags(
             QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable
         )
-        if hasattr(group, "setHandlesChildEvents"):
-            group.setHandlesChildEvents(False)
         self._assign_layer_name(group, name)
         self._schedule_scene_changed()
         return group
