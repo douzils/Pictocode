@@ -12,7 +12,12 @@ class WindowsPanel(QWidget):
         self.chk_props = QCheckBox('Propriétés')
         self.chk_toolbar = QCheckBox("Barre d'outils")
         self.chk_imports = QCheckBox('Imports')
-        for chk in (self.chk_layers, self.chk_props, self.chk_toolbar, self.chk_imports):
+        for chk in (
+            self.chk_layers,
+            self.chk_props,
+            self.chk_toolbar,
+            self.chk_imports,
+        ):
             layout.addWidget(chk)
 
         self.chk_layers.stateChanged.connect(

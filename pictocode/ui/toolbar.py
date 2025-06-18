@@ -67,7 +67,10 @@ class Toolbar(QToolBar):
         from PyQt5.QtWidgets import QFileDialog
 
         path, _ = QFileDialog.getOpenFileName(
-            self.parent(), "Importer une image", "", "Images (*.png *.jpg *.jpeg *.bmp *.gif)"
+            self.parent(),
+            "Importer une image",
+            "",
+            "Images (*.png *.jpg *.jpeg *.bmp *.gif)",
         )
         if path:
             item = self.canvas.insert_image(path)

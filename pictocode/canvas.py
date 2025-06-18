@@ -161,10 +161,13 @@ class CanvasWidget(QGraphicsView):
             self.scene.removeItem(self._temp_item)
             self._temp_item = None
 
-    def new_document(self, width, height, unit, orientation, color_mode, dpi, name=""):
+    def new_document(
+        self, width, height, unit, orientation, color_mode, dpi, name=""
+    ):
         """
         Initialise un nouveau document selon les paramètres donnés.
-        width/height en unité choisie, orientation et dpi sont pris en compte ici.
+        width/height en unité choisie, orientation et dpi sont pris en
+        compte ici.
         """
         w = to_pixels(width, unit, dpi)
         h = to_pixels(height, unit, dpi)
@@ -264,14 +267,21 @@ class CanvasWidget(QGraphicsView):
         w = int(self._doc_rect.width())
         h = int(self._doc_rect.height())
         root = Element(
-            "svg", xmlns="http://www.w3.org/2000/svg", width=str(w), height=str(h)
+            "svg",
+            xmlns="http://www.w3.org/2000/svg",
+            width=str(w),
+            height=str(h),
         )
 
         for item in reversed(self.scene.items()):
             if item is self._frame_item:
                 continue
             cls = type(item).__name__
-            stroke = item.pen().color().name() if hasattr(item, "pen") else "#000000"
+            stroke = (
+                item.pen().color().name()
+                if hasattr(item, "pen")
+                else "#000000"
+            )
 
             if cls == "Rect":
                 r = item.rect()
@@ -312,11 +322,22 @@ class CanvasWidget(QGraphicsView):
                 )
             elif cls == "FreehandPath":
                 path = item.path()
-                pts = [path.elementAt(i) for i in range(path.elementCount())]
-                if len(pts) > 2 and pts[0].x == pts[-1].x and pts[0].y == pts[-1].y:
+                pts = [
+                    path.elementAt(i)
+                    for i in range(path.elementCount())
+                ]
+                if (
+                    len(pts) > 2
+                    and pts[0].x == pts[-1].x
+                    and pts[0].y == pts[-1].y
+                ):
                     points = " ".join(f"{p.x},{p.y}" for p in pts[:-1])
                     SubElement(
-                        root, "polygon", points=points, fill="none", stroke=stroke
+                        root,
+                        "polygon",
+                        points=points,
+                        fill="none",
+                        stroke=stroke,
                     )
                 else:
                     cmds = []
@@ -324,7 +345,11 @@ class CanvasWidget(QGraphicsView):
                         cmd = "M" if i == 0 else "L"
                         cmds.append(f"{cmd}{ept.x} {ept.y}")
                     SubElement(
-                        root, "path", d=" ".join(cmds), fill="none", stroke=stroke
+                        root,
+                        "path",
+                        d=" ".join(cmds),
+                        fill="none",
+                        stroke=stroke,
                     )
             elif cls == "TextItem":
                 SubElement(
@@ -413,7 +438,8 @@ class CanvasWidget(QGraphicsView):
                     self._temp_item.setOpacity(0.6)
                     self.scene.addItem(self._temp_item)
             elif self.current_tool == "text":
-                item = TextItem(scene_pos.x(), scene_pos.y(), "Texte", 12, self.pen_color)
+                item = TextItem(scene_pos.x(), scene_pos.y(),
+                                "Texte", 12, self.pen_color)
                 item.setZValue(self._new_item_z)
                 self.scene.addItem(item)
                 self._assign_layer_name(item)
@@ -445,7 +471,10 @@ class CanvasWidget(QGraphicsView):
                     path.lineTo(scene_pos)
                     self._polygon_item.setPath(path)
                     self._poly_preview_line.setLine(
-                        scene_pos.x(), scene_pos.y(), scene_pos.x(), scene_pos.y()
+                        scene_pos.x(),
+                        scene_pos.y(),
+                        scene_pos.x(),
+                        scene_pos.y(),
                     )
             elif self.current_tool == "freehand":
                 self._freehand_points = [scene_pos]
@@ -486,7 +515,10 @@ class CanvasWidget(QGraphicsView):
             self._poly_preview_line.setLine(
                 last.x(), last.y(), scene_pos.x(), scene_pos.y()
             )
-        elif self.current_tool == "freehand" and self._freehand_points is not None:
+        elif (
+            self.current_tool == "freehand"
+            and self._freehand_points is not None
+        ):
             self._freehand_points.append(scene_pos)
             if self._current_path_item:
                 path = self._current_path_item.path()
@@ -497,7 +529,8 @@ class CanvasWidget(QGraphicsView):
         elif self._temp_item and self._start_pos:
             x0, y0 = self._start_pos.x(), self._start_pos.y()
             if self.current_tool in ("rect", "ellipse"):
-                rect = QRectF(x0, y0, scene_pos.x() - x0, scene_pos.y() - y0).normalized()
+                rect = QRectF(x0, y0, scene_pos.x() - x0,
+                              scene_pos.y() - y0).normalized()
                 self._temp_item.setRect(
                     rect.x(), rect.y(), rect.width(), rect.height()
                 )
@@ -545,7 +578,8 @@ class CanvasWidget(QGraphicsView):
         elif self._temp_item and self._start_pos:
             x0, y0 = self._start_pos.x(), self._start_pos.y()
             if self.current_tool in ("rect", "ellipse"):
-                rect = QRectF(x0, y0, scene_pos.x() - x0, scene_pos.y() - y0).normalized()
+                rect = QRectF(x0, y0, scene_pos.x() - x0,
+                              scene_pos.y() - y0).normalized()
                 self._temp_item.setRect(
                     rect.x(), rect.y(), rect.width(), rect.height()
                 )
@@ -638,14 +672,17 @@ class CanvasWidget(QGraphicsView):
             item = items[0]
             if hasattr(item, "pen"):
                 act_color = QAction("Couleur du contour...", self)
-                act_color.triggered.connect(lambda: self._change_pen_color(item))
+                act_color.triggered.connect(
+                    lambda: self._change_pen_color(item))
                 menu.addAction(act_color)
                 act_width = QAction("Épaisseur du trait...", self)
-                act_width.triggered.connect(lambda: self._change_pen_width(item))
+                act_width.triggered.connect(
+                    lambda: self._change_pen_width(item))
                 menu.addAction(act_width)
             if hasattr(item, "brush"):
                 act_fill = QAction("Couleur de remplissage...", self)
-                act_fill.triggered.connect(lambda: self._change_brush_color(item))
+                act_fill.triggered.connect(
+                    lambda: self._change_brush_color(item))
                 menu.addAction(act_fill)
             act_delete = QAction("Supprimer", self)
             act_delete.triggered.connect(
@@ -859,7 +896,8 @@ class CanvasWidget(QGraphicsView):
         t = data.get("type")
         if t == "rect":
             item = Rect(
-                data["x"], data["y"], data["w"], data["h"], QColor(data["color"])
+                data["x"], data["y"], data["w"], data["h"], QColor(
+                    data["color"])
             )
             pen = item.pen()
             pen.setWidth(int(data.get("pen_width", pen.width())))
@@ -872,7 +910,8 @@ class CanvasWidget(QGraphicsView):
             item.setZValue(float(data.get("z", 0)))
         elif t == "ellipse":
             item = Ellipse(
-                data["x"], data["y"], data["w"], data["h"], QColor(data["color"])
+                data["x"], data["y"], data["w"], data["h"], QColor(
+                    data["color"])
             )
             pen = item.pen()
             pen.setWidth(int(data.get("pen_width", pen.width())))
@@ -885,7 +924,8 @@ class CanvasWidget(QGraphicsView):
             item.setZValue(float(data.get("z", 0)))
         elif t == "line":
             item = Line(
-                data["x1"], data["y1"], data["x2"], data["y2"], QColor(data["color"])
+                data["x1"], data["y1"], data["x2"], data["y2"], QColor(
+                    data["color"])
             )
             pen = item.pen()
             pen.setWidth(int(data.get("pen_width", pen.width())))
@@ -895,7 +935,8 @@ class CanvasWidget(QGraphicsView):
             item.setZValue(float(data.get("z", 0)))
         elif t == "path":
             pts = [QPointF(p[0], p[1]) for p in data.get("points", [])]
-            item = FreehandPath.from_points(pts, QColor(data.get("color", "black")))
+            item = FreehandPath.from_points(
+                pts, QColor(data.get("color", "black")))
             pen = item.pen()
             pen.setWidth(int(data.get("pen_width", pen.width())))
             item.setPen(pen)

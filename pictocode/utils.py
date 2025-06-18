@@ -13,7 +13,8 @@ def color_to_hex(qcolor):
 
 
 def get_contrast_color(qcolor):
-    """Return '#000000' or '#ffffff' depending on brightness for readability."""
+    """Return '#000000' or '#ffffff' depending on brightness for
+    readability."""
     from PyQt5.QtGui import QColor
 
     color = QColor(qcolor)
@@ -30,7 +31,10 @@ def generate_pycode(shapes):
         "    QGraphicsLineItem, QGraphicsPathItem, QGraphicsPolygonItem,",
         "    QGraphicsTextItem",
         ")",
-        "from PyQt5.QtGui import QPen, QBrush, QColor, QPainterPath, QPolygonF",
+        (
+            "from PyQt5.QtGui import QPen, QBrush, QColor, QPainterPath, "
+            "QPolygonF"
+        ),
         "from PyQt5.QtCore import QPointF",
         "",
         "scene = QGraphicsScene()",
@@ -44,7 +48,8 @@ def generate_pycode(shapes):
         if cls == "Rect":
             r = shp.rect()
             lines.append(
-                f"rect{i} = QGraphicsRectItem({r.x()}, {r.y()}, {r.width()}, {r.height()})"
+                f"rect{i} = QGraphicsRectItem("
+                f"{r.x()}, {r.y()}, {r.width()}, {r.height()})"
             )
             color = shp.pen().color().name()
             width = shp.pen().width()
@@ -62,11 +67,13 @@ def generate_pycode(shapes):
         elif cls == "Ellipse":
             e = shp.rect()
             lines.append(
-                f"ellipse{i} = QGraphicsEllipseItem({e.x()}, {e.y()}, {e.width()}, {e.height()})"
+                f"ellipse{i} = QGraphicsEllipseItem("
+                f"{e.x()}, {e.y()}, {e.width()}, {e.height()})"
             )
             color = shp.pen().color().name()
             width = shp.pen().width()
-            lines.append(f"ellipse{i}.setPen(QPen(QColor('{color}'), {width}))")
+            lines.append(
+                f"ellipse{i}.setPen(QPen(QColor('{color}'), {width}))")
             if shp.brush().style() != 0:
                 fill = shp.brush().color().name()
                 lines.append(f"ellipse{i}.setBrush(QBrush(QColor('{fill}')))")
@@ -80,7 +87,8 @@ def generate_pycode(shapes):
         elif cls == "Line":
             line = shp.line()
             lines.append(
-                f"line{i} = QGraphicsLineItem({line.x1()}, {line.y1()}, {line.x2()}, {line.y2()})"
+                f"line{i} = QGraphicsLineItem("
+                f"{line.x1()}, {line.y1()}, {line.x2()}, {line.y2()})"
             )
             color = shp.pen().color().name()
             width = shp.pen().width()
@@ -95,7 +103,8 @@ def generate_pycode(shapes):
         elif cls == "FreehandPath":
             path = shp.path()
             pts = [path.elementAt(j) for j in range(path.elementCount())]
-            is_poly = len(pts) > 2 and pts[0].x == pts[-1].x and pts[0].y == pts[-1].y
+            is_poly = len(
+                pts) > 2 and pts[0].x == pts[-1].x and pts[0].y == pts[-1].y
             if is_poly:
                 lines.append(f"poly{i} = QPolygonF([")
                 for p in pts[:-1]:
@@ -104,10 +113,12 @@ def generate_pycode(shapes):
                 lines.append(f"poly_item{i} = QGraphicsPolygonItem(poly{i})")
                 color = shp.pen().color().name()
                 width = shp.pen().width()
-                lines.append(f"poly_item{i}.setPen(QPen(QColor('{color}'), {width}))")
+                lines.append(
+                    f"poly_item{i}.setPen(QPen(QColor('{color}'), {width}))")
                 if shp.brush().style() != 0:
                     fill = shp.brush().color().name()
-                    lines.append(f"poly_item{i}.setBrush(QBrush(QColor('{fill}')))")
+                    lines.append(
+                        f"poly_item{i}.setBrush(QBrush(QColor('{fill}')))")
                 lines.append(f"poly_item{i}.setPos({shp.x()}, {shp.y()})")
                 if shp.rotation() != 0:
                     lines.append(f"poly_item{i}.setRotation({shp.rotation()})")
@@ -122,10 +133,12 @@ def generate_pycode(shapes):
                 lines.append(f"path_item{i} = QGraphicsPathItem(path{i})")
                 color = shp.pen().color().name()
                 width = shp.pen().width()
-                lines.append(f"path_item{i}.setPen(QPen(QColor('{color}'), {width}))")
+                lines.append(
+                    f"path_item{i}.setPen(QPen(QColor('{color}'), {width}))")
                 if shp.brush().style() != 0:
                     fill = shp.brush().color().name()
-                    lines.append(f"path_item{i}.setBrush(QBrush(QColor('{fill}')))")
+                    lines.append(
+                        f"path_item{i}.setBrush(QBrush(QColor('{fill}')))")
                 lines.append(f"path_item{i}.setPos({shp.x()}, {shp.y()})")
                 if shp.rotation() != 0:
                     lines.append(f"path_item{i}.setRotation({shp.rotation()})")

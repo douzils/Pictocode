@@ -36,5 +36,6 @@ class ShortcutSettingsDialog(QDialog):
 
     def get_shortcuts(self) -> dict[str, str]:
         return {
-            name: edit.keySequence().toString() for name, edit in self._edits.items()
+            name: edit.keySequence().toString()
+            for name, edit in self._edits.items()
         }

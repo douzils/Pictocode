@@ -29,7 +29,8 @@ from .shortcut_settings_dialog import ShortcutSettingsDialog
 from .layers_dock import LayersWidget
 from .imports_dock import ImportsWidget
 
-PROJECTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Projects")
+PROJECTS_DIR = os.path.join(os.path.dirname(
+    os.path.abspath(__file__)), "Projects")
 
 
 class MainWindow(QMainWindow):
@@ -65,12 +66,18 @@ class MainWindow(QMainWindow):
 
         # Paramètres de l'application
         self.settings = QSettings("pictocode", "pictocode")
-        self.favorite_projects = self.settings.value("favorite_projects", [], type=list)
-        self.recent_projects = self.settings.value("recent_projects", [], type=list)
-        self.imported_images = self.settings.value("imported_images", [], type=list)
-        self.template_projects = self.settings.value("template_projects", [], type=list)
-        self.autosave_enabled = self.settings.value("autosave_enabled", False, type=bool)
-        self.autosave_interval = int(self.settings.value("autosave_interval", 5))
+        self.favorite_projects = self.settings.value(
+            "favorite_projects", [], type=list)
+        self.recent_projects = self.settings.value(
+            "recent_projects", [], type=list)
+        self.imported_images = self.settings.value(
+            "imported_images", [], type=list)
+        self.template_projects = self.settings.value(
+            "template_projects", [], type=list)
+        self.autosave_enabled = self.settings.value(
+            "autosave_enabled", False, type=bool)
+        self.autosave_interval = int(
+            self.settings.value("autosave_interval", 5))
         self._autosave_timer = QTimer(self)
         self._autosave_timer.timeout.connect(self._autosave)
         if self.autosave_enabled:
@@ -163,7 +170,8 @@ class MainWindow(QMainWindow):
 
         # Paramètres de thème et raccourcis
         self.current_theme = self.settings.value("theme", "Light")
-        self.accent_color = QColor(self.settings.value("accent_color", "#0078d7"))
+        self.accent_color = QColor(
+            self.settings.value("accent_color", "#0078d7"))
         self.font_size = int(self.settings.value("font_size", 10))
         self.menu_color = QColor(
             self.settings.value("menu_color", self.accent_color.name())
@@ -180,15 +188,18 @@ class MainWindow(QMainWindow):
         self.flag_inactive_color = QColor(
             self.settings.value("flag_inactive_color", "#3a3f44")
         )
-        self.menu_font_size = int(self.settings.value("menu_font_size", self.font_size))
+        self.menu_font_size = int(self.settings.value(
+            "menu_font_size", self.font_size))
         self.toolbar_font_size = int(
             self.settings.value("toolbar_font_size", self.font_size)
         )
-        self.dock_font_size = int(self.settings.value("dock_font_size", self.font_size))
+        self.dock_font_size = int(self.settings.value(
+            "dock_font_size", self.font_size))
         self.show_splash = self.settings.value("show_splash", True, type=bool)
         self.handle_size = int(self.settings.value("handle_size", 12))
         self.rotation_offset = int(self.settings.value("rotation_offset", 20))
-        self.handle_color = QColor(self.settings.value("handle_color", "#000000"))
+        self.handle_color = QColor(
+            self.settings.value("handle_color", "#000000"))
         self.rotation_handle_color = QColor(
             self.settings.value("rotation_handle_color", "#ff0000")
         )
@@ -499,7 +510,8 @@ class MainWindow(QMainWindow):
                 }
                 self.open_project(path, params, data.get("shapes", []))
             except Exception as e:
-                QMessageBox.critical(self, "Erreur", f"Impossible d'ouvrir : {e}")
+                QMessageBox.critical(
+                    self, "Erreur", f"Impossible d'ouvrir : {e}")
 
     def open_project(self, path, params, shapes=None):
         """Charge un projet existant (optionnellement avec formes)."""
@@ -537,8 +549,12 @@ class MainWindow(QMainWindow):
 
                 images = []
                 for shp in data.get("shapes", []):
-                    if shp.get("type") == "image" and os.path.exists(shp["path"]):
-                        images.append((shp["path"], os.path.basename(shp["path"])))
+                    if (
+                        shp.get("type") == "image"
+                        and os.path.exists(shp["path"])
+                    ):
+                        images.append(
+                            (shp["path"], os.path.basename(shp["path"])))
                         shp["path"] = f"images/{os.path.basename(shp['path'])}"
 
                 with zipfile.ZipFile(self.current_project_path, "w") as zf:
@@ -551,7 +567,9 @@ class MainWindow(QMainWindow):
                     for src, name in images:
                         zf.write(src, f"images/{name}")
             else:
-                with open(self.current_project_path, "w", encoding="utf-8") as f:
+                with open(
+                    self.current_project_path, "w", encoding="utf-8"
+                ) as f:
                     json.dump(data, f, indent=2, ensure_ascii=False)
                 # also save preview
                 thumb = os.path.splitext(self.current_project_path)[0] + ".png"
@@ -561,10 +579,15 @@ class MainWindow(QMainWindow):
             self.add_recent_project(self.current_project_path)
             self.home.populate_lists()
         except Exception as e:
-            QMessageBox.critical(self, "Erreur", f"Impossible d'enregistrer : {e}")
+            QMessageBox.critical(
+                self, "Erreur", f"Impossible d'enregistrer : {e}")
 
     def _autosave(self):
-        if self.autosave_enabled and self.current_project_path and self.unsaved_changes:
+        if (
+            self.autosave_enabled
+            and self.current_project_path
+            and self.unsaved_changes
+        ):
             self.save_project()
 
     def save_as_project(self):
@@ -622,7 +645,8 @@ class MainWindow(QMainWindow):
                 with open(path, "w", encoding="utf-8") as f:
                     f.write(code)
             except Exception as e:
-                QMessageBox.critical(self, "Erreur", f"Impossible d'exporter : {e}")
+                QMessageBox.critical(
+                    self, "Erreur", f"Impossible d'exporter : {e}")
 
     def back_to_home(self):
         if not self.maybe_save():
@@ -700,7 +724,12 @@ class MainWindow(QMainWindow):
         from PyQt5.QtWidgets import QInputDialog
 
         size, ok = QInputDialog.getInt(
-            self, "Taille de la grille", "Pixels :", self.canvas.grid_size, 1, 200
+            self,
+            "Taille de la grille",
+            "Pixels :",
+            self.canvas.grid_size,
+            1,
+            200,
         )
         if ok:
             self.canvas.set_grid_size(size)
@@ -791,7 +820,8 @@ class MainWindow(QMainWindow):
 
     def open_shortcut_settings(self):
         current = {
-            name: act.shortcut().toString() for name, act in self.actions.items()
+            name: act.shortcut().toString()
+            for name, act in self.actions.items()
         }
         dlg = ShortcutSettingsDialog(current, self)
         if dlg.exec_() == QDialog.Accepted:
@@ -844,7 +874,8 @@ class MainWindow(QMainWindow):
         flag_active: QColor | None = None,
         flag_inactive: QColor | None = None,
     ):
-        """Applique un thème clair ou sombre ainsi que des réglages personnalisés."""
+        """Applique un thème clair ou sombre ainsi que des réglages
+        personnalisés."""
         app = QApplication.instance()
         accent = accent or self.accent_color
         font_size = font_size or self.font_size
@@ -869,13 +900,15 @@ class MainWindow(QMainWindow):
             pal.setColor(QPalette.Button, QColor(53, 53, 53))
             pal.setColor(QPalette.ButtonText, Qt.white)
             pal.setColor(QPalette.Highlight, accent)
-            pal.setColor(QPalette.HighlightedText, QColor(get_contrast_color(accent)))
+            pal.setColor(QPalette.HighlightedText,
+                         QColor(get_contrast_color(accent)))
             app.setPalette(pal)
             app.setStyle("Fusion")
         else:
             pal = app.style().standardPalette()
             pal.setColor(QPalette.Highlight, accent)
-            pal.setColor(QPalette.HighlightedText, QColor(get_contrast_color(accent)))
+            pal.setColor(QPalette.HighlightedText,
+                         QColor(get_contrast_color(accent)))
             app.setPalette(pal)
             app.setStyle("Fusion")
 
@@ -891,16 +924,56 @@ class MainWindow(QMainWindow):
         menu_fg = get_contrast_color(menu_color)
 
         self.setStyleSheet(
-            f"QToolBar {{ background: {toolbar_color.name()}; color: {tb_text}; font-size: {toolbar_font_size}pt; }}\n"
-            f"QMenuBar {{ background: transparent; font-size: {menu_font_size}pt; padding: 2px; }}\n"
-            f"QMenuBar::item {{ background: {inactive.name()}; color: {menu_text}; padding: 4px 8px; margin: 0 2px; border-top-left-radius:4px; border-top-right-radius:4px; }}\n"
-            f"QMenuBar::item:selected {{ background: {active.name()}; margin-top: 2px; }}\n"
-            f"QMenuBar::item:pressed {{ background: {active.name()}; margin-top: 2px; }}\n"
-            f"QWidget#title_bar {{ background: {toolbar_color.name()}; color: {tb_text}; font-size: {toolbar_font_size}pt; }}\n"
-            f"QWidget#title_bar QPushButton {{ border: none; background: transparent; color: {tb_text}; padding: 4px; }}\n"
-            f"QWidget#title_bar QPushButton:hover {{ background: {toolbar_color.darker(110).name()}; }}\n"
-            f"QMenu {{ background-color: {menu_color.name()}; color: {menu_fg}; border-radius: 6px; }}\n"
-            f"QMenu::item:selected {{ background-color: {menu_color.darker(130).name()}; }}"
+            f"""
+            QToolBar {{
+                background: {toolbar_color.name()};
+                color: {tb_text};
+                font-size: {toolbar_font_size}pt;
+            }}
+            QMenuBar {{
+                background: transparent;
+                font-size: {menu_font_size}pt;
+                padding: 2px;
+            }}
+            QMenuBar::item {{
+                background: {inactive.name()};
+                color: {menu_text};
+                padding: 4px 8px;
+                margin: 0 2px;
+                border-top-left-radius:4px;
+                border-top-right-radius:4px;
+            }}
+            QMenuBar::item:selected {{
+                background: {active.name()};
+                margin-top: 2px;
+            }}
+            QMenuBar::item:pressed {{
+                background: {active.name()};
+                margin-top: 2px;
+            }}
+            QWidget#title_bar {{
+                background: {toolbar_color.name()};
+                color: {tb_text};
+                font-size: {toolbar_font_size}pt;
+            }}
+            QWidget#title_bar QPushButton {{
+                border: none;
+                background: transparent;
+                color: {tb_text};
+                padding: 4px;
+            }}
+            QWidget#title_bar QPushButton:hover {{
+                background: {toolbar_color.darker(110).name()};
+            }}
+            QMenu {{
+                background-color: {menu_color.name()};
+                color: {menu_fg};
+                border-radius: 6px;
+            }}
+            QMenu::item:selected {{
+                background-color: {menu_color.darker(130).name()};
+            }}
+            """
         )
         self.inspector_dock.setStyleSheet(
             f"QDockWidget {{ background: {dock_color.name()}; }}"
@@ -910,7 +983,8 @@ class MainWindow(QMainWindow):
             f"font-size: {dock_font_size}pt;"
         )
         for dock in (self.layers_dock, self.imports_dock):
-            dock.setStyleSheet(f"QDockWidget {{ background: {dock_color.name()}; }}")
+            dock.setStyleSheet(
+                f"QDockWidget {{ background: {dock_color.name()}; }}")
         for widget in (self.layers, self.imports):
             widget.setStyleSheet(f"font-size: {dock_font_size}pt;")
             if hasattr(widget, "apply_theme"):

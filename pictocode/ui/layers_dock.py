@@ -29,7 +29,9 @@ class LayersTreeWidget(QTreeWidget):
         group_color: QColor | None = None,
         **kwargs,
     ):
+
         """Initialize the tree and set up drop highlighting colors."""
+
         super().__init__(parent, **kwargs)
         self._parent = parent
         pal = self.palette()
@@ -43,13 +45,13 @@ class LayersTreeWidget(QTreeWidget):
 
     def _clear_highlight(self):
         if self._highlight_item:
-            # The QTreeWidgetItem may have been removed from the tree during a
-            # drop operation. When this happens Qt deletes the underlying C++
+            # The QTreeWidgetItem may have been removed from the tree during
+            # a drop operation. When this happens Qt deletes the underlying C++
             # object and calling methods on it raises a RuntimeError. Guard by
             # checking that the item still belongs to a tree before clearing
-            # its background colors. The call to ``treeWidget`` itself can raise
-            # ``RuntimeError`` if the wrapped C++ object has been deleted, so we
-            # also protect against that case.
+            # its background colors. The call to ``treeWidget`` itself can
+            # raise ``RuntimeError`` if the wrapped C++ object has been
+            # deleted, so we also protect against that case.
             try:
                 if self._highlight_item.treeWidget() is not None:
                     for c in range(self.columnCount()):
@@ -65,9 +67,16 @@ class LayersTreeWidget(QTreeWidget):
         item = self.itemAt(event.pos())
         pos = self.dropIndicatorPosition()
 
-        if pos in (QAbstractItemView.AboveItem, QAbstractItemView.BelowItem) and item:
+        if (
+            pos in (QAbstractItemView.AboveItem, QAbstractItemView.BelowItem)
+            and item
+        ):
             rect = self.visualItemRect(item)
-            y = rect.top() if pos == QAbstractItemView.AboveItem else rect.bottom()
+            y = (
+                rect.top()
+                if pos == QAbstractItemView.AboveItem
+                else rect.bottom()
+            )
             self._drop_line.setGeometry(0, y, self.viewport().width(), 2)
             self._drop_line.show()
         else:
@@ -200,7 +209,8 @@ class LayersWidget(QWidget):
         if not canvas:
             return
 
-        project_name = getattr(canvas, "current_meta", {}).get("name") or "Projet"
+        project_name = getattr(canvas, "current_meta",
+                               {}).get("name") or "Projet"
         root_item = QTreeWidgetItem(self.tree)
         root_item.setText(0, project_name)
         root_item.setData(0, Qt.UserRole, None)
@@ -382,7 +392,8 @@ class LayersWidget(QWidget):
     def _handle_tree_drop(self, event):
         target_item = self.tree.itemAt(event.pos())
         drop_pos = self.tree.dropIndicatorPosition()
-        selected = [it.data(0, Qt.UserRole) for it in self.tree.selectedItems()]
+        selected = [it.data(0, Qt.UserRole)
+                            for it in self.tree.selectedItems()]
 
         if (
             target_item
@@ -392,8 +403,13 @@ class LayersWidget(QWidget):
             and self.canvas
         ):
             target_gitem = target_item.data(0, Qt.UserRole)
-            if target_gitem and not isinstance(target_gitem, QGraphicsItemGroup):
-                items = [target_gitem] + sorted(selected, key=lambda g: g.zValue())
+            if (
+                target_gitem
+                and not isinstance(target_gitem, QGraphicsItemGroup)
+            ):
+                items = [target_gitem] + sorted(
+                    selected, key=lambda g: g.zValue()
+                )
                 group = self.canvas.group_selected(items, sort_items=False)
                 if group:
                     event.accept()
@@ -417,7 +433,8 @@ class LayersWidget(QWidget):
                 child = tparent.child(idx)
                 gitem = child.data(0, Qt.UserRole)
                 if gitem:
-                    target_parent = gparent if isinstance(gparent, QGraphicsItemGroup) else None
+                    target_parent = gparent if isinstance(
+                        gparent, QGraphicsItemGroup) else None
                     if gitem.parentItem() is not target_parent:
                         gitem.setParentItem(target_parent)
                         gitem.setFlag(
@@ -433,7 +450,10 @@ class LayersWidget(QWidget):
                 apply_children(child, gitem)
 
         root = self.tree.invisibleRootItem()
-        if root.childCount() == 1 and root.child(0).data(0, Qt.UserRole) is None:
+        if (
+            root.childCount() == 1
+            and root.child(0).data(0, Qt.UserRole) is None
+        ):
             root = root.child(0)
         apply_children(root, None)
 

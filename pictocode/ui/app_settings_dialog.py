@@ -59,7 +59,8 @@ class AppSettingsDialog(QDialog):
         self.accent_color = QColor(accent)
         self.color_edit = QLineEdit(self.accent_color.name())
         self.color_edit.setReadOnly(True)
-        self.color_edit.mousePressEvent = lambda e: self._choose_color("accent")
+        self.color_edit.mousePressEvent = lambda e: self._choose_color(
+            "accent")
         form.addRow("Couleur d'accent :", self.color_edit)
 
         # Global font size
@@ -72,7 +73,8 @@ class AppSettingsDialog(QDialog):
         self.menu_color = QColor(menu_color or self.accent_color)
         self.menu_color_edit = QLineEdit(self.menu_color.name())
         self.menu_color_edit.setReadOnly(True)
-        self.menu_color_edit.mousePressEvent = lambda e: self._choose_color("menu")
+        self.menu_color_edit.mousePressEvent = lambda e: self._choose_color(
+            "menu")
         form.addRow("Couleur menu :", self.menu_color_edit)
 
         self.toolbar_color = QColor(toolbar_color or self.accent_color)
@@ -86,7 +88,8 @@ class AppSettingsDialog(QDialog):
         self.dock_color = QColor(dock_color or self.accent_color)
         self.dock_color_edit = QLineEdit(self.dock_color.name())
         self.dock_color_edit.setReadOnly(True)
-        self.dock_color_edit.mousePressEvent = lambda e: self._choose_color("dock")
+        self.dock_color_edit.mousePressEvent = lambda e: self._choose_color(
+            "dock")
         form.addRow("Couleur inspecteur :", self.dock_color_edit)
 
         # Per-element font sizes
@@ -118,7 +121,8 @@ class AppSettingsDialog(QDialog):
         self.handle_color = QColor(handle_color or Qt.black)
         self.handle_color_edit = QLineEdit(self.handle_color.name())
         self.handle_color_edit.setReadOnly(True)
-        self.handle_color_edit.mousePressEvent = lambda e: self._choose_color("handle")
+        self.handle_color_edit.mousePressEvent = lambda e: self._choose_color(
+            "handle")
         form.addRow("Couleur poignées :", self.handle_color_edit)
 
         self.rotation_offset_spin = QSpinBox()
@@ -127,9 +131,12 @@ class AppSettingsDialog(QDialog):
         form.addRow("Décalage rotation :", self.rotation_offset_spin)
 
         self.rotation_handle_color = QColor(rotation_handle_color or Qt.red)
-        self.rotation_handle_color_edit = QLineEdit(self.rotation_handle_color.name())
+        self.rotation_handle_color_edit = QLineEdit(
+            self.rotation_handle_color.name())
         self.rotation_handle_color_edit.setReadOnly(True)
-        self.rotation_handle_color_edit.mousePressEvent = lambda e: self._choose_color("rotation_handle")
+        self.rotation_handle_color_edit.mousePressEvent = (
+            lambda e: self._choose_color("rotation_handle")
+        )
         form.addRow("Couleur rotation :", self.rotation_handle_color_edit)
 
         self.autosave_chk = QCheckBox()
