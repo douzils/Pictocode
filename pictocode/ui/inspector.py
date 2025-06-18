@@ -6,8 +6,10 @@ from PyQt5.QtWidgets import (
     QColorDialog,
     QPushButton,
     QComboBox,
+    QInputDialog,
 )
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QLinearGradient, QBrush
 from .step_spinbox import StepSpinBox
 
 
@@ -26,24 +28,33 @@ class Inspector(QWidget):
         self.h_field.setRange(1, 10000)
         self.rotation_field = StepSpinBox(self)
         self.rotation_field.setRange(-360, 360)
+        self.axis_btn = QPushButton("Définir…", self)
+        self.axis_btn.clicked.connect(self._set_rotation_axis)
         self.z_field = StepSpinBox(self)
         self.z_field.setRange(-1000, 1000)
         self.border_field = StepSpinBox(self)
         self.border_field.setRange(0, 100)
+        self.opacity_field = StepSpinBox(self)
+        self.opacity_field.setRange(0, 100)
+        self.opacity_field.setValue(100)
         self.var_field = QLineEdit(self)
         self.align_field = QComboBox(self)
         self.align_field.addItems(["left", "center", "right"])
         self.fill_btn = QPushButton()
         self.fill_btn.setFixedWidth(40)
         self.fill_btn.clicked.connect(self._pick_fill)
+        self.gradient_btn = QPushButton("…", self)
+        self.gradient_btn.clicked.connect(self._pick_gradient)
         self._update_fill_button("#ffffff")
         self.layout.addRow("X :", self.x_field)
         self.layout.addRow("Y :", self.y_field)
         self.layout.addRow("W :", self.w_field)
         self.layout.addRow("H :", self.h_field)
         self.layout.addRow("Rotation :", self.rotation_field)
+        self.layout.addRow("Axe rotation :", self.axis_btn)
         self.layout.addRow("Calque :", self.z_field)
         self.layout.addRow("Largeur bordure :", self.border_field)
+        self.layout.addRow("Opacité % :", self.opacity_field)
 
         self.color_btn = QPushButton()
         self.color_btn.setFixedWidth(40)
@@ -51,6 +62,7 @@ class Inspector(QWidget):
         self._update_color_button("#000000")
         self.layout.addRow("Couleur bordure :", self.color_btn)
         self.layout.addRow("Couleur fond :", self.fill_btn)
+        self.layout.addRow("Dégradé :", self.gradient_btn)
         self.layout.addRow("Variable :", self.var_field)
         self.layout.addRow("Alignement :", self.align_field)
 
@@ -83,14 +95,19 @@ class Inspector(QWidget):
             (self.rotation_field, lambda val: self._item.setRotation(int(val))),
             (self.z_field, lambda val: self._item.setZValue(int(val))),
             (self.border_field, self._set_pen_width),
+            (self.opacity_field, lambda val: self._item.setOpacity(int(val)/100)),
             (self.var_field, self._set_var_name),
             (self.align_field, self._set_alignment),
             (self.text_field, lambda val: self._item.setPlainText(val) if hasattr(self._item, 'setPlainText') else None),
             (self.font_field, lambda val: self._set_font_size(int(val))),
         ):
-            if hasattr(fld, "editingFinished"):
-                fld.editingFinished.connect(
-                    lambda fld=fld, st=setter: self._update_field(fld, st)
+            if hasattr(fld, "valueChanged"):
+                fld.valueChanged.connect(
+                    lambda _val, fld=fld, st=setter: self._update_field(fld, st)
+                )
+            elif hasattr(fld, "textEdited"):
+                fld.textEdited.connect(
+                    lambda _val, fld=fld, st=setter: self._update_field(fld, st)
                 )
             elif isinstance(fld, QComboBox):
                 fld.currentIndexChanged.connect(
@@ -113,6 +130,7 @@ class Inspector(QWidget):
                 self.border_field,
             ):
                 fld.setValue(0)
+            self.opacity_field.setValue(100)
             self.var_field.setText("")
             self._update_color_button("#000000")
             self._update_fill_button("#ffffff")
@@ -130,6 +148,7 @@ class Inspector(QWidget):
         if hasattr(item, "brush"):
             self._update_fill_button(item.brush().color().name())
         self.rotation_field.setValue(int(item.rotation()))
+        self.opacity_field.setValue(int(item.opacity() * 100))
         self.z_field.setValue(int(item.zValue()))
         if hasattr(item, "pen"):
             self.border_field.setValue(item.pen().width())
@@ -213,8 +232,54 @@ class Inspector(QWidget):
             self._update_fill_button(col.name())
             self._notify_change()
 
+    def _pick_gradient(self, event=None):
+        if not self._item or not hasattr(self._item, 'brush'):
+            return
+        start = QColorDialog.getColor(parent=self, title="Couleur de départ")
+        if not start.isValid():
+            return
+        end = QColorDialog.getColor(parent=self, title="Couleur de fin")
+        if not end.isValid():
+            return
+        r = self._item.boundingRect()
+        grad = QLinearGradient(0, 0, r.width(), 0)
+        grad.setColorAt(0, start)
+        grad.setColorAt(1, end)
+        self._item.setBrush(QBrush(grad))
+        self._update_fill_button(start.name())
+        self._notify_change()
+
     def _update_fill_button(self, color: str):
         self.fill_btn.setStyleSheet(f"background:{color};")
+
+    def _set_rotation_axis(self):
+        if not self._item:
+            return
+        r = self._item.boundingRect()
+        x, ok = QInputDialog.getDouble(
+            self,
+            "Axe de rotation",
+            "X :",
+            r.width() / 2,
+            -10000,
+            10000,
+            2,
+        )
+        if not ok:
+            return
+        y, ok = QInputDialog.getDouble(
+            self,
+            "Axe de rotation",
+            "Y :",
+            r.height() / 2,
+            -10000,
+            10000,
+            2,
+        )
+        if not ok:
+            return
+        self._item.setTransformOriginPoint(x, y)
+        self._notify_change()
 
     def _notify_change(self):
         if self._item and self._item.scene():

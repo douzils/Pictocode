@@ -29,7 +29,7 @@ class AppSettingsDialog(QDialog):
         toolbar_font_size: Optional[int] = None,
         dock_font_size: Optional[int] = None,
         show_splash: bool = True,
-        handle_size: int = 8,
+        handle_size: int = 12,
         rotation_offset: int = 20,
         handle_color: Optional[Union[QColor, str]] = None,
         rotation_handle_color: Optional[Union[QColor, str]] = None,
