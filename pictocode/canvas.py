@@ -1053,7 +1053,11 @@ class CanvasWidget(QGraphicsView):
         items = [it for it in self.scene.selectedItems() if it is not self._frame_item]
         if len(items) <= 1:
             return None
+        # Preserve stacking order by sorting the items from bottom to top
+        items.sort(key=lambda it: it.zValue())
         group = self.scene.createItemGroup(items)
+        # Keep the group's z to match the highest child so layers don't bounce
+        group.setZValue(max(it.zValue() for it in items))
         group.setFlags(
             QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable
         )
