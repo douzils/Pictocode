@@ -98,6 +98,10 @@ class LayersWidget(QWidget):
 
         self._apply_styles()
 
+    def apply_theme(self):
+        """Re-apply styles when the application theme changes."""
+        self._apply_styles()
+
         self.tree.itemClicked.connect(self._on_item_clicked)
         self.tree.itemChanged.connect(self._on_item_changed)
         self.tree.itemSelectionChanged.connect(self._on_selection_changed)
@@ -200,6 +204,7 @@ class LayersWidget(QWidget):
 
     # ------------------------------------------------------------------
     def _on_item_clicked(self, titem, column):
+        self.tree.setCurrentItem(titem)
         gitem = titem.data(0, Qt.UserRole)
         if not gitem:
             return
