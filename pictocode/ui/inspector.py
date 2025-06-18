@@ -139,29 +139,45 @@ class Inspector(QWidget):
             return
 
         r = item.rect() if hasattr(item, "rect") else item.boundingRect()
-        self.x_field.setValue(int(item.x()))
-        self.y_field.setValue(int(item.y()))
-        self.w_field.setValue(int(r.width()))
-        self.h_field.setValue(int(r.height()))
+        # avoid moving the item when populating the inspector fields
+        for fld, val in (
+            (self.x_field, int(item.x())),
+            (self.y_field, int(item.y())),
+            (self.w_field, int(r.width())),
+            (self.h_field, int(r.height())),
+            (self.rotation_field, int(item.rotation())),
+            (self.opacity_field, int(item.opacity() * 100)),
+            (self.z_field, int(item.zValue())),
+        ):
+            fld.blockSignals(True)
+            fld.setValue(val)
+            fld.blockSignals(False)
+        if hasattr(item, "pen"):
+            self.border_field.blockSignals(True)
+            self.border_field.setValue(item.pen().width())
+            self.border_field.blockSignals(False)
         pen = item.pen().color().name() if hasattr(item, "pen") else "#000000"
         self._update_color_button(pen)
         if hasattr(item, "brush"):
             self._update_fill_button(item.brush().color().name())
-        self.rotation_field.setValue(int(item.rotation()))
-        self.opacity_field.setValue(int(item.opacity() * 100))
-        self.z_field.setValue(int(item.zValue()))
-        if hasattr(item, "pen"):
-            self.border_field.setValue(item.pen().width())
+        self.var_field.blockSignals(True)
         self.var_field.setText(getattr(item, "var_name", ""))
+        self.var_field.blockSignals(False)
         if hasattr(item, "alignment"):
             idx = self.align_field.findText(getattr(item, "alignment", "left"))
             if idx >= 0:
+                self.align_field.blockSignals(True)
                 self.align_field.setCurrentIndex(idx)
+                self.align_field.blockSignals(False)
         if hasattr(item, "toPlainText"):
             self.text_field.show()
             self.font_field.show()
+            self.text_field.blockSignals(True)
             self.text_field.setText(item.toPlainText())
+            self.text_field.blockSignals(False)
+            self.font_field.blockSignals(True)
             self.font_field.setText(str(item.font().pointSize()))
+            self.font_field.blockSignals(False)
         else:
             self.text_field.hide()
             self.font_field.hide()

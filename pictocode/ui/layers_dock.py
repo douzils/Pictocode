@@ -25,6 +25,12 @@ class LayersWidget(QWidget):
         self.tree.setHeaderLabels(["Nom", "👁", "🔒"])
         self.tree.setSelectionMode(QAbstractItemView.SingleSelection)
         self.tree.setDragDropMode(QAbstractItemView.InternalMove)
+        self.tree.setDragEnabled(True)
+        self.tree.setEditTriggers(
+            QAbstractItemView.DoubleClicked
+            | QAbstractItemView.EditKeyPressed
+            | QAbstractItemView.SelectedClicked
+        )
         self.tree.setAlternatingRowColors(True)
         self.tree.header().setSectionResizeMode(QHeaderView.Stretch)
         layout = QVBoxLayout(self)
