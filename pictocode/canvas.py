@@ -19,6 +19,7 @@ from PyQt5.QtGui import (
     QImage,
     QPainterPath,
     QPdfWriter,
+    QTransform,
 )
 from .shapes import Rect, Ellipse, Line, FreehandPath, TextItem, ImageItem
 from .utils import to_pixels
@@ -76,6 +77,7 @@ class CanvasWidget(QGraphicsView):
         self._polygon_item = None
         self._poly_preview_line = None
         self.pen_color = QColor("black")
+        self._new_item_z = 0
 
         # Key modifier to allow drawing over an existing item
         # (configurable via parent if needed)
@@ -359,6 +361,20 @@ class CanvasWidget(QGraphicsView):
                 grid = self.grid_size / scale
                 scene_pos.setX(round(scene_pos.x() / grid) * grid)
                 scene_pos.setY(round(scene_pos.y() / grid) * grid)
+            base_item = self.scene.itemAt(scene_pos, QTransform())
+            while base_item and base_item.parentItem():
+                base_item = base_item.parentItem()
+            if base_item is self._frame_item:
+                base_item = None
+            if base_item:
+                self._new_item_z = base_item.zValue() + 0.1
+            else:
+                existing = [
+                    it.zValue()
+                    for it in self.scene.items()
+                    if it is not self._frame_item
+                ]
+                self._new_item_z = (min(existing) if existing else 0) - 0.1
             if self.current_tool == "erase":
                 items = self.scene.items(scene_pos)
                 if items and items[0] is not self._frame_item:
@@ -394,10 +410,12 @@ class CanvasWidget(QGraphicsView):
                         self.pen_color,
                     )
                 if self._temp_item:
+                    self._temp_item.setZValue(self._new_item_z)
                     self._temp_item.setOpacity(0.6)
                     self.scene.addItem(self._temp_item)
             elif self.current_tool == "text":
                 item = TextItem(scene_pos.x(), scene_pos.y(), "Texte", 12, self.pen_color)
+                item.setZValue(self._new_item_z)
                 self.scene.addItem(item)
                 self._assign_layer_name(item)
                 item.setSelected(True)
@@ -409,6 +427,7 @@ class CanvasWidget(QGraphicsView):
                     self._polygon_points = [scene_pos]
                     path = QPainterPath(scene_pos)
                     self._polygon_item = FreehandPath(path, self.pen_color, 2)
+                    self._polygon_item.setZValue(self._new_item_z)
                     self._polygon_item.setOpacity(0.6)
                     self.scene.addItem(self._polygon_item)
                     self._poly_preview_line = Line(
@@ -418,6 +437,7 @@ class CanvasWidget(QGraphicsView):
                         scene_pos.y(),
                         self.pen_color,
                     )
+                    self._poly_preview_line.setZValue(self._new_item_z)
                     self._poly_preview_line.setOpacity(0.6)
                     self.scene.addItem(self._poly_preview_line)
                 else:
@@ -433,6 +453,7 @@ class CanvasWidget(QGraphicsView):
                 self._current_path_item = FreehandPath.from_points(
                     self._freehand_points, self.pen_color, 2
                 )
+                self._current_path_item.setZValue(self._new_item_z)
                 self._current_path_item.setOpacity(0.6)
                 self.scene.addItem(self._current_path_item)
         elif event.button() == Qt.RightButton:
