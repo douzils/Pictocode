@@ -1,5 +1,12 @@
 # pictocode/ui/inspector.py
-from PyQt5.QtWidgets import QWidget, QFormLayout, QLineEdit, QColorDialog
+from PyQt5.QtWidgets import (
+    QWidget,
+    QFormLayout,
+    QLineEdit,
+    QColorDialog,
+    QSpinBox,
+    QPushButton,
+)
 
 
 class Inspector(QWidget):
@@ -7,17 +14,23 @@ class Inspector(QWidget):
         super().__init__(parent)
         self.layout = QFormLayout(self)
 
-        self.x_field = QLineEdit(self)
-        self.y_field = QLineEdit(self)
-        self.w_field = QLineEdit(self)
-        self.h_field = QLineEdit(self)
+        self.x_field = QSpinBox(self)
+        self.x_field.setRange(-10000, 10000)
+        self.y_field = QSpinBox(self)
+        self.y_field.setRange(-10000, 10000)
+        self.w_field = QSpinBox(self)
+        self.w_field.setRange(1, 10000)
+        self.h_field = QSpinBox(self)
+        self.h_field.setRange(1, 10000)
         self.layout.addRow("X :", self.x_field)
         self.layout.addRow("Y :", self.y_field)
         self.layout.addRow("W :", self.w_field)
         self.layout.addRow("H :", self.h_field)
 
-        self.color_btn = QLineEdit(self)  # on affiche le code couleur
-        self.color_btn.setReadOnly(True)
+        self.color_btn = QPushButton()
+        self.color_btn.setFixedWidth(40)
+        self.color_btn.clicked.connect(self._pick_color)
+        self._update_color_button("#000000")
         self.layout.addRow("Couleur :", self.color_btn)
 
         self.text_field = QLineEdit(self)
@@ -55,8 +68,7 @@ class Inspector(QWidget):
                 lambda fld=fld, st=setter: self._update_field(fld, st)
             )
 
-        # Choix de couleur
-        self.color_btn.mousePressEvent = self._pick_color
+        # Choix de couleur handled by clicked signal
 
     def set_target(self, item):
         """Appelé par le Canvas quand un item est sélectionné."""
@@ -67,20 +79,20 @@ class Inspector(QWidget):
                 self.y_field,
                 self.w_field,
                 self.h_field,
-                self.color_btn,
             ):
-                fld.setText("")
+                fld.setValue(0)
+            self._update_color_button("#000000")
             self.text_field.hide()
             self.font_field.hide()
             return
 
         r = item.rect() if hasattr(item, "rect") else item.boundingRect()
-        self.x_field.setText(str(int(item.x())))
-        self.y_field.setText(str(int(item.y())))
-        self.w_field.setText(str(int(r.width())))
-        self.h_field.setText(str(int(r.height())))
+        self.x_field.setValue(int(item.x()))
+        self.y_field.setValue(int(item.y()))
+        self.w_field.setValue(int(r.width()))
+        self.h_field.setValue(int(r.height()))
         pen = item.pen().color().name() if hasattr(item, "pen") else "#000000"
-        self.color_btn.setText(pen)
+        self._update_color_button(pen)
         if hasattr(item, "toPlainText"):
             self.text_field.show()
             self.font_field.show()
@@ -92,11 +104,12 @@ class Inspector(QWidget):
 
     def _update_field(self, fld, setter):
         try:
-            setter(fld.text())
+            value = fld.value() if hasattr(fld, "value") else fld.text()
+            setter(value)
         except Exception:
             pass
 
-    def _pick_color(self, event):
+    def _pick_color(self, event=None):
         if not self._item:
             return
         col = QColorDialog.getColor(parent=self)
@@ -107,11 +120,14 @@ class Inspector(QWidget):
                 self._item.setPen(pen)
             elif hasattr(self._item, "setDefaultTextColor"):
                 self._item.setDefaultTextColor(col)
-            self.color_btn.setText(col.name())
+            self._update_color_button(col.name())
 
     def _set_font_size(self, size: int):
         if hasattr(self._item, 'font'):
             f = self._item.font()
             f.setPointSize(size)
             self._item.setFont(f)
+
+    def _update_color_button(self, color: str):
+        self.color_btn.setStyleSheet(f"background:{color};")
 

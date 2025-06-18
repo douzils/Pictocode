@@ -39,6 +39,8 @@ Ce dépôt contient **l'intégralité du code source** de l'application. Les mod
 - Zoom à la molette et déplacement (pan). Utilisez l'outil **Pan** de la barre
   d'outils ou un clic molette pour déplacer temporairement la vue.
 - Inspecteur pour modifier position, taille et couleur de l'objet sélectionné.
+  Les champs numériques utilisent désormais des "spin box" pour une saisie
+  plus fiable et un bouton affiche la couleur courante.
 - Sauvegarde du projet au format JSON et génération de code Python.
 
 ### Fonctionnalités supplémentaires
@@ -61,15 +63,17 @@ Ce dépôt contient **l'intégralité du code source** de l'application. Les mod
 - Faire pivoter une forme grâce à la poignée de rotation placée au-dessus.
 
 #### Précision et aides
-- Grille visible avec magnétisme optionnel.
+- Grille visible avec magnétisme optionnel et taille ajustable.
 
 #### Export
 - Exporter au format image (PNG ou JPEG).
+- Exporter en PDF.
 - Exporter en SVG.
 - Générer le code Python correspondant aux formes.
 
 #### Sélection
 - Sélectionner et déplacer les objets existants par glisser-déposer.
+- Annuler ou rétablir une action (Undo/Redo).
 
 #### Aides visuelles
 - Contours visibles sur l'objet sélectionné.
@@ -101,6 +105,11 @@ Ces commandes ouvrent la fenêtre principale de l'éditeur.
 
 Depuis un projet ouvert, utilisez le menu **Fichier > Exporter en image…**
 pour enregistrer le contenu du canvas au format PNG ou JPEG.
+
+### Exporter en PDF
+
+Le menu **Fichier > Exporter en PDF…** permet d'enregistrer un fichier `.pdf`
+à partir du contenu du document.
 
 ### Exporter en SVG
 

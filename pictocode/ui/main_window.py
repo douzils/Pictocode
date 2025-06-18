@@ -130,6 +130,8 @@ class MainWindow(QMainWindow):
             "copy": "Ctrl+C",
             "cut": "Ctrl+X",
             "paste": "Ctrl+V",
+            "undo": "Ctrl+Z",
+            "redo": "Ctrl+Shift+Z",
             "duplicate": "Ctrl+D",
             "delete": "Delete",
             "select_all": "Ctrl+A",
@@ -137,6 +139,8 @@ class MainWindow(QMainWindow):
             "zoom_out": "Ctrl+-",
             "toggle_grid": "Ctrl+G",
             "toggle_snap": "Ctrl+Shift+G",
+            "grid_size": "",
+            "export_pdf": "",
         }
 
         # état courant
@@ -219,6 +223,18 @@ class MainWindow(QMainWindow):
         editm.addAction(paste_act)
         self.actions["paste"] = paste_act
 
+        editm.addSeparator()
+
+        undo_act = QAction("Annuler", self)
+        undo_act.triggered.connect(self.undo)
+        editm.addAction(undo_act)
+        self.actions["undo"] = undo_act
+
+        redo_act = QAction("Rétablir", self)
+        redo_act.triggered.connect(self.redo)
+        editm.addAction(redo_act)
+        self.actions["redo"] = redo_act
+
         dup_act = QAction("Dupliquer", self)
         dup_act.triggered.connect(self.duplicate_selection)
         editm.addAction(dup_act)
@@ -256,6 +272,11 @@ class MainWindow(QMainWindow):
         editm.addAction(snap_act)
         self.actions["toggle_snap"] = snap_act
 
+        grid_size_act = QAction("Taille de grille…", self)
+        grid_size_act.triggered.connect(self.set_grid_size)
+        editm.addAction(grid_size_act)
+        self.actions["grid_size"] = grid_size_act
+
         new_act = QAction("Nouveau…", self)
         new_act.triggered.connect(self.open_new_project_dialog)
         filem.addAction(new_act)
@@ -287,6 +308,11 @@ class MainWindow(QMainWindow):
         export_svg_act.triggered.connect(self.export_svg)
         filem.addAction(export_svg_act)
         self.actions["export_svg"] = export_svg_act
+
+        export_pdf_act = QAction("Exporter en PDF…", self)
+        export_pdf_act.triggered.connect(self.export_pdf)
+        filem.addAction(export_pdf_act)
+        self.actions["export_pdf"] = export_pdf_act
 
         export_code_act = QAction("Exporter en code Python…", self)
         export_code_act.triggered.connect(self.export_pycode)
@@ -647,6 +673,30 @@ class MainWindow(QMainWindow):
     def toggle_snap(self):
         self.canvas._toggle_snap()
 
+    def undo(self):
+        self.canvas.undo()
+
+    def redo(self):
+        self.canvas.redo()
+
+    def set_grid_size(self):
+        from PyQt5.QtWidgets import QInputDialog
+
+        size, ok = QInputDialog.getInt(
+            self, "Taille de la grille", "Pixels :", self.canvas.grid_size, 1, 200
+        )
+        if ok:
+            self.canvas.set_grid_size(size)
+
+    def export_pdf(self):
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Exporter en PDF", PROJECTS_DIR, "PDF (*.pdf)"
+        )
+        if path:
+            if not path.lower().endswith(".pdf"):
+                path += ".pdf"
+            self.canvas.export_pdf(path)
+
     # ------------------------------------------------------------------
     def closeEvent(self, event):
         if self.maybe_save():
@@ -884,6 +934,7 @@ class MainWindow(QMainWindow):
             "saveas",
             "export_image",
             "export_svg",
+            "export_pdf",
             "export_code",
             "project_props",
         ):
