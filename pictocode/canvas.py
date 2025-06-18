@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import (
     QGraphicsItemGroup,
 )
 from .ui.animated_menu import AnimatedMenu
-from PyQt5.QtCore import Qt, QRectF, QPointF, QSizeF
+from PyQt5.QtCore import Qt, QRectF, QPointF, QSizeF, pyqtSignal
 from PyQt5.QtGui import (
     QPainter,
     QColor,
@@ -24,13 +24,30 @@ from .shapes import Rect, Ellipse, Line, FreehandPath, TextItem, ImageItem
 from .utils import to_pixels
 
 
+class CanvasScene(QGraphicsScene):
+    """QGraphicsScene emitting signals when items are added or removed."""
+
+    itemAdded = pyqtSignal()
+    itemRemoved = pyqtSignal()
+
+    def addItem(self, item):
+        super().addItem(item)
+        self.itemAdded.emit()
+
+    def removeItem(self, item):
+        super().removeItem(item)
+        self.itemRemoved.emit()
+
+
 class CanvasWidget(QGraphicsView):
     def __init__(self, parent=None):
         super().__init__(parent)
 
         # Scène
-        self.scene = QGraphicsScene(self)
+        self.scene = CanvasScene(self)
         self.setScene(self.scene)
+        self.scene.itemAdded.connect(self._on_scene_changed)
+        self.scene.itemRemoved.connect(self._on_scene_changed)
         self.setViewportUpdateMode(QGraphicsView.BoundingRectViewportUpdate)
 
         # Outil actif
