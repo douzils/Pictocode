@@ -51,12 +51,13 @@ class LayersTreeWidget(QTreeWidget):
         self._highlight_item = None
 
     def mousePressEvent(self, event):
-        """Begin dragging as soon as a layer is pressed."""
+
         if event.button() == Qt.LeftButton:
             col = self.columnAt(event.pos().x())
             item = self.itemAt(event.pos())
             super().mousePressEvent(event)
             if item is not None and col == 0:
+
 
                 # Qt has processed the press and updated selection, so start
                 # the drag right away without requiring any mouse movement.
