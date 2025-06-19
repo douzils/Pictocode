@@ -470,7 +470,7 @@ class MainWindow(QMainWindow):
 
         # affiche toolbar et docks
         self.toolbar.setVisible(True)
-        self.inspector_dock.setVisible(True)
+        self.inspector_dock.setVisible(False)
         self.layers_dock.setVisible(True)
         self.imports_dock.setVisible(True)
         self._set_project_actions_enabled(True)
@@ -536,7 +536,7 @@ class MainWindow(QMainWindow):
         self.canvas.load_shapes(shapes or [])
         # bascule UI
         self.toolbar.setVisible(True)
-        self.inspector_dock.setVisible(True)
+        self.inspector_dock.setVisible(False)
         self.layers_dock.setVisible(True)
         self.imports_dock.setVisible(True)
         self._set_project_actions_enabled(True)
