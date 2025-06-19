@@ -13,7 +13,7 @@ from PyQt5.QtWidgets import (
     QFrame,
     QStyle,
 )
-from PyQt5.QtCore import Qt, QPropertyAnimation
+from PyQt5.QtCore import Qt, QPropertyAnimation, QTimer
 from PyQt5.QtWidgets import QGraphicsObject
 from PyQt5.QtGui import QBrush, QColor
 from .animated_menu import AnimatedMenu
@@ -57,6 +57,10 @@ class LayersTreeWidget(QTreeWidget):
             item = self.itemAt(event.pos())
             super().mousePressEvent(event)
             if item is not None and col == 0:
+
+                # Schedule the drag for the next event loop iteration so Qt
+                # has time to process the press normally first.
+                QTimer.singleShot(0, lambda: self.startDrag(Qt.MoveAction))
                 # Start the drag right away without requiring movement
                 self.startDrag(Qt.MoveAction)
             return
