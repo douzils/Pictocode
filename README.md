@@ -150,3 +150,12 @@ au bord de l'écran).
 ### Rapport de bugs
 
 En cas d'erreur inattendue, Pictocode enregistre automatiquement la trace dans `~/pictocode_logs/pictocode.log`. Ce fichier peut être joint pour signaler un problème.
+
+### Commandes utiles
+
+Ces quelques lignes résument les commandes principales pour démarrer avec Pictocode :
+
+- `pip install -r requirements.txt` pour installer les dépendances.
+- `python -m pictocode` pour lancer l'application depuis le module installé.
+- `python main.py` pour exécuter directement l'application.
+
