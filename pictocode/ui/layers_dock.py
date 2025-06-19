@@ -50,6 +50,18 @@ class LayersTreeWidget(QTreeWidget):
         self._drop_line.hide()
         self._highlight_item = None
 
+    def mousePressEvent(self, event):
+        """Start a drag immediately when clicking on a layer."""
+        if event.button() == Qt.LeftButton:
+            col = self.columnAt(event.pos().x())
+            item = self.itemAt(event.pos())
+            super().mousePressEvent(event)
+            if item is not None and col == 0:
+                # Start the drag right away without requiring movement
+                self.startDrag(Qt.MoveAction)
+            return
+        super().mousePressEvent(event)
+
     def _clear_highlight(self):
         if self._highlight_item:
             # The QTreeWidgetItem may have been removed from the tree during
