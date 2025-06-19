@@ -36,35 +36,12 @@ class TransparentItemGroup(QGraphicsItemGroup):
             self.setHandlesChildEvents(False)
 
 
-    def _ignore_if_unselected(self, event):
-        """Ignore the event when the group isn't selected."""
-        if not self.isSelected():
-            event.ignore()
-            return True
-        return False
-
     def itemChange(self, change, value):
         if change == QGraphicsItem.ItemSelectedHasChanged and hasattr(
             self, "setHandlesChildEvents"
         ):
             self.setHandlesChildEvents(bool(value))
         return super().itemChange(change, value)
-
-
-    def mousePressEvent(self, event):
-        if self._ignore_if_unselected(event):
-            return
-        super().mousePressEvent(event)
-
-    def mouseMoveEvent(self, event):
-        if self._ignore_if_unselected(event):
-            return
-        super().mouseMoveEvent(event)
-
-    def mouseReleaseEvent(self, event):
-        if self._ignore_if_unselected(event):
-            return
-        super().mouseReleaseEvent(event)
 
 
     def _forward_or_handle(self, event, handler):
