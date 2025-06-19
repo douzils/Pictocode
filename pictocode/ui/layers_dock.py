@@ -142,8 +142,17 @@ class LayersWidget(QWidget):
         self.tree.setAlternatingRowColors(True)
         header = self.tree.header()
         header.setSectionResizeMode(0, QHeaderView.Stretch)
-        header.setSectionResizeMode(1, QHeaderView.ResizeToContents)
-        header.setSectionResizeMode(2, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(1, QHeaderView.Fixed)
+        header.setSectionResizeMode(2, QHeaderView.Fixed)
+        fm = self.tree.fontMetrics()
+        icon_w = max(
+            fm.boundingRect(VISIBLE_ICON).width(),
+            fm.boundingRect(HIDDEN_ICON).width(),
+            fm.boundingRect(LOCK_ICON).width(),
+            fm.boundingRect(UNLOCK_ICON).width(),
+        ) + 4
+        header.resizeSection(1, icon_w)
+        header.resizeSection(2, icon_w)
         header.hide()
         layout = QVBoxLayout(self)
         layout.addWidget(self.tree)
@@ -193,7 +202,7 @@ class LayersWidget(QWidget):
                 border: 1px solid {border};
             }}
             QTreeWidget::item {{
-                padding: 4px 1px 4px 0px;
+                padding: 4px 1px 4px 4px;
             }}
             QTreeWidget::item:selected {{
                 background: {highlight};
