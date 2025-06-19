@@ -193,7 +193,7 @@ class LayersWidget(QWidget):
                 border: 1px solid {border};
             }}
             QTreeWidget::item {{
-                padding: 4px 2px;
+                padding: 4px 1px 4px 0px;
             }}
             QTreeWidget::item:selected {{
                 background: {highlight};
