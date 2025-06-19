@@ -13,9 +13,9 @@ from PyQt5.QtWidgets import (
     QFrame,
     QStyle,
 )
-from PyQt5.QtCore import Qt, QPropertyAnimation
+from PyQt5.QtCore import Qt, QPropertyAnimation, QTimer
 from PyQt5.QtWidgets import QGraphicsObject
-from PyQt5.QtGui import QBrush, QColor
+from PyQt5.QtGui import QBrush, QColor, QDrag
 from .animated_menu import AnimatedMenu
 
 
@@ -49,6 +49,27 @@ class LayersTreeWidget(QTreeWidget):
         self._drop_line.setStyleSheet(f"background:{self.drop_color.name()};")
         self._drop_line.hide()
         self._highlight_item = None
+
+    def mousePressEvent(self, event):
+        """Start a drag immediately on mouse press without extra motion."""
+        if event.button() == Qt.LeftButton:
+            item = self.itemAt(event.pos())
+            col = self.columnAt(event.pos().x())
+            super().mousePressEvent(event)
+            if item is not None and col == 0:
+                # Allow the widget to process selection before starting the drag
+                def _start():
+                    drag = QDrag(self)
+                    mime = self.mimeData(self.selectedItems())
+                    drag.setMimeData(mime)
+                    rect = self.visualItemRect(item)
+                    drag.setPixmap(self.viewport().grab(rect))
+                    drag.setHotSpot(event.pos() - rect.topLeft())
+                    drag.exec_(Qt.MoveAction)
+
+                QTimer.singleShot(0, _start)
+            return
+        super().mousePressEvent(event)
 
     def _clear_highlight(self):
         if self._highlight_item:
