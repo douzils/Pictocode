@@ -13,6 +13,20 @@ else
     exit 1
 fi
 
+python3 - <<'EOF'
+import sys
+try:
+    import PyQt5 # noqa: F401
+except Exception:
+    sys.exit(1)
+EOF
+CHECK_STATUS=$?
+if [ $CHECK_STATUS -ne 0 ]; then
+    echo "ERREUR : la dépendance PyQt5 est manquante."
+    echo "Exécutez : pip install -r requirements.txt"
+    exit 1
+fi
+
 echo "[pictocode] Lancement de pictocode…"
 $CMD "$@"
 STATUS=$?
