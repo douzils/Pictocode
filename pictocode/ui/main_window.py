@@ -812,6 +812,11 @@ class MainWindow(QMainWindow):
             self.autosave_enabled = dlg.get_autosave_enabled()
             self.autosave_interval = dlg.get_autosave_interval()
             self.auto_show_inspector = dlg.get_auto_show_inspector()
+
+            if self.auto_show_inspector:
+                items = self.canvas.scene.selectedItems()
+                self.inspector_dock.setVisible(bool(items))
+
             self.apply_theme(
                 theme,
                 accent,
