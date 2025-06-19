@@ -19,6 +19,12 @@ from PyQt5.QtGui import QBrush, QColor
 from .animated_menu import AnimatedMenu
 
 
+VISIBLE_ICON = "\U0001F441"  # eye
+HIDDEN_ICON = "\u274C"      # cross mark
+LOCK_ICON = "\U0001F512"    # closed lock
+UNLOCK_ICON = "\U0001F513"  # open lock
+
+
 class LayersTreeWidget(QTreeWidget):
     """QTreeWidget with custom drag preview highlighting."""
 
@@ -186,10 +192,6 @@ class LayersWidget(QWidget):
             QTreeWidget::item {{
                 padding: 4px 2px;
             }}
-            QTreeWidget::indicator {{
-                subcontrol-position: center right;
-                margin-right: 4px;
-            }}
             QTreeWidget::item:selected {{
                 background: {highlight};
                 color: {highlight_text};
@@ -254,17 +256,14 @@ class LayersWidget(QWidget):
                 | Qt.ItemIsEditable
                 | Qt.ItemIsDragEnabled
                 | Qt.ItemIsDropEnabled
-                | Qt.ItemIsUserCheckable
             )
             qitem.setFlags(flags)
-
-            qitem.setCheckState(
-                1,
-                Qt.Checked if gitem.isVisible() else Qt.Unchecked,
-            )
+            qitem.setTextAlignment(1, Qt.AlignRight | Qt.AlignVCenter)
+            qitem.setTextAlignment(2, Qt.AlignRight | Qt.AlignVCenter)
+            qitem.setText(1, VISIBLE_ICON if gitem.isVisible() else HIDDEN_ICON)
 
             locked = not (gitem.flags() & QGraphicsItem.ItemIsMovable)
-            qitem.setCheckState(2, Qt.Unchecked if locked else Qt.Checked)
+            qitem.setText(2, LOCK_ICON if locked else UNLOCK_ICON)
             if isinstance(gitem, QGraphicsItemGroup):
                 icon = self.style().standardIcon(QStyle.SP_DirIcon)
             else:
@@ -309,16 +308,35 @@ class LayersWidget(QWidget):
             gchild = child.data(0, Qt.UserRole)
             if visible is not None and gchild:
                 gchild.setVisible(visible)
-                child.setCheckState(1, Qt.Checked if visible else Qt.Unchecked)
+                child.setText(1, VISIBLE_ICON if visible else HIDDEN_ICON)
             if locked is not None and gchild:
                 gchild.setFlag(QGraphicsItem.ItemIsMovable, not locked)
                 gchild.setFlag(QGraphicsItem.ItemIsSelectable, not locked)
-                child.setCheckState(2, Qt.Unchecked if locked else Qt.Checked)
+                child.setText(2, LOCK_ICON if locked else UNLOCK_ICON)
             self._propagate_state(child, visible=visible, locked=locked)
 
     # ------------------------------------------------------------------
     def _on_item_clicked(self, titem, column):
         self.tree.setCurrentItem(titem)
+        if self._updating:
+            return
+        gitem = titem.data(0, Qt.UserRole)
+        if not gitem:
+            return
+        if column == 1:
+            vis = not gitem.isVisible()
+            gitem.setVisible(vis)
+            titem.setText(1, VISIBLE_ICON if vis else HIDDEN_ICON)
+            if isinstance(gitem, QGraphicsItemGroup):
+                self._propagate_state(titem, visible=vis)
+        elif column == 2:
+            locked = not bool(gitem.flags() & QGraphicsItem.ItemIsMovable)
+            locked = not locked
+            gitem.setFlag(QGraphicsItem.ItemIsMovable, not locked)
+            gitem.setFlag(QGraphicsItem.ItemIsSelectable, not locked)
+            titem.setText(2, LOCK_ICON if locked else UNLOCK_ICON)
+            if isinstance(gitem, QGraphicsItemGroup):
+                self._propagate_state(titem, locked=locked)
 
     def _on_item_changed(self, titem, column):
         if self._updating:
@@ -328,20 +346,6 @@ class LayersWidget(QWidget):
             return
         if column == 0:
             gitem.layer_name = titem.text(0)
-        elif column == 1:
-            vis = titem.checkState(1) == Qt.Checked
-            gitem.setVisible(vis)
-
-            if isinstance(gitem, QGraphicsItemGroup):
-                self._propagate_state(titem, visible=vis)
-
-        elif column == 2:
-            locked = titem.checkState(2) != Qt.Checked
-            gitem.setFlag(QGraphicsItem.ItemIsMovable, not locked)
-            gitem.setFlag(QGraphicsItem.ItemIsSelectable, not locked)
-
-            if isinstance(gitem, QGraphicsItemGroup):
-                self._propagate_state(titem, locked=locked)
 
     def _on_selection_changed(self):
         if not self.canvas:
@@ -366,9 +370,10 @@ class LayersWidget(QWidget):
             root_item = self.tree.invisibleRootItem().child(0)
             self.highlight_item(group)
             qitem = self.tree.currentItem()
-            root_item.takeChild(root_item.indexOfChild(qitem))
-            root_item.insertChild(index, qitem)
-            self._sync_scene_from_tree()
+            if root_item and qitem:
+                root_item.takeChild(root_item.indexOfChild(qitem))
+                root_item.insertChild(index, qitem)
+                self._sync_scene_from_tree()
 
         if item is None:
             menu = AnimatedMenu(self)
@@ -377,7 +382,8 @@ class LayersWidget(QWidget):
             if menu.exec_(self.tree.mapToGlobal(pos)) == act_new_group:
                 idx = self.tree.indexAt(pos).row()
                 if idx < 0:
-                    idx = root.childCount()
+                    root_item = self.tree.invisibleRootItem().child(0)
+                    idx = root_item.childCount() if root_item else 0
                 insert_group(idx)
             return
 
@@ -387,7 +393,9 @@ class LayersWidget(QWidget):
             act_new_group = QAction("Nouvelle collection", menu)
             menu.addAction(act_new_group)
             if menu.exec_(self.tree.mapToGlobal(pos)) == act_new_group:
-                insert_group(root.childCount())
+                root_item = self.tree.invisibleRootItem().child(0)
+                count = root_item.childCount() if root_item else 0
+                insert_group(count)
             return
         menu = AnimatedMenu(self)
         act_delete = QAction("Supprimer", menu)
@@ -421,7 +429,9 @@ class LayersWidget(QWidget):
             self.update_layers(self.canvas)
             self.highlight_item(new_item)
         elif action is act_new_group:
-            insert_group(root.childCount())
+            root_item = self.tree.invisibleRootItem().child(0)
+            count = root_item.childCount() if root_item else 0
+            insert_group(count)
         elif action is act_up:
             parent = item.parent() or self.tree.invisibleRootItem().child(0)
             idx = parent.indexOfChild(item)
