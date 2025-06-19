@@ -157,6 +157,9 @@ class LayersWidget(QWidget):
         )
         self.tree.setAlternatingRowColors(True)
         header = self.tree.header()
+        # Ensure the layer name column stretches to fill the available space
+        # rather than the last column.
+        header.setStretchLastSection(False)
         header.setSectionResizeMode(0, QHeaderView.Stretch)
         header.setSectionResizeMode(1, QHeaderView.Fixed)
         header.setSectionResizeMode(2, QHeaderView.Fixed)
