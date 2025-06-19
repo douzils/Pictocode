@@ -140,8 +140,11 @@ class LayersWidget(QWidget):
             | QAbstractItemView.EditKeyPressed
         )
         self.tree.setAlternatingRowColors(True)
-        self.tree.header().setSectionResizeMode(QHeaderView.Stretch)
-        self.tree.header().hide()
+        header = self.tree.header()
+        header.setSectionResizeMode(0, QHeaderView.Stretch)
+        header.setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(2, QHeaderView.ResizeToContents)
+        header.hide()
         layout = QVBoxLayout(self)
         layout.addWidget(self.tree)
 
@@ -402,6 +405,8 @@ class LayersWidget(QWidget):
         menu.addAction(act_delete)
         act_dup = QAction("Dupliquer", menu)
         menu.addAction(act_dup)
+        act_rename = QAction("Renommer", menu)
+        menu.addAction(act_rename)
         menu.addSeparator()
         act_new_group = QAction("Nouvelle collection", menu)
         menu.addAction(act_new_group)
@@ -428,6 +433,8 @@ class LayersWidget(QWidget):
             new_item = self.canvas.scene.selectedItems()[0]
             self.update_layers(self.canvas)
             self.highlight_item(new_item)
+        elif action is act_rename:
+            self.tree.editItem(item, 0)
         elif action is act_new_group:
             root_item = self.tree.invisibleRootItem().child(0)
             count = root_item.childCount() if root_item else 0
