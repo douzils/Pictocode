@@ -132,10 +132,10 @@ class LayersWidget(QWidget):
         self.tree.setEditTriggers(
             QAbstractItemView.DoubleClicked
             | QAbstractItemView.EditKeyPressed
-            | QAbstractItemView.SelectedClicked
         )
         self.tree.setAlternatingRowColors(True)
         self.tree.header().setSectionResizeMode(QHeaderView.Stretch)
+        self.tree.header().hide()
         layout = QVBoxLayout(self)
         layout.addWidget(self.tree)
 
@@ -168,7 +168,7 @@ class LayersWidget(QWidget):
         """Apply a darker style reminiscent of Blender's Outliner."""
         pal = self.tree.palette()
         base = "#2b2b2b"
-        alt = "#313131"
+        alt = "#353535"
         text = "#f0f0f0"
         highlight = pal.highlight().color().name()
         highlight_text = pal.highlightedText().color().name()
@@ -185,6 +185,10 @@ class LayersWidget(QWidget):
             }}
             QTreeWidget::item {{
                 padding: 4px 2px;
+            }}
+            QTreeWidget::indicator {{
+                subcontrol-position: center right;
+                margin-right: 4px;
             }}
             QTreeWidget::item:selected {{
                 background: {highlight};
