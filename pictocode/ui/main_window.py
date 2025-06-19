@@ -155,6 +155,8 @@ class MainWindow(QMainWindow):
             "duplicate": "Ctrl+D",
             "delete": "Delete",
             "select_all": "Ctrl+A",
+            "flip_horizontal": "",
+            "flip_vertical": "",
             "zoom_in": "Ctrl++",
             "zoom_out": "Ctrl+-",
             "toggle_grid": "Ctrl+G",
@@ -261,6 +263,16 @@ class MainWindow(QMainWindow):
         dup_act.triggered.connect(self.duplicate_selection)
         editm.addAction(dup_act)
         self.actions["duplicate"] = dup_act
+
+        flip_h_act = QAction("Miroir horizontal", self)
+        flip_h_act.triggered.connect(self.flip_horizontal)
+        editm.addAction(flip_h_act)
+        self.actions["flip_horizontal"] = flip_h_act
+
+        flip_v_act = QAction("Miroir vertical", self)
+        flip_v_act.triggered.connect(self.flip_vertical)
+        editm.addAction(flip_v_act)
+        self.actions["flip_vertical"] = flip_v_act
 
         del_act = QAction("Supprimer", self)
         del_act.triggered.connect(self.delete_selection)
@@ -695,6 +707,12 @@ class MainWindow(QMainWindow):
 
     def duplicate_selection(self):
         self.canvas.duplicate_selected()
+
+    def flip_horizontal(self):
+        self.canvas.flip_horizontal_selected()
+
+    def flip_vertical(self):
+        self.canvas.flip_vertical_selected()
 
     def delete_selection(self):
         self.canvas.delete_selected()
