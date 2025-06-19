@@ -745,6 +745,22 @@ class CanvasWidget(QGraphicsView):
                 act_fill.triggered.connect(
                     lambda: self._change_brush_color(item))
                 menu.addAction(act_fill)
+            act_flip_h = QAction("Miroir horizontal", self)
+            act_flip_h.triggered.connect(
+                lambda: (
+                    item.setSelected(True),
+                    self.flip_horizontal_selected(),
+                )
+            )
+            menu.addAction(act_flip_h)
+            act_flip_v = QAction("Miroir vertical", self)
+            act_flip_v.triggered.connect(
+                lambda: (
+                    item.setSelected(True),
+                    self.flip_vertical_selected(),
+                )
+            )
+            menu.addAction(act_flip_v)
             act_delete = QAction("Supprimer", self)
             act_delete.triggered.connect(
                 lambda: (
@@ -1094,6 +1110,35 @@ class CanvasWidget(QGraphicsView):
 
     def zoom_out(self):
         self.scale(0.8, 0.8)
+
+    # --- Flip --------------------------------------------------------
+    def flip_horizontal_selected(self):
+        """Flip selected items horizontally around their center."""
+        items = [it for it in self.scene.selectedItems() if it is not self._frame_item]
+        if not items:
+            return
+        for it in items:
+            center = it.boundingRect().center()
+            orig = it.transformOriginPoint()
+            it.setTransformOriginPoint(center)
+            it.scale(-1, 1)
+            it.setTransformOriginPoint(orig)
+        self._mark_dirty()
+        self._schedule_scene_changed()
+
+    def flip_vertical_selected(self):
+        """Flip selected items vertically around their center."""
+        items = [it for it in self.scene.selectedItems() if it is not self._frame_item]
+        if not items:
+            return
+        for it in items:
+            center = it.boundingRect().center()
+            orig = it.transformOriginPoint()
+            it.setTransformOriginPoint(center)
+            it.scale(1, -1)
+            it.setTransformOriginPoint(orig)
+        self._mark_dirty()
+        self._schedule_scene_changed()
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Escape and self._temp_item:
