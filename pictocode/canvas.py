@@ -26,13 +26,14 @@ from .utils import to_pixels
 
 
 class TransparentItemGroup(QGraphicsItemGroup):
-    """Item group that lets its children handle events unless selected."""
+    """Item group that handles events only when selected."""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # ItemHasNoContents avoids painting the group while keeping a bounding rect
         self.setFlag(QGraphicsItem.ItemHasNoContents, True)
         if hasattr(self, "setHandlesChildEvents"):
+            # Let children receive events until the group becomes selected
             self.setHandlesChildEvents(False)
 
 
@@ -40,8 +41,11 @@ class TransparentItemGroup(QGraphicsItemGroup):
         if change == QGraphicsItem.ItemSelectedHasChanged and hasattr(
             self, "setHandlesChildEvents"
         ):
+            # Forward events to the children when not selected so they remain
+            # individually selectable.
             self.setHandlesChildEvents(bool(value))
         return super().itemChange(change, value)
+
 
 
     def _forward_or_handle(self, event, handler):
