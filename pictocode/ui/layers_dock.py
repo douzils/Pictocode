@@ -57,9 +57,12 @@ class LayersTreeWidget(QTreeWidget):
             item = self.itemAt(event.pos())
             super().mousePressEvent(event)
             if item is not None and col == 0:
+
                 # Schedule the drag for the next event loop iteration so Qt
                 # has time to process the press normally first.
                 QTimer.singleShot(0, lambda: self.startDrag(Qt.MoveAction))
+                # Start the drag right away without requiring movement
+                self.startDrag(Qt.MoveAction)
             return
         super().mousePressEvent(event)
 
