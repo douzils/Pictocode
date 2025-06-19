@@ -133,6 +133,9 @@ Une barre de titre personnalisée adopte également ces réglages, avec les bout
 de réduction, plein écran et fermeture.
 Les passages entre l'accueil et le canvas utilisent désormais un effet de fondu.
 
+Le panneau des calques suit maintenant automatiquement le thème choisi pour
+conserver un contraste optimal en mode clair comme en mode sombre.
+
 ### Raccourcis personnalisables
 
 Une boîte de dialogue **Préférences > Raccourcis…** permet de modifier les

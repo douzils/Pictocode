@@ -183,14 +183,14 @@ class LayersWidget(QWidget):
         self.tree.setCurrentItem(titem)
 
     def _apply_styles(self):
-        """Apply a darker style reminiscent of Blender's Outliner."""
+        """Apply styles that follow the application palette."""
         pal = self.tree.palette()
-        base = "#2b2b2b"
-        alt = "#353535"
-        text = "#f0f0f0"
+        base = pal.base().color().name()
+        alt = pal.alternateBase().color().name()
+        text = pal.text().color().name()
         highlight = pal.highlight().color().name()
         highlight_text = pal.highlightedText().color().name()
-        header_bg = "#2b2b2b"
+        header_bg = pal.window().color().name()
         border = pal.mid().color().name()
 
         self.tree.setStyleSheet(
