@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import (
     QComboBox,
     QInputDialog,
     QDialog,
+    QHBoxLayout,
 )
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QLinearGradient, QBrush, QColor
@@ -32,6 +33,16 @@ class Inspector(QWidget):
         self.rotation_field.setRange(-360, 360)
         self.axis_btn = QPushButton("Définir…", self)
         self.axis_btn.clicked.connect(self._set_rotation_axis)
+        self.flip_h_btn = QPushButton("Horizontal", self)
+        self.flip_h_btn.clicked.connect(self._flip_horizontal)
+        self.flip_v_btn = QPushButton("Vertical", self)
+        self.flip_v_btn.clicked.connect(self._flip_vertical)
+        flip_box = QWidget(self)
+        flip_layout = QHBoxLayout(flip_box)
+        flip_layout.setContentsMargins(0, 0, 0, 0)
+        flip_layout.setSpacing(2)
+        flip_layout.addWidget(self.flip_h_btn)
+        flip_layout.addWidget(self.flip_v_btn)
         self.z_field = StepSpinBox(self)
         self.z_field.setRange(-1000, 1000)
         self.border_field = StepSpinBox(self)
@@ -55,6 +66,7 @@ class Inspector(QWidget):
         self.layout.addRow("H :", self.h_field)
         self.layout.addRow("Rotation :", self.rotation_field)
         self.layout.addRow("Axe rotation :", self.axis_btn)
+        self.layout.addRow("Miroir :", flip_box)
         self.layout.addRow("Calque :", self.z_field)
         self.layout.addRow("Largeur bordure :", self.border_field)
         self.layout.addRow("Opacité % :", self.opacity_field)
@@ -306,6 +318,16 @@ class Inspector(QWidget):
             " stop:1 %s);"
             % (start.name(), end.name())
         )
+
+    def _flip_horizontal(self):
+        if self._item and hasattr(self.parent(), "canvas"):
+            self._item.setSelected(True)
+            self.parent().canvas.flip_horizontal_selected()
+
+    def _flip_vertical(self):
+        if self._item and hasattr(self.parent(), "canvas"):
+            self._item.setSelected(True)
+            self.parent().canvas.flip_vertical_selected()
 
     def _set_rotation_axis(self):
         if not self._item:
