@@ -51,17 +51,17 @@ class LayersTreeWidget(QTreeWidget):
         self._highlight_item = None
 
     def mousePressEvent(self, event):
-        """Start a drag immediately when clicking on a layer."""
+        """Begin dragging immediately when a layer is pressed."""
         if event.button() == Qt.LeftButton:
             col = self.columnAt(event.pos().x())
             item = self.itemAt(event.pos())
             super().mousePressEvent(event)
             if item is not None and col == 0:
-
-                # Schedule the drag for the next event loop iteration so Qt
-                # has time to process the press normally first.
+                # Allow Qt to process the press event first so selection
+                # updates correctly, then start the drag without requiring
+                # any mouse movement. Scheduling the start avoids losing
+                # the drop indicator when the cursor doesn't move.
                 QTimer.singleShot(0, lambda: self.startDrag(Qt.MoveAction))
-                # Start the drag right away without requiring movement
                 self.startDrag(Qt.MoveAction)
             return
         super().mousePressEvent(event)

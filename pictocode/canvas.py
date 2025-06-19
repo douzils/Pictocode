@@ -26,61 +26,24 @@ from .utils import to_pixels
 
 
 class TransparentItemGroup(QGraphicsItemGroup):
-    """Item group that lets its children handle events unless selected."""
+    """Item group that handles events only when selected."""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # ItemHasNoContents avoids painting the group while keeping a bounding rect
         self.setFlag(QGraphicsItem.ItemHasNoContents, True)
         if hasattr(self, "setHandlesChildEvents"):
+            # Let children receive events until the group becomes selected
             self.setHandlesChildEvents(False)
-
-
-    def _ignore_if_unselected(self, event):
-        """Ignore the event when the group isn't selected."""
-        if not self.isSelected():
-            event.ignore()
-            return True
-        return False
 
     def itemChange(self, change, value):
         if change == QGraphicsItem.ItemSelectedHasChanged and hasattr(
             self, "setHandlesChildEvents"
         ):
+            # Forward events to the children when not selected so they remain
+            # individually selectable.
             self.setHandlesChildEvents(bool(value))
         return super().itemChange(change, value)
-
-
-    def mousePressEvent(self, event):
-        if self._ignore_if_unselected(event):
-            return
-        super().mousePressEvent(event)
-
-    def mouseMoveEvent(self, event):
-        if self._ignore_if_unselected(event):
-            return
-        super().mouseMoveEvent(event)
-
-    def mouseReleaseEvent(self, event):
-        if self._ignore_if_unselected(event):
-            return
-        super().mouseReleaseEvent(event)
-
-
-    def _forward_or_handle(self, event, handler):
-        if self.isSelected():
-            handler(event)
-        else:
-            event.ignore()
-
-    def mousePressEvent(self, event):
-        self._forward_or_handle(event, super().mousePressEvent)
-
-    def mouseMoveEvent(self, event):
-        self._forward_or_handle(event, super().mouseMoveEvent)
-
-    def mouseReleaseEvent(self, event):
-        self._forward_or_handle(event, super().mouseReleaseEvent)
 
 
 
