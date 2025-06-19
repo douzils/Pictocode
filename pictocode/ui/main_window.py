@@ -78,6 +78,8 @@ class MainWindow(QMainWindow):
             "autosave_enabled", False, type=bool)
         self.autosave_interval = int(
             self.settings.value("autosave_interval", 5))
+        self.auto_show_inspector = self.settings.value(
+            "auto_show_inspector", True, type=bool)
         self._autosave_timer = QTimer(self)
         self._autosave_timer.timeout.connect(self._autosave)
         if self.autosave_enabled:
@@ -789,6 +791,7 @@ class MainWindow(QMainWindow):
             self.rotation_handle_color,
             self.autosave_enabled,
             self.autosave_interval,
+            self.auto_show_inspector,
             self,
         )
         if dlg.exec_() == QDialog.Accepted:
@@ -808,6 +811,10 @@ class MainWindow(QMainWindow):
             self.show_splash = dlg.get_show_splash()
             self.autosave_enabled = dlg.get_autosave_enabled()
             self.autosave_interval = dlg.get_autosave_interval()
+            self.auto_show_inspector = dlg.get_auto_show_inspector()
+            if self.auto_show_inspector:
+                items = self.canvas.scene.selectedItems()
+                self.inspector_dock.setVisible(bool(items))
             self.apply_theme(
                 theme,
                 accent,
@@ -831,6 +838,7 @@ class MainWindow(QMainWindow):
             )
             self.settings.setValue("autosave_enabled", self.autosave_enabled)
             self.settings.setValue("autosave_interval", self.autosave_interval)
+            self.settings.setValue("auto_show_inspector", self.auto_show_inspector)
             if self.autosave_enabled:
                 self._autosave_timer.start(self.autosave_interval * 60000)
             else:
