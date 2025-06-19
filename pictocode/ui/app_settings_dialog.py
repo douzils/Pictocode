@@ -35,6 +35,7 @@ class AppSettingsDialog(QDialog):
         rotation_handle_color: Optional[Union[QColor, str]] = None,
         autosave_enabled: bool = False,
         autosave_interval: int = 5,
+        auto_show_inspector: bool = True,
         parent=None,
     ):
 
@@ -148,6 +149,10 @@ class AppSettingsDialog(QDialog):
         self.autosave_spin.setValue(int(autosave_interval))
         form.addRow("Intervalle (min) :", self.autosave_spin)
 
+        self.auto_show_chk = QCheckBox()
+        self.auto_show_chk.setChecked(bool(auto_show_inspector))
+        form.addRow("Ouvrir inspecteur sur sélection :", self.auto_show_chk)
+
         buttons = QDialogButtonBox(
             QDialogButtonBox.Ok | QDialogButtonBox.Cancel, Qt.Horizontal, self
         )
@@ -210,3 +215,6 @@ class AppSettingsDialog(QDialog):
 
     def get_autosave_interval(self) -> int:
         return self.autosave_spin.value()
+
+    def get_auto_show_inspector(self) -> bool:
+        return self.auto_show_chk.isChecked()

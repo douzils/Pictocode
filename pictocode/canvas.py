@@ -843,15 +843,16 @@ class CanvasWidget(QGraphicsView):
         window = self.window()
         if hasattr(window, "inspector"):
             items = self.scene.selectedItems()
+            auto_show = getattr(window, "auto_show_inspector", True)
             if items:
                 window.inspector.set_target(items[0])
                 if hasattr(window, "layers"):
                     window.layers.highlight_item(items[0])
-                if hasattr(window, "inspector_dock"):
+                if auto_show and hasattr(window, "inspector_dock"):
                     window.inspector_dock.setVisible(True)
             else:
                 window.inspector.set_target(None)
-                if hasattr(window, "inspector_dock"):
+                if auto_show and hasattr(window, "inspector_dock"):
                     window.inspector_dock.setVisible(False)
                 if hasattr(window, "layers"):
                     try:
