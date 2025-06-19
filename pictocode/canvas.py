@@ -847,8 +847,17 @@ class CanvasWidget(QGraphicsView):
                 window.inspector.set_target(items[0])
                 if hasattr(window, "layers"):
                     window.layers.highlight_item(items[0])
+                if hasattr(window, "inspector_dock"):
+                    window.inspector_dock.setVisible(True)
             else:
                 window.inspector.set_target(None)
+                if hasattr(window, "inspector_dock"):
+                    window.inspector_dock.setVisible(False)
+                if hasattr(window, "layers"):
+                    try:
+                        window.layers._clear_highlight()
+                    except AttributeError:
+                        pass
 
     def _mark_dirty(self):
         window = self.window()
