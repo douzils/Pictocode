@@ -55,11 +55,7 @@ class TransparentItemGroup(QGraphicsItemGroup):
     def mousePressEvent(self, event):
         self._forward_or_handle(event, super().mousePressEvent)
 
-    def mouseMoveEvent(self, event):
-        self._forward_or_handle(event, super().mouseMoveEvent)
 
-    def mouseReleaseEvent(self, event):
-        self._forward_or_handle(event, super().mouseReleaseEvent)
 
 
 
