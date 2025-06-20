@@ -59,9 +59,19 @@ class LayersTreeWidget(QTreeWidget):
             col = self.columnAt(event.pos().x())
             item = self.itemAt(event.pos())
             super().mousePressEvent(event)
-            # Dragging is disabled; just ensure the item gets selected
             if item is not None and col == 0:
-                return
+                # Schedule the drag to start after Qt processes the press so
+                # the item becomes selected without requiring any mouse
+                # movement.
+
+                # Start dragging immediately so a drop can occur even
+                # without moving the mouse, then schedule another start in
+                # the next event loop iteration to ensure selection updates
+                # correctly across platforms.
+                self.startDrag(Qt.MoveAction)
+
+                QTimer.singleShot(0, lambda: self.startDrag(Qt.MoveAction))
+            return
         super().mousePressEvent(event)
 
     def keyPressEvent(self, event):
@@ -168,11 +178,9 @@ class LayersWidget(QWidget):
         self.tree.setColumnCount(3)
         self.tree.setHeaderLabels(["Nom", "Vis", "Lock"])
         self.tree.setSelectionMode(QAbstractItemView.SingleSelection)
-        # Disable drag and drop; items will be reordered via shortcuts or
-        # the context menu instead of using click-and-drop.
-        self.tree.setDragDropMode(QAbstractItemView.NoDragDrop)
-        self.tree.setDragEnabled(False)
-        self.tree.setAcceptDrops(False)
+        self.tree.setDragDropMode(QAbstractItemView.InternalMove)
+        self.tree.setDragEnabled(True)
+        self.tree.setAcceptDrops(True)
         self.tree.setEditTriggers(
             QAbstractItemView.DoubleClicked
             | QAbstractItemView.EditKeyPressed
@@ -215,7 +223,7 @@ class LayersWidget(QWidget):
         self.tree.itemSelectionChanged.connect(self._on_selection_changed)
         self.tree.setContextMenuPolicy(Qt.CustomContextMenu)
         self.tree.customContextMenuRequested.connect(self._open_menu)
-        self.tree.viewport().setAcceptDrops(False)
+        self.tree.viewport().setAcceptDrops(True)
 
         # Map QGraphicsItems to their corresponding tree items for quick lookups
         self._item_map: dict[QGraphicsItem, QTreeWidgetItem] = {}
