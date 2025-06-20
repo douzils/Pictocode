@@ -57,18 +57,12 @@ class LayersTreeWidget(QTreeWidget):
             item = self.itemAt(event.pos())
             super().mousePressEvent(event)
             if item is not None and col == 0:
-
-
-                # Qt has processed the press and updated selection, so start
-                # the drag right away without requiring any mouse movement.
+                # Start dragging immediately so a drop can occur even
+                # without moving the mouse, then schedule another start in
+                # the next event loop iteration to ensure selection updates
+                # correctly across platforms.
                 self.startDrag(Qt.MoveAction)
-
-                # Schedule the drag for the next event loop iteration so Qt
-                # has time to process the press normally first. Starting the
-                # drag after the press event ensures the item becomes selected
-                # without requiring any mouse movement.
                 QTimer.singleShot(0, lambda: self.startDrag(Qt.MoveAction))
-
             return
         super().mousePressEvent(event)
 
@@ -191,10 +185,8 @@ class LayersWidget(QWidget):
         # animation is already running.
         self._z_anims = {}
 
-    def apply_theme(self):
-        """Re-apply styles when the application theme changes."""
-        self._apply_styles()
-
+        # Connect signals once during initialization. "apply_theme" will only
+        # re-apply styles without re-connecting to avoid duplicate callbacks.
         self.tree.itemPressed.connect(self._on_item_pressed)
         self.tree.itemClicked.connect(self._on_item_clicked)
         self.tree.itemChanged.connect(self._on_item_changed)
@@ -202,6 +194,10 @@ class LayersWidget(QWidget):
         self.tree.setContextMenuPolicy(Qt.CustomContextMenu)
         self.tree.customContextMenuRequested.connect(self._open_menu)
         self.tree.viewport().setAcceptDrops(True)
+
+    def apply_theme(self):
+        """Re-apply styles when the application theme changes."""
+        self._apply_styles()
 
     def _on_item_pressed(self, titem, column):
         """Ensure the pressed item becomes current before dragging."""
