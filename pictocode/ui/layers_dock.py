@@ -60,18 +60,11 @@ class LayersTreeWidget(QTreeWidget):
             item = self.itemAt(event.pos())
             super().mousePressEvent(event)
             if item is not None and col == 0:
-                # Schedule the drag to start after Qt processes the press so
-                # the item becomes selected without requiring any mouse
-                # movement.
-
-                # Start dragging immediately so a drop can occur even
-                # without moving the mouse, then schedule another start in
-                # the next event loop iteration to ensure selection updates
-                # correctly across platforms.
-                self.startDrag(Qt.MoveAction)
-
-                QTimer.singleShot(0, lambda: self.startDrag(Qt.MoveAction))
-            return
+                # Rely on Qt's default behaviour to start dragging only
+                # when the user actually moves the mouse.  This avoids
+                # accidental drops triggered by a simple click which could
+                # reorder layers unexpectedly or create unwanted groups.
+                return
         super().mousePressEvent(event)
 
     def keyPressEvent(self, event):
