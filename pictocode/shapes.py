@@ -19,7 +19,12 @@ from PyQt5.QtGui import (
     QTransform,
 )
 import math
-from PyQt5.QtCore import Qt, QPointF, QRectF
+from PyQt5.QtCore import (
+    Qt,
+    QPointF,
+    QRectF,
+    QVariantAnimation,
+)
 
 
 class SnapToGridMixin:
@@ -36,6 +41,53 @@ class SnapToGridMixin:
         return super().itemChange(change, value)
 
 
+class SwingMoveMixin:
+    """Rotate slightly while dragging to give a swinging effect."""
+
+    def __init__(self):
+        # Do not call ``super().__init__`` to avoid initializing the
+        # underlying ``QGraphicsItem`` twice. Each shape constructor will
+        # explicitly invoke this initializer after creating the item.
+        self._dragging_swing = False
+        self._base_rot = 0.0
+        self._last_pos = QPointF()
+        self._rot_anim = None
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self._dragging_swing = True
+            self._base_rot = self.rotation() if hasattr(self, "rotation") else 0.0
+            self._last_pos = self.pos()
+            if self._rot_anim:
+                self._rot_anim.stop()
+        super().mousePressEvent(event)
+
+    def mouseReleaseEvent(self, event):
+        if self._dragging_swing:
+            self._dragging_swing = False
+            self._animate_rotation(self._base_rot)
+        super().mouseReleaseEvent(event)
+
+    def itemChange(self, change, value):
+        if change == QGraphicsItem.ItemPositionChange and self._dragging_swing:
+            value = super().itemChange(change, value)
+            delta = value - self._last_pos
+            self._last_pos = value
+            angle = max(-10.0, min(10.0, delta.x()))
+            self.setRotation(self._base_rot + angle)
+            return value
+        return super().itemChange(change, value)
+    def _animate_rotation(self, rot):
+        if self._rot_anim:
+            self._rot_anim.stop()
+        self._rot_anim = QVariantAnimation()
+        self._rot_anim.setDuration(120)
+        self._rot_anim.setStartValue(self.rotation())
+        self._rot_anim.setEndValue(rot)
+        self._rot_anim.valueChanged.connect(lambda v: self.setRotation(v))
+        self._rot_anim.start()
+
+
 class ResizableMixin:
     """Ajoute des poignées de redimensionnement et la logique associée."""
 
@@ -49,7 +101,9 @@ class ResizableMixin:
     rotation_offset = 20
 
     def __init__(self):
-        super().__init__()
+        # ``QGraphicsItem`` est déjà initialisé par les classes concrètes;
+        # ne pas chaîner ``super().__init__`` ici pour éviter les
+        # constructions multiples qui empêchent le grab de fonctionner.
         self._resizing = False
         self._rotating = False
         self._start_scene_pos = QPointF()
@@ -279,15 +333,15 @@ class ResizableMixin:
         super().mouseReleaseEvent(event)
 
 
-class Rect(ResizableMixin, SnapToGridMixin, QGraphicsRectItem):
+class Rect(SwingMoveMixin, ResizableMixin, SnapToGridMixin, QGraphicsRectItem):
     """Rectangle déplaçable, sélectionnable et redimensionnable."""
 
     def __init__(self, x, y, w, h, color: QColor = QColor("black")):
-        # Initialise explicitement les différentes bases pour
-        # éviter que ``ResizableMixin`` ne reçoive des arguments
-        # inattendus via ``super()``.
-        ResizableMixin.__init__(self)
+        # Initialise explicitement ``QGraphicsRectItem`` avant les mixins pour
+        # éviter tout double appel du constructeur Qt.
         QGraphicsRectItem.__init__(self, 0, 0, w, h)
+        ResizableMixin.__init__(self)
+        SwingMoveMixin.__init__(self)
         self.setPos(x, y)
         pen = QPen(color)
         pen.setWidth(2)
@@ -312,12 +366,13 @@ class Rect(ResizableMixin, SnapToGridMixin, QGraphicsRectItem):
         self.setTransformOriginPoint(r.width() / 2, r.height() / 2)
 
 
-class Ellipse(ResizableMixin, SnapToGridMixin, QGraphicsEllipseItem):
+class Ellipse(SwingMoveMixin, ResizableMixin, SnapToGridMixin, QGraphicsEllipseItem):
     """Ellipse déplaçable, sélectionnable et redimensionnable."""
 
     def __init__(self, x, y, w, h, color: QColor = QColor("black")):
-        ResizableMixin.__init__(self)
         QGraphicsEllipseItem.__init__(self, 0, 0, w, h)
+        ResizableMixin.__init__(self)
+        SwingMoveMixin.__init__(self)
         self.setPos(x, y)
         pen = QPen(color)
         pen.setWidth(2)
@@ -411,12 +466,13 @@ class LineResizableMixin:
         super().mouseReleaseEvent(event)
 
 
-class Line(LineResizableMixin, SnapToGridMixin, QGraphicsLineItem):
+class Line(SwingMoveMixin, LineResizableMixin, SnapToGridMixin, QGraphicsLineItem):
     """Ligne déplaçable, sélectionnable et redimensionnable."""
 
     def __init__(self, x1, y1, x2, y2, color: QColor = QColor("black")):
-        LineResizableMixin.__init__(self)
         QGraphicsLineItem.__init__(self, x1, y1, x2, y2)
+        LineResizableMixin.__init__(self)
+        SwingMoveMixin.__init__(self)
         pen = QPen(color)
         pen.setWidth(2)
         self.setPen(pen)
@@ -430,7 +486,7 @@ class Line(LineResizableMixin, SnapToGridMixin, QGraphicsLineItem):
         self.setToolTip("Clique droit pour modifier")
 
 
-class FreehandPath(ResizableMixin, SnapToGridMixin, QGraphicsPathItem):
+class FreehandPath(SwingMoveMixin, ResizableMixin, SnapToGridMixin, QGraphicsPathItem):
     """
     Tracé libre.
     Utilisez `from_points` pour construire à partir d’une liste de QPointF.
@@ -442,8 +498,9 @@ class FreehandPath(ResizableMixin, SnapToGridMixin, QGraphicsPathItem):
         pen_color: QColor = QColor("black"),
         pen_width: int = 2,
     ):
-        ResizableMixin.__init__(self)
         QGraphicsPathItem.__init__(self)
+        ResizableMixin.__init__(self)
+        SwingMoveMixin.__init__(self)
         pen = QPen(pen_color)
         pen.setWidth(pen_width)
         self.setPen(pen)
@@ -489,7 +546,7 @@ class FreehandPath(ResizableMixin, SnapToGridMixin, QGraphicsPathItem):
         return cls(painter_path, pen_color, pen_width)
 
 
-class TextItem(ResizableMixin, SnapToGridMixin, QGraphicsTextItem):
+class TextItem(SwingMoveMixin, ResizableMixin, SnapToGridMixin, QGraphicsTextItem):
     """Bloc de texte éditable, déplaçable et redimensionnable."""
 
     def __init__(
@@ -500,8 +557,9 @@ class TextItem(ResizableMixin, SnapToGridMixin, QGraphicsTextItem):
         font_size: int = 12,
         color: QColor = QColor("black"),
     ):
-        ResizableMixin.__init__(self)
         QGraphicsTextItem.__init__(self, text)
+        ResizableMixin.__init__(self)
+        SwingMoveMixin.__init__(self)
         font = QFont()
         font.setPointSize(font_size)
         self.setFont(font)
@@ -541,14 +599,15 @@ class TextItem(ResizableMixin, SnapToGridMixin, QGraphicsTextItem):
         self.setTransformOriginPoint(w / 2, h / 2)
 
 
-class ImageItem(ResizableMixin, SnapToGridMixin, QGraphicsPixmapItem):
+class ImageItem(SwingMoveMixin, ResizableMixin, SnapToGridMixin, QGraphicsPixmapItem):
     """Image insérée dans le canvas."""
 
     def __init__(self, x: float, y: float, path: str):
         self.path = path
         pix = QPixmap(path)
-        ResizableMixin.__init__(self)
         QGraphicsPixmapItem.__init__(self, pix)
+        ResizableMixin.__init__(self)
+        SwingMoveMixin.__init__(self)
         self._orig_pixmap = pix
         self.setPos(x, y)
         self.setFlags(
