@@ -49,20 +49,7 @@ class TransparentItemGroup(QGraphicsItemGroup):
 
 
 
-    def _forward_or_handle(self, event, handler):
-        if self.isSelected():
-            handler(event)
-        else:
-            event.ignore()
 
-    def mousePressEvent(self, event):
-        self._forward_or_handle(event, super().mousePressEvent)
-
-    def mouseMoveEvent(self, event):
-        self._forward_or_handle(event, super().mouseMoveEvent)
-
-    def mouseReleaseEvent(self, event):
-        self._forward_or_handle(event, super().mouseReleaseEvent)
 
 
 
