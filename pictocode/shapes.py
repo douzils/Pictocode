@@ -42,20 +42,24 @@ class SnapToGridMixin:
 
 
 class SwingMoveMixin:
+
     """Rotate slightly while dragging to give a swinging effect."""
+
 
     def __init__(self):
         super().__init__()
         self._dragging_swing = False
         self._base_rot = 0.0
         self._last_pos = QPointF()
-        self._rot_anim = None
+
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
             self._dragging_swing = True
             self._base_rot = self.rotation() if hasattr(self, "rotation") else 0.0
+
             self._last_pos = self.pos()
+
             if self._rot_anim:
                 self._rot_anim.stop()
         super().mousePressEvent(event)
@@ -63,7 +67,9 @@ class SwingMoveMixin:
     def mouseReleaseEvent(self, event):
         if self._dragging_swing:
             self._dragging_swing = False
+
             self._animate_rotation(self._base_rot)
+
         super().mouseReleaseEvent(event)
 
     def itemChange(self, change, value):
