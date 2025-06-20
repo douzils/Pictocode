@@ -47,7 +47,10 @@ class LayersTreeWidget(QTreeWidget):
         self._drop_line = QFrame(self.viewport())
         self._drop_line.setFixedHeight(2)
         self._drop_line.setStyleSheet(f"background:{self.drop_color.name()};")
+        self._drop_line.setAttribute(Qt.WA_TransparentForMouseEvents)
         self._drop_line.hide()
+        # Use a custom drop indicator to avoid flicker with Qt's built-in one
+        self.setDropIndicatorShown(False)
         self._highlight_item = None
 
     def mousePressEvent(self, event):
@@ -93,7 +96,9 @@ class LayersTreeWidget(QTreeWidget):
 
     def dragMoveEvent(self, event):
         """Highlight potential drop targets while dragging."""
+        event.setDropAction(Qt.MoveAction)
         super().dragMoveEvent(event)
+        event.accept()
         item = self.itemAt(event.pos())
         pos = self.dropIndicatorPosition()
 
@@ -119,7 +124,7 @@ class LayersTreeWidget(QTreeWidget):
                 brush = QBrush(self.group_color)
                 for c in range(self.columnCount()):
                     item.setBackground(c, brush)
-        else:
+        elif item is not self._highlight_item:
             self._clear_highlight()
 
     def dropEvent(self, event):
