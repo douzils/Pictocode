@@ -26,7 +26,7 @@ UNLOCK_ICON = "\U0001F513"  # open lock
 
 
 class LayersTreeWidget(QTreeWidget):
-    """QTreeWidget with custom drag preview highlighting."""
+    """Tree widget used for the layer hierarchy."""
 
     def __init__(
         self,
@@ -59,22 +59,24 @@ class LayersTreeWidget(QTreeWidget):
             col = self.columnAt(event.pos().x())
             item = self.itemAt(event.pos())
             super().mousePressEvent(event)
+            # Dragging is disabled; just ensure the item gets selected
             if item is not None and col == 0:
-
-                # Schedule the drag to start after Qt processes the press so
-                # the item becomes selected without requiring any mouse
-                # movement.
-
-
-                # Start dragging immediately so a drop can occur even
-                # without moving the mouse, then schedule another start in
-                # the next event loop iteration to ensure selection updates
-                # correctly across platforms.
-                self.startDrag(Qt.MoveAction)
-
-                QTimer.singleShot(0, lambda: self.startDrag(Qt.MoveAction))
-            return
+                return
         super().mousePressEvent(event)
+
+    def keyPressEvent(self, event):
+        if event.modifiers() & Qt.ControlModifier:
+            if event.key() == Qt.Key_Up:
+                if self._parent:
+                    self._parent.move_current_item_up()
+                event.accept()
+                return
+            elif event.key() == Qt.Key_Down:
+                if self._parent:
+                    self._parent.move_current_item_down()
+                event.accept()
+                return
+        super().keyPressEvent(event)
 
     def _clear_highlight(self):
         if self._highlight_item:
@@ -166,9 +168,11 @@ class LayersWidget(QWidget):
         self.tree.setColumnCount(3)
         self.tree.setHeaderLabels(["Nom", "Vis", "Lock"])
         self.tree.setSelectionMode(QAbstractItemView.SingleSelection)
-        self.tree.setDragDropMode(QAbstractItemView.InternalMove)
-        self.tree.setDragEnabled(True)
-        self.tree.setAcceptDrops(True)
+        # Disable drag and drop; items will be reordered via shortcuts or
+        # the context menu instead of using click-and-drop.
+        self.tree.setDragDropMode(QAbstractItemView.NoDragDrop)
+        self.tree.setDragEnabled(False)
+        self.tree.setAcceptDrops(False)
         self.tree.setEditTriggers(
             QAbstractItemView.DoubleClicked
             | QAbstractItemView.EditKeyPressed
@@ -211,7 +215,7 @@ class LayersWidget(QWidget):
         self.tree.itemSelectionChanged.connect(self._on_selection_changed)
         self.tree.setContextMenuPolicy(Qt.CustomContextMenu)
         self.tree.customContextMenuRequested.connect(self._open_menu)
-        self.tree.viewport().setAcceptDrops(True)
+        self.tree.viewport().setAcceptDrops(False)
 
         # Map QGraphicsItems to their corresponding tree items for quick lookups
         self._item_map: dict[QGraphicsItem, QTreeWidgetItem] = {}
@@ -423,6 +427,29 @@ class LayersWidget(QWidget):
                 self.canvas.scene.clearSelection()
                 gitem.setSelected(True)
 
+    # --- Layer reordering utilities ---------------------------------
+    def move_current_item_up(self):
+        item = self.tree.currentItem()
+        if not item:
+            return
+        parent = item.parent() or self.tree.invisibleRootItem().child(0)
+        idx = parent.indexOfChild(item)
+        if idx > 0:
+            parent.takeChild(idx)
+            parent.insertChild(idx - 1, item)
+            self._sync_scene_from_tree()
+
+    def move_current_item_down(self):
+        item = self.tree.currentItem()
+        if not item:
+            return
+        parent = item.parent() or self.tree.invisibleRootItem().child(0)
+        idx = parent.indexOfChild(item)
+        if idx < parent.childCount() - 1:
+            parent.takeChild(idx)
+            parent.insertChild(idx + 1, item)
+            self._sync_scene_from_tree()
+
     def _open_menu(self, pos):
         if not self.canvas:
             return
@@ -503,19 +530,9 @@ class LayersWidget(QWidget):
             count = root_item.childCount() if root_item else 0
             insert_group(count)
         elif action is act_up:
-            parent = item.parent() or self.tree.invisibleRootItem().child(0)
-            idx = parent.indexOfChild(item)
-            if idx > 0:
-                parent.takeChild(idx)
-                parent.insertChild(idx - 1, item)
-                self._sync_scene_from_tree()
+            self.move_current_item_up()
         elif action is act_down:
-            parent = item.parent() or self.tree.invisibleRootItem().child(0)
-            idx = parent.indexOfChild(item)
-            if idx < parent.childCount() - 1:
-                parent.takeChild(idx)
-                parent.insertChild(idx + 1, item)
-                self._sync_scene_from_tree()
+            self.move_current_item_down()
         elif action is act_group:
             group = self.canvas.group_selected()
             if group:
