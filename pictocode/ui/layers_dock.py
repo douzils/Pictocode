@@ -213,6 +213,9 @@ class LayersWidget(QWidget):
         self.tree.customContextMenuRequested.connect(self._open_menu)
         self.tree.viewport().setAcceptDrops(True)
 
+        # Map QGraphicsItems to their corresponding tree items for quick lookups
+        self._item_map: dict[QGraphicsItem, QTreeWidgetItem] = {}
+
     def apply_theme(self):
         """Re-apply styles when the application theme changes."""
         self._apply_styles()
@@ -266,6 +269,8 @@ class LayersWidget(QWidget):
             selected = items[0] if items else None
 
         self._updating = True
+        # Reset the item map when rebuilding the tree
+        self._item_map.clear()
 
         expanded = {}
 
@@ -302,6 +307,8 @@ class LayersWidget(QWidget):
             name = getattr(gitem, "layer_name", type(gitem).__name__)
             qitem.setText(0, name)
             qitem.setData(0, Qt.UserRole, gitem)
+            # Keep a reference for quick lookups later
+            self._item_map[gitem] = qitem
             flags = (
                 qitem.flags()
                 | Qt.ItemIsEditable
@@ -340,6 +347,11 @@ class LayersWidget(QWidget):
     # ------------------------------------------------------------------
     def highlight_item(self, item):
         """Select ``item`` in the tree if it is present."""
+        qitem = self._item_map.get(item)
+        if qitem:
+            self.tree.setCurrentItem(qitem)
+            return
+        # Fallback: traverse the tree if mapping is missing
         def walk(parent):
             for i in range(parent.childCount()):
                 child = parent.child(i)
@@ -353,18 +365,21 @@ class LayersWidget(QWidget):
         walk(self.tree.invisibleRootItem())
 
     def _propagate_state(self, tparent, *, visible=None, locked=None):
-        """Recursively apply visibility or lock state to children."""
-        for idx in range(tparent.childCount()):
-            child = tparent.child(idx)
-            gchild = child.data(0, Qt.UserRole)
-            if visible is not None and gchild:
-                gchild.setVisible(visible)
-                child.setText(1, VISIBLE_ICON if visible else HIDDEN_ICON)
-            if locked is not None and gchild:
-                gchild.setFlag(QGraphicsItem.ItemIsMovable, not locked)
-                gchild.setFlag(QGraphicsItem.ItemIsSelectable, not locked)
-                child.setText(2, LOCK_ICON if locked else UNLOCK_ICON)
-            self._propagate_state(child, visible=visible, locked=locked)
+        """Apply visibility or lock state to ``tparent`` and all its children."""
+        queue = [tparent]
+        while queue:
+            current = queue.pop(0)
+            gchild = current.data(0, Qt.UserRole)
+            if gchild and current is not tparent:
+                if visible is not None:
+                    gchild.setVisible(visible)
+                    current.setText(1, VISIBLE_ICON if visible else HIDDEN_ICON)
+                if locked is not None:
+                    gchild.setFlag(QGraphicsItem.ItemIsMovable, not locked)
+                    gchild.setFlag(QGraphicsItem.ItemIsSelectable, not locked)
+                    current.setText(2, LOCK_ICON if locked else UNLOCK_ICON)
+            for i in range(current.childCount()):
+                queue.append(current.child(i))
 
     # ------------------------------------------------------------------
     def _on_item_clicked(self, titem, column):
@@ -550,8 +565,16 @@ class LayersWidget(QWidget):
 
         z_index = 0
 
-        def apply_children(tparent, gparent):
-            nonlocal z_index
+        root = self.tree.invisibleRootItem()
+        if (
+            root.childCount() == 1
+            and root.child(0).data(0, Qt.UserRole) is None
+        ):
+            root = root.child(0)
+
+        stack = [(root, None)]
+        while stack:
+            tparent, gparent = stack.pop()
             for idx in range(tparent.childCount()):
                 child = tparent.child(idx)
                 gitem = child.data(0, Qt.UserRole)
@@ -570,15 +593,7 @@ class LayersWidget(QWidget):
                         )
                     self._animate_z(gitem, z_index)
                     z_index += 1
-                apply_children(child, gitem)
-
-        root = self.tree.invisibleRootItem()
-        if (
-            root.childCount() == 1
-            and root.child(0).data(0, Qt.UserRole) is None
-        ):
-            root = root.child(0)
-        apply_children(root, None)
+                stack.append((child, gitem))
 
     def _animate_z(self, gitem, z):
         """Animate z-value changes while avoiding animation loops."""
