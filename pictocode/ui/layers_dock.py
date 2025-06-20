@@ -92,7 +92,13 @@ class LayersTreeWidget(QTreeWidget):
             except RuntimeError:
                 # The underlying item was deleted; nothing to clear.
                 pass
-            self._highlight_item = None
+        self._highlight_item = None
+
+    def dragEnterEvent(self, event):
+        """Ensure drags initiated outside the tree are accepted."""
+        event.setDropAction(Qt.MoveAction)
+        super().dragEnterEvent(event)
+        event.accept()
 
     def dragMoveEvent(self, event):
         """Highlight potential drop targets while dragging."""
