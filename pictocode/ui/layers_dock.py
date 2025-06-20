@@ -58,6 +58,11 @@ class LayersTreeWidget(QTreeWidget):
             super().mousePressEvent(event)
             if item is not None and col == 0:
 
+                # Schedule the drag to start after Qt processes the press so
+                # the item becomes selected without requiring any mouse
+                # movement.
+
+
                 # Start dragging immediately so a drop can occur even
                 # without moving the mouse, then schedule another start in
                 # the next event loop iteration to ensure selection updates

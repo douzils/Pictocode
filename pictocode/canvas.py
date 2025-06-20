@@ -46,6 +46,17 @@ class TransparentItemGroup(QGraphicsItemGroup):
             self.setHandlesChildEvents(bool(value))
         return super().itemChange(change, value)
 
+    def _forward_or_handle(self, event, handler):
+        if self.isSelected():
+            handler(event)
+        else:
+            event.ignore()
+
+    def mousePressEvent(self, event):
+        self._forward_or_handle(event, super().mousePressEvent)
+
+
+
 
 
 
