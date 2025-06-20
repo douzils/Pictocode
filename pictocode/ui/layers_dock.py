@@ -57,11 +57,13 @@ class LayersTreeWidget(QTreeWidget):
             item = self.itemAt(event.pos())
             super().mousePressEvent(event)
             if item is not None and col == 0:
+
                 # Start dragging immediately so a drop can occur even
                 # without moving the mouse, then schedule another start in
                 # the next event loop iteration to ensure selection updates
                 # correctly across platforms.
                 self.startDrag(Qt.MoveAction)
+
                 QTimer.singleShot(0, lambda: self.startDrag(Qt.MoveAction))
             return
         super().mousePressEvent(event)
