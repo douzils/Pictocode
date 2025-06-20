@@ -42,21 +42,24 @@ class SnapToGridMixin:
 
 
 class SwingMoveMixin:
-    """Add a small swinging animation when moving an item."""
+
+    """Rotate slightly while dragging to give a swinging effect."""
+
 
     def __init__(self):
         super().__init__()
         self._dragging_swing = False
         self._base_rot = 0.0
-        self._pos_anim = None
-        self._rot_anim = None
+        self._last_pos = QPointF()
+
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
             self._dragging_swing = True
             self._base_rot = self.rotation() if hasattr(self, "rotation") else 0.0
-            if self._pos_anim:
-                self._pos_anim.stop()
+
+            self._last_pos = self.pos()
+
             if self._rot_anim:
                 self._rot_anim.stop()
         super().mousePressEvent(event)
@@ -64,32 +67,25 @@ class SwingMoveMixin:
     def mouseReleaseEvent(self, event):
         if self._dragging_swing:
             self._dragging_swing = False
-            self._start_anim(self.pos(), self._base_rot)
+
+            self._animate_rotation(self._base_rot)
+
         super().mouseReleaseEvent(event)
 
     def itemChange(self, change, value):
         if change == QGraphicsItem.ItemPositionChange and self._dragging_swing:
             value = super().itemChange(change, value)
-            new_pos = value
-            delta = new_pos - self.pos()
+            delta = value - self._last_pos
+            self._last_pos = value
             angle = max(-10.0, min(10.0, delta.x()))
-            self._start_anim(new_pos, self._base_rot + angle)
-            return self.pos()
+            self.setRotation(self._base_rot + angle)
+            return value
         return super().itemChange(change, value)
-
-    def _start_anim(self, pos, rot):
-        if self._pos_anim:
-            self._pos_anim.stop()
+    def _animate_rotation(self, rot):
         if self._rot_anim:
             self._rot_anim.stop()
-        self._pos_anim = QVariantAnimation()
-        self._pos_anim.setDuration(80)
-        self._pos_anim.setStartValue(self.pos())
-        self._pos_anim.setEndValue(pos)
-        self._pos_anim.valueChanged.connect(lambda v: self.setPos(v))
-        self._pos_anim.start()
         self._rot_anim = QVariantAnimation()
-        self._rot_anim.setDuration(80)
+        self._rot_anim.setDuration(120)
         self._rot_anim.setStartValue(self.rotation())
         self._rot_anim.setEndValue(rot)
         self._rot_anim.valueChanged.connect(lambda v: self.setRotation(v))
