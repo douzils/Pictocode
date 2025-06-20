@@ -45,13 +45,14 @@ class SwingMoveMixin:
 
     """Rotate slightly while dragging to give a swinging effect."""
 
-
     def __init__(self):
-        super().__init__()
+        # Do not call ``super().__init__`` to avoid initializing the
+        # underlying ``QGraphicsItem`` twice. Each shape constructor will
+        # explicitly invoke this initializer after creating the item.
         self._dragging_swing = False
         self._base_rot = 0.0
         self._last_pos = QPointF()
-
+        self._rot_anim = None
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
@@ -345,6 +346,7 @@ class Rect(SwingMoveMixin, ResizableMixin, SnapToGridMixin, QGraphicsRectItem):
         SwingMoveMixin.__init__(self)
         ResizableMixin.__init__(self)
         QGraphicsRectItem.__init__(self, 0, 0, w, h)
+        SwingMoveMixin.__init__(self)
         self.setPos(x, y)
         pen = QPen(color)
         pen.setWidth(2)
@@ -376,6 +378,7 @@ class Ellipse(SwingMoveMixin, ResizableMixin, SnapToGridMixin, QGraphicsEllipseI
         SwingMoveMixin.__init__(self)
         ResizableMixin.__init__(self)
         QGraphicsEllipseItem.__init__(self, 0, 0, w, h)
+        SwingMoveMixin.__init__(self)
         self.setPos(x, y)
         pen = QPen(color)
         pen.setWidth(2)
@@ -476,6 +479,7 @@ class Line(SwingMoveMixin, LineResizableMixin, SnapToGridMixin, QGraphicsLineIte
         SwingMoveMixin.__init__(self)
         LineResizableMixin.__init__(self)
         QGraphicsLineItem.__init__(self, x1, y1, x2, y2)
+        SwingMoveMixin.__init__(self)
         pen = QPen(color)
         pen.setWidth(2)
         self.setPen(pen)
@@ -504,6 +508,7 @@ class FreehandPath(SwingMoveMixin, ResizableMixin, SnapToGridMixin, QGraphicsPat
         SwingMoveMixin.__init__(self)
         ResizableMixin.__init__(self)
         QGraphicsPathItem.__init__(self)
+        SwingMoveMixin.__init__(self)
         pen = QPen(pen_color)
         pen.setWidth(pen_width)
         self.setPen(pen)
@@ -563,6 +568,7 @@ class TextItem(SwingMoveMixin, ResizableMixin, SnapToGridMixin, QGraphicsTextIte
         SwingMoveMixin.__init__(self)
         ResizableMixin.__init__(self)
         QGraphicsTextItem.__init__(self, text)
+        SwingMoveMixin.__init__(self)
         font = QFont()
         font.setPointSize(font_size)
         self.setFont(font)
@@ -611,6 +617,7 @@ class ImageItem(SwingMoveMixin, ResizableMixin, SnapToGridMixin, QGraphicsPixmap
         SwingMoveMixin.__init__(self)
         ResizableMixin.__init__(self)
         QGraphicsPixmapItem.__init__(self, pix)
+        SwingMoveMixin.__init__(self)
         self._orig_pixmap = pix
         self.setPos(x, y)
         self.setFlags(
