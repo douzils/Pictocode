@@ -46,9 +46,6 @@ class TransparentItemGroup(QGraphicsItemGroup):
             self.setHandlesChildEvents(bool(value))
         return super().itemChange(change, value)
 
-
-
-
     def _forward_or_handle(self, event, handler):
         if self.isSelected():
             handler(event)
@@ -63,6 +60,11 @@ class TransparentItemGroup(QGraphicsItemGroup):
 
     def mouseReleaseEvent(self, event):
         self._forward_or_handle(event, super().mouseReleaseEvent)
+
+
+
+
+
 
 
 
