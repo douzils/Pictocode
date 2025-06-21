@@ -19,10 +19,10 @@ from PyQt5.QtGui import QBrush, QColor, QTransform, QDrag, QPainter
 from .animated_menu import AnimatedMenu
 
 
-VISIBLE_ICON = "\U0001F441"  # eye
-HIDDEN_ICON = "\u274C"      # cross mark
-LOCK_ICON = "\U0001F512"    # closed lock
-UNLOCK_ICON = "\U0001F513"  # open lock
+VISIBLE_ICON = "\U0001f441"  # eye
+HIDDEN_ICON = "\u274c"  # cross mark
+LOCK_ICON = "\U0001f512"  # closed lock
+UNLOCK_ICON = "\U0001f513"  # open lock
 
 
 class LayersTreeWidget(QTreeWidget):
@@ -36,7 +36,6 @@ class LayersTreeWidget(QTreeWidget):
         group_color: QColor | None = None,
         **kwargs,
     ):
-
         """Initialize the tree and set up drop highlighting colors."""
 
         super().__init__(parent, **kwargs)
@@ -52,6 +51,21 @@ class LayersTreeWidget(QTreeWidget):
         # Use a custom drop indicator to avoid flicker with Qt's built-in one
         self.setDropIndicatorShown(False)
         self._highlight_item = None
+
+    def mimeData(self, items):
+        """Return MIME data for ``items`` without serializing ``QGraphicsItem`` pointers."""
+        # Temporarily remove the ``Qt.UserRole`` data that stores a ``QGraphicsItem``
+        # pointer so Qt's default implementation doesn't attempt to serialize it,
+        # which would otherwise produce ``QVariant::save`` warnings and break drag
+        # animations on some platforms.
+        backup = {}
+        for it in items:
+            backup[it] = it.data(0, Qt.UserRole)
+            it.setData(0, Qt.UserRole, None)
+        mime = super().mimeData(items)
+        for it in items:
+            it.setData(0, Qt.UserRole, backup[it])
+        return mime
 
     def mousePressEvent(self, event):
 
@@ -201,8 +215,7 @@ class LayersWidget(QWidget):
         self.tree.setDragEnabled(True)
         self.tree.setAcceptDrops(True)
         self.tree.setEditTriggers(
-            QAbstractItemView.DoubleClicked
-            | QAbstractItemView.EditKeyPressed
+            QAbstractItemView.DoubleClicked | QAbstractItemView.EditKeyPressed
         )
         self.tree.setAlternatingRowColors(True)
         header = self.tree.header()
@@ -213,12 +226,15 @@ class LayersWidget(QWidget):
         header.setSectionResizeMode(1, QHeaderView.Fixed)
         header.setSectionResizeMode(2, QHeaderView.Fixed)
         fm = self.tree.fontMetrics()
-        icon_w = max(
-            fm.boundingRect(VISIBLE_ICON).width(),
-            fm.boundingRect(HIDDEN_ICON).width(),
-            fm.boundingRect(LOCK_ICON).width(),
-            fm.boundingRect(UNLOCK_ICON).width(),
-        ) + 4
+        icon_w = (
+            max(
+                fm.boundingRect(VISIBLE_ICON).width(),
+                fm.boundingRect(HIDDEN_ICON).width(),
+                fm.boundingRect(LOCK_ICON).width(),
+                fm.boundingRect(UNLOCK_ICON).width(),
+            )
+            + 4
+        )
         header.resizeSection(1, icon_w)
         header.resizeSection(2, icon_w)
         header.hide()
@@ -319,8 +335,9 @@ class LayersWidget(QWidget):
             self._updating = False
             return
 
-        project_name = getattr(canvas, "current_meta",
-                               {}).get("name") or "Projet"
+        project_name = (
+            getattr(canvas, "current_meta", {}).get("name") or "Projet"
+        )
         root_item = QTreeWidgetItem(self.tree)
         root_item.setText(0, project_name)
         root_item.setData(0, Qt.UserRole, None)
@@ -349,7 +366,9 @@ class LayersWidget(QWidget):
             qitem.setFlags(flags)
             qitem.setTextAlignment(1, Qt.AlignRight | Qt.AlignVCenter)
             qitem.setTextAlignment(2, Qt.AlignRight | Qt.AlignVCenter)
-            qitem.setText(1, VISIBLE_ICON if gitem.isVisible() else HIDDEN_ICON)
+            qitem.setText(
+                1, VISIBLE_ICON if gitem.isVisible() else HIDDEN_ICON
+            )
 
             locked = not (gitem.flags() & QGraphicsItem.ItemIsMovable)
             qitem.setText(2, LOCK_ICON if locked else UNLOCK_ICON)
@@ -382,6 +401,7 @@ class LayersWidget(QWidget):
         if qitem:
             self.tree.setCurrentItem(qitem)
             return
+
         # Fallback: traverse the tree if mapping is missing
         def walk(parent):
             for i in range(parent.childCount()):
@@ -404,7 +424,9 @@ class LayersWidget(QWidget):
             if gchild and current is not tparent:
                 if visible is not None:
                     gchild.setVisible(visible)
-                    current.setText(1, VISIBLE_ICON if visible else HIDDEN_ICON)
+                    current.setText(
+                        1, VISIBLE_ICON if visible else HIDDEN_ICON
+                    )
                 if locked is not None:
                     gchild.setFlag(QGraphicsItem.ItemIsMovable, not locked)
                     gchild.setFlag(QGraphicsItem.ItemIsSelectable, not locked)
@@ -585,9 +607,8 @@ class LayersWidget(QWidget):
             and self.canvas
         ):
             target_gitem = target_item.data(0, Qt.UserRole)
-            if (
-                target_gitem
-                and not isinstance(target_gitem, QGraphicsItemGroup)
+            if target_gitem and not isinstance(
+                target_gitem, QGraphicsItemGroup
             ):
                 items = [target_gitem] + sorted(
                     selected, key=lambda g: g.zValue()
@@ -623,8 +644,11 @@ class LayersWidget(QWidget):
                 child = tparent.child(idx)
                 gitem = child.data(0, Qt.UserRole)
                 if gitem:
-                    target_parent = gparent if isinstance(
-                        gparent, QGraphicsItemGroup) else None
+                    target_parent = (
+                        gparent
+                        if isinstance(gparent, QGraphicsItemGroup)
+                        else None
+                    )
                     if gitem.parentItem() is not target_parent:
                         gitem.setParentItem(target_parent)
                         gitem.setFlag(
