@@ -14,8 +14,9 @@ from PyQt5.QtWidgets import (
     QStyle,
 )
 from PyQt5.QtCore import Qt, QPropertyAnimation, QTimer
-from PyQt5.QtWidgets import QGraphicsObject, QDrag
-from PyQt5.QtGui import QBrush, QColor, QTransform
+from PyQt5.QtWidgets import QGraphicsObject
+from PyQt5.QtGui import QBrush, QColor, QTransform, QDrag
+
 from .animated_menu import AnimatedMenu
 
 
