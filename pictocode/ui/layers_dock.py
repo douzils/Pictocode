@@ -15,7 +15,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import Qt, QPropertyAnimation, QTimer
 from PyQt5.QtWidgets import QGraphicsObject
-from PyQt5.QtGui import QBrush, QColor
+from PyQt5.QtGui import QBrush, QColor, QTransform, QDrag
 from .animated_menu import AnimatedMenu
 
 
@@ -98,6 +98,24 @@ class LayersTreeWidget(QTreeWidget):
                 # The underlying item was deleted; nothing to clear.
                 pass
         self._highlight_item = None
+
+    def startDrag(self, supported_actions):
+        """Start a drag with a slightly rotated pixmap for a swinging effect."""
+        item = self.currentItem()
+        if not item:
+            super().startDrag(supported_actions)
+            return
+
+        rect = self.visualItemRect(item)
+        pixmap = self.viewport().grab(rect)
+        transform = QTransform()
+        transform.rotate(8)
+        pixmap = pixmap.transformed(transform, Qt.SmoothTransformation)
+        drag = QDrag(self)
+        drag.setMimeData(self.mimeData(self.selectedItems()))
+        drag.setPixmap(pixmap)
+        drag.setHotSpot(pixmap.rect().center())
+        drag.exec_(Qt.MoveAction)
 
     def dragEnterEvent(self, event):
         """Ensure drags initiated outside the tree are accepted."""
