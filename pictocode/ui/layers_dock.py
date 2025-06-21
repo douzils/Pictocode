@@ -15,7 +15,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import Qt, QPropertyAnimation, QTimer
 from PyQt5.QtWidgets import QGraphicsObject
-from PyQt5.QtGui import QBrush, QColor, QTransform, QDrag
+from PyQt5.QtGui import QBrush, QColor, QTransform, QDrag, QPainter
 from .animated_menu import AnimatedMenu
 
 
@@ -60,9 +60,9 @@ class LayersTreeWidget(QTreeWidget):
             item = self.itemAt(event.pos())
             super().mousePressEvent(event)
             if item is not None and col == 0:
-                # Schedule a drag immediately so the row can be moved
-                # even if the mouse doesn't travel far after the press.
-                self.startDrag(Qt.MoveAction)
+                # Schedule a drag once the press event has been handled so the
+                # row can be moved smoothly even if the mouse doesn't travel
+                # far after the initial click.
                 QTimer.singleShot(0, lambda: self.startDrag(Qt.MoveAction))
             return
         super().mousePressEvent(event)
@@ -109,8 +109,16 @@ class LayersTreeWidget(QTreeWidget):
         rect = self.visualItemRect(item)
         pixmap = self.viewport().grab(rect)
         transform = QTransform()
+        cx = pixmap.width() / 2
+        cy = pixmap.height() / 2
+        transform.translate(cx, cy)
         transform.rotate(8)
+        transform.translate(-cx, -cy)
         pixmap = pixmap.transformed(transform, Qt.SmoothTransformation)
+        painter = QPainter(pixmap)
+        painter.setCompositionMode(QPainter.CompositionMode_DestinationIn)
+        painter.fillRect(pixmap.rect(), QColor(0, 0, 0, 180))
+        painter.end()
         drag = QDrag(self)
         drag.setMimeData(self.mimeData(self.selectedItems()))
         drag.setPixmap(pixmap)
