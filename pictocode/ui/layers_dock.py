@@ -16,7 +16,6 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt, QPropertyAnimation, QTimer
 from PyQt5.QtWidgets import QGraphicsObject
 from PyQt5.QtGui import QBrush, QColor, QTransform, QDrag
-
 from .animated_menu import AnimatedMenu
 
 
@@ -61,11 +60,11 @@ class LayersTreeWidget(QTreeWidget):
             item = self.itemAt(event.pos())
             super().mousePressEvent(event)
             if item is not None and col == 0:
-                # Rely on Qt's default behaviour to start dragging only
-                # when the user actually moves the mouse.  This avoids
-                # accidental drops triggered by a simple click which could
-                # reorder layers unexpectedly or create unwanted groups.
-                return
+                # Schedule a drag immediately so the row can be moved
+                # even if the mouse doesn't travel far after the press.
+                self.startDrag(Qt.MoveAction)
+                QTimer.singleShot(0, lambda: self.startDrag(Qt.MoveAction))
+            return
         super().mousePressEvent(event)
 
     def keyPressEvent(self, event):
