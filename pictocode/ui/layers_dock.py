@@ -60,10 +60,17 @@ class LayersTreeWidget(QTreeWidget):
         # animations on some platforms.
         backup = []
 
+
+        def strip_data(item):
+            backup.append((item, item.data(0, Qt.UserRole)))
+            item.setData(0, Qt.UserRole, None)
+            for i in range(item.childCount()):
+                strip_data(item.child(i))
+
         try:
             for it in items:
-                backup.append((it, it.data(0, Qt.UserRole)))
-                it.setData(0, Qt.UserRole, None)
+                strip_data(it)
+
             return super().mimeData(items)
         finally:
             for it, data in backup:
