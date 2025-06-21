@@ -58,14 +58,15 @@ class LayersTreeWidget(QTreeWidget):
         # pointer so Qt's default implementation doesn't attempt to serialize it,
         # which would otherwise produce ``QVariant::save`` warnings and break drag
         # animations on some platforms.
-        backup = {}
-        for it in items:
-            backup[it] = it.data(0, Qt.UserRole)
-            it.setData(0, Qt.UserRole, None)
-        mime = super().mimeData(items)
-        for it in items:
-            it.setData(0, Qt.UserRole, backup[it])
-        return mime
+        backup = []
+        try:
+            for it in items:
+                backup.append((it, it.data(0, Qt.UserRole)))
+                it.setData(0, Qt.UserRole, None)
+            return super().mimeData(items)
+        finally:
+            for it, data in backup:
+                it.setData(0, Qt.UserRole, data)
 
     def mousePressEvent(self, event):
 
