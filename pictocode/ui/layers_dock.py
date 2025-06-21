@@ -59,6 +59,7 @@ class LayersTreeWidget(QTreeWidget):
         # which would otherwise produce ``QVariant::save`` warnings and break drag
         # animations on some platforms.
         backup = []
+
         try:
             for it in items:
                 backup.append((it, it.data(0, Qt.UserRole)))
