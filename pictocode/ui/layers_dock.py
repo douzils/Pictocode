@@ -109,7 +109,11 @@ class LayersTreeWidget(QTreeWidget):
         rect = self.visualItemRect(item)
         pixmap = self.viewport().grab(rect)
         transform = QTransform()
+        cx = pixmap.width() / 2
+        cy = pixmap.height() / 2
+        transform.translate(cx, cy)
         transform.rotate(8)
+        transform.translate(-cx, -cy)
         pixmap = pixmap.transformed(transform, Qt.SmoothTransformation)
         painter = QPainter(pixmap)
         painter.setCompositionMode(QPainter.CompositionMode_DestinationIn)
