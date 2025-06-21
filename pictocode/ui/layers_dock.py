@@ -15,7 +15,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import Qt, QPropertyAnimation, QTimer
 from PyQt5.QtWidgets import QGraphicsObject
-from PyQt5.QtGui import QBrush, QColor
+from PyQt5.QtGui import QBrush, QColor, QTransform, QDrag
 from .animated_menu import AnimatedMenu
 
 
@@ -60,11 +60,11 @@ class LayersTreeWidget(QTreeWidget):
             item = self.itemAt(event.pos())
             super().mousePressEvent(event)
             if item is not None and col == 0:
-                # Rely on Qt's default behaviour to start dragging only
-                # when the user actually moves the mouse.  This avoids
-                # accidental drops triggered by a simple click which could
-                # reorder layers unexpectedly or create unwanted groups.
-                return
+                # Schedule a drag immediately so the row can be moved
+                # even if the mouse doesn't travel far after the press.
+                self.startDrag(Qt.MoveAction)
+                QTimer.singleShot(0, lambda: self.startDrag(Qt.MoveAction))
+            return
         super().mousePressEvent(event)
 
     def keyPressEvent(self, event):
@@ -98,6 +98,24 @@ class LayersTreeWidget(QTreeWidget):
                 # The underlying item was deleted; nothing to clear.
                 pass
         self._highlight_item = None
+
+    def startDrag(self, supported_actions):
+        """Start a drag with a slightly rotated pixmap for a swinging effect."""
+        item = self.currentItem()
+        if not item:
+            super().startDrag(supported_actions)
+            return
+
+        rect = self.visualItemRect(item)
+        pixmap = self.viewport().grab(rect)
+        transform = QTransform()
+        transform.rotate(8)
+        pixmap = pixmap.transformed(transform, Qt.SmoothTransformation)
+        drag = QDrag(self)
+        drag.setMimeData(self.mimeData(self.selectedItems()))
+        drag.setPixmap(pixmap)
+        drag.setHotSpot(pixmap.rect().center())
+        drag.exec_(Qt.MoveAction)
 
     def dragEnterEvent(self, event):
         """Ensure drags initiated outside the tree are accepted."""
