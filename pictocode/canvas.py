@@ -166,6 +166,7 @@ class CanvasWidget(QGraphicsView):
         # Gestion des calques
         self.layers = OrderedDict()
         self.current_layer = None
+        self.lock_others = False
         self.create_layer("Layer 1")
 
     def _draw_doc_frame(self):
@@ -1327,13 +1328,30 @@ class CanvasWidget(QGraphicsView):
         self._schedule_scene_changed()
         return group
 
+    def _apply_lock_setting(self):
+        """Lock or unlock layers based on the current setting."""
+        if not self.current_layer:
+            return
+        if self.lock_others:
+            for n, layer in self.layers.items():
+                locked = layer is not self.current_layer
+                layer.locked = locked
+                layer.setEnabled(not locked)
+        else:
+            for layer in self.layers.values():
+                layer.locked = False
+                layer.setEnabled(True)
+
+    def set_lock_others(self, enabled: bool):
+        """Enable or disable locking of non-active layers."""
+        self.lock_others = enabled
+        self._apply_lock_setting()
+        self._schedule_scene_changed()
+
     def set_current_layer(self, name: str):
         if name in self.layers:
             self.current_layer = self.layers[name]
-            for n, layer in self.layers.items():
-                locked = n != name
-                layer.locked = locked
-                layer.setEnabled(not locked)
+            self._apply_lock_setting()
             self._schedule_scene_changed()
 
     def set_layer_visible(self, name: str, visible: bool):
