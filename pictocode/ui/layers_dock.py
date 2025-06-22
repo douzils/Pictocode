@@ -6,6 +6,7 @@ from PyQt5.QtWidgets import (
     QToolButton,
     QMenu,
     QWidgetAction,
+    QCheckBox,
 )
 from PyQt5.QtCore import Qt, QPoint
 
@@ -25,6 +26,12 @@ class LayersWidget(QWidget):
 
         self.menu = QMenu(self)
         self.menu.aboutToShow.connect(self.populate)
+
+        self.lock_chk = QCheckBox("Lock other", self.menu)
+        self.lock_chk.toggled.connect(self._on_lock_others_toggled)
+        lock_act = QWidgetAction(self.menu)
+        lock_act.setDefaultWidget(self.lock_chk)
+
         action = QWidgetAction(self.menu)
         self.tree = QTreeWidget()
         self.tree.setHeaderLabels(["Calque", "Lock", "Vis.", ""])
@@ -33,6 +40,7 @@ class LayersWidget(QWidget):
         self.tree.setContextMenuPolicy(Qt.CustomContextMenu)
         self.tree.customContextMenuRequested.connect(self._on_context_menu)
         action.setDefaultWidget(self.tree)
+        self.menu.addAction(lock_act)
         self.menu.addAction(action)
         self.button.setMenu(self.menu)
 
@@ -54,6 +62,9 @@ class LayersWidget(QWidget):
     def populate(self):
         """Refresh drop-down list from canvas layers."""
         self.tree.blockSignals(True)
+        self.lock_chk.blockSignals(True)
+        self.lock_chk.setChecked(self.main.canvas.lock_others)
+        self.lock_chk.blockSignals(False)
 
         self.tree.clear()
         canvas = self.main.canvas
@@ -124,6 +135,11 @@ class LayersWidget(QWidget):
 
     def _remove_layer_by_name(self, name: str):
         self.main.canvas.remove_layer(name)
+        self.populate()
+
+    def _on_lock_others_toggled(self, checked: bool):
+        """Lock or unlock all non-active layers."""
+        self.main.canvas.set_lock_others(checked)
         self.populate()
 
     # ------------------------------------------------------------------
