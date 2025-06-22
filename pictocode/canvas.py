@@ -1340,6 +1340,7 @@ class CanvasWidget(QGraphicsView):
         first = layers_data[0]
         self.set_current_layer(first.get("name", self.layer_names()[0]))
 
+
     # --- Item lookup -------------------------------------------------
     def select_item_by_name(self, name: str):
         """Select the item having the given stored name."""
@@ -1349,4 +1350,5 @@ class CanvasWidget(QGraphicsView):
                 it.setSelected(True)
                 self.ensureVisible(it.sceneBoundingRect())
                 break
+
 
