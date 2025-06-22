@@ -92,6 +92,7 @@ class LayersTreeWidget(QTreeWidget):
         anim.setEndValue(end_color)
 
         def _update(value):
+
             try:
                 if item.treeWidget() is None:
                     return
@@ -218,6 +219,7 @@ class LayersTreeWidget(QTreeWidget):
 
         if pos in (QAbstractItemView.AboveItem, QAbstractItemView.BelowItem) and item:
             rect = self.visualItemRect(item)
+
             line_y = rect.top() if pos == QAbstractItemView.AboveItem else rect.bottom()
         elif pos == QAbstractItemView.OnItem and item:
             if event.modifiers() & Qt.ControlModifier:
@@ -236,6 +238,7 @@ class LayersTreeWidget(QTreeWidget):
 
         if line_y is not None:
             self._drop_line.setGeometry(0, line_y, self.viewport().width(), 2)
+
             self._fade_widget(self._drop_line, show=True)
         else:
             if self._drop_line.isVisible():
