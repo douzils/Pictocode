@@ -563,11 +563,13 @@ class TextItem(ResizableMixin, SnapToGridMixin, QGraphicsTextItem):
                 f"{getattr(self, 'layer_name', type(self).__name__)} position "
                 f"changed to {value.x():.1f},{value.y():.1f}"
             )
+
         elif change == QGraphicsItem.ItemSelectedHasChanged:
             logger.debug(
                 f"{getattr(self, 'layer_name', type(self).__name__)} selected="
                 f"{bool(value)}"
             )
+
         return super().itemChange(change, value)
 
     def rect(self):

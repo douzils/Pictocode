@@ -51,11 +51,13 @@ class TransparentItemGroup(QGraphicsItemGroup):
         item.setFlag(QGraphicsItem.ItemIsSelectable, True)
         item.setFlag(QGraphicsItem.ItemSendsGeometryChanges, True)
         logger.debug(
+
             "Added %s to %s flags=0x%x enabled=%s",
             getattr(item, "layer_name", type(item).__name__),
             getattr(self, "layer_name", "group"),
             int(item.flags()),
             self.isEnabled(),
+
         )
 
 
@@ -477,6 +479,7 @@ class CanvasWidget(QGraphicsView):
         if item:
             flags = int(item.flags())
             logger.debug(
+
                 "Item flags=0x%x movable=%s selectable=%s enabled=%s",
                 flags,
                 bool(flags & QGraphicsItem.ItemIsMovable),
@@ -490,6 +493,7 @@ class CanvasWidget(QGraphicsView):
                     getattr(parent, "layer_name", type(parent).__name__),
                     parent.isEnabled(),
                 )
+
         if self.current_tool == "pan":
             super().mousePressEvent(event)
             return
@@ -623,6 +627,7 @@ class CanvasWidget(QGraphicsView):
                     getattr(item, "layer_name", type(item).__name__),
                     item.isEnabled(),
                 )
+
 
     def mouseMoveEvent(self, event):
         scene_pos = self.mapToScene(event.pos())
@@ -762,6 +767,7 @@ class CanvasWidget(QGraphicsView):
                     f"Selected {getattr(it, 'layer_name', type(it).__name__)} "
                     f"at {pos.x():.1f},{pos.y():.1f}"
                 )
+
 
     def mouseDoubleClickEvent(self, event):
         scene_pos = self.mapToScene(event.pos())
@@ -1445,6 +1451,7 @@ class CanvasWidget(QGraphicsView):
             logger.debug(
                 f"Layer {getattr(layer, 'layer_name', '')} locked={effective_locked} "
                 f"enabled={layer.isEnabled()} current={layer is self.current_layer}"
+
             )
 
     def set_lock_others(self, enabled: bool):
