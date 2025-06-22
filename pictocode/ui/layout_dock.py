@@ -45,4 +45,12 @@ class LayoutWidget(QWidget):
         if not current:
             return
         name = current.data(0, Qt.UserRole)
-        self.main.canvas.select_item_by_name(name)
+        # Top-level items correspond to layers. Selecting them should only
+        # change the active layer, not select the underlying group which
+        # would block interaction with its children on the canvas.
+        if current.parent() is None:
+            # Avoid locking the canvas by leaving the layer group selected
+            self.main.canvas.deselect_all()
+            self.main.canvas.set_current_layer(name)
+        else:
+            self.main.canvas.select_item_by_name(name)

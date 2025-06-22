@@ -8,7 +8,6 @@ from PyQt5.QtWidgets import (
     QAction,
     QGraphicsItem,
     QGraphicsItemGroup,
-    QGraphicsObject,
 )
 from .ui.animated_menu import AnimatedMenu
 from PyQt5.QtCore import Qt, QRectF, QPointF, QSizeF, pyqtSignal, QTimer
@@ -281,7 +280,8 @@ class CanvasWidget(QGraphicsView):
         for s in shapes:
             self._create_item(s)
         self.scene.blockSignals(False)
-        window = self.window()
+        # Ensure layer and layout views stay in sync with the scene
+        self._schedule_scene_changed()
 
     def export_project(self):
         """
@@ -1125,6 +1125,10 @@ class CanvasWidget(QGraphicsView):
         for it in self.scene.items():
             if it is not self._frame_item:
                 it.setSelected(True)
+
+    def deselect_all(self):
+        """Clear selection on the scene."""
+        self.scene.clearSelection()
 
     def zoom_in(self):
         self.scale(1.25, 1.25)
