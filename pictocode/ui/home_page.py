@@ -315,9 +315,10 @@ class HomePage(QWidget):
             )
         }
         shapes = data.get("shapes", [])
+        layers = data.get("layers", [])
 
         # Appelle MainWindow pour ouvrir le projet
-        self.parent.open_project(path, params, shapes)
+        self.parent.open_project(path, params, shapes, layers)
 
     def _on_template_double_click(self, item: QListWidgetItem):
         """Pré-remplit le dialogue de nouveau projet avec un modèle."""

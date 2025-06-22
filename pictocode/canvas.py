@@ -21,6 +21,7 @@ from PyQt5.QtGui import (
     QPdfWriter,
     QTransform,
 )
+from collections import OrderedDict
 from .shapes import Rect, Ellipse, Line, FreehandPath, TextItem, ImageItem
 from .utils import to_pixels
 
@@ -155,6 +156,11 @@ class CanvasWidget(QGraphicsView):
         self._loading_snapshot = False
         self._name_counters = {}
 
+        # Gestion des calques
+        self.layers = OrderedDict()
+        self.current_layer = None
+        self.create_layer("Layer 1")
+
     def _draw_doc_frame(self):
         """Dessine le contour en pointillés de la zone de travail."""
         if self._frame_item:
@@ -220,6 +226,9 @@ class CanvasWidget(QGraphicsView):
         self.scene.clear()
         self._frame_item = None
         self._name_counters = {}
+        self.layers.clear()
+        self.current_layer = None
+        self.create_layer("Layer 1")
         self._doc_rect = QRectF(0, 0, w, h)
         self._draw_doc_frame()
         self.setSceneRect(self._doc_rect.adjusted(-500, -500, 500, 500))
@@ -285,7 +294,11 @@ class CanvasWidget(QGraphicsView):
             if data:
                 shapes.append(data)
         meta = getattr(self, "current_meta", {})
-        return {**meta, "shapes": shapes}
+        layers = [
+            {"name": name, "visible": layer.isVisible()}
+            for name, layer in self.layers.items()
+        ]
+        return {**meta, "shapes": shapes, "layers": layers}
 
     def export_image(self, path: str, img_format: str = "PNG"):
         """Enregistre la scène actuelle dans un fichier image."""
@@ -480,6 +493,9 @@ class CanvasWidget(QGraphicsView):
                                 "Texte", 12, self.pen_color)
                 item.setZValue(self._new_item_z)
                 self.scene.addItem(item)
+                if self.current_layer:
+                    self.current_layer.addToGroup(item)
+                    item.layer = self.current_layer.layer_name
                 self._assign_layer_name(item)
                 item.setSelected(True)
                 item.setTextInteractionFlags(Qt.TextEditorInteraction)
@@ -609,6 +625,9 @@ class CanvasWidget(QGraphicsView):
                 self._current_path_item.setPath(path)
                 self._current_path_item.setOpacity(1.0)
                 self._assign_layer_name(self._current_path_item)
+                if self.current_layer:
+                    self.current_layer.addToGroup(self._current_path_item)
+                    self._current_path_item.layer = self.current_layer.layer_name
             self._current_path_item = None
             self._freehand_points = None
             self._mark_dirty()
@@ -625,6 +644,9 @@ class CanvasWidget(QGraphicsView):
                 self._temp_item.setLine(x0, y0, scene_pos.x(), scene_pos.y())
             self._temp_item.setOpacity(1.0)
             self._assign_layer_name(self._temp_item)
+            if self.current_layer:
+                self.current_layer.addToGroup(self._temp_item)
+                self._temp_item.layer = self.current_layer.layer_name
             self._temp_item = None
             self._mark_dirty()
             self._schedule_scene_changed()
@@ -649,6 +671,9 @@ class CanvasWidget(QGraphicsView):
             self._polygon_item.setPath(path)
             self._polygon_item.setOpacity(1.0)
             self._assign_layer_name(self._polygon_item)
+            if self.current_layer:
+                self.current_layer.addToGroup(self._polygon_item)
+                self._polygon_item.layer = self.current_layer.layer_name
             self.scene.removeItem(self._poly_preview_line)
             self._poly_preview_line = None
             self._polygon_item = None
@@ -862,6 +887,7 @@ class CanvasWidget(QGraphicsView):
             return {
                 "type": "rect",
                 "name": getattr(item, "layer_name", ""),
+                "layer": getattr(item, "layer", ""),
                 "x": item.x(),
                 "y": item.y(),
                 "w": r.width(),
@@ -877,6 +903,7 @@ class CanvasWidget(QGraphicsView):
             return {
                 "type": "ellipse",
                 "name": getattr(item, "layer_name", ""),
+                "layer": getattr(item, "layer", ""),
                 "x": item.x(),
                 "y": item.y(),
                 "w": e.width(),
@@ -892,6 +919,7 @@ class CanvasWidget(QGraphicsView):
             return {
                 "type": "line",
                 "name": getattr(item, "layer_name", ""),
+                "layer": getattr(item, "layer", ""),
                 "x": item.x(),
                 "y": item.y(),
                 "x1": line.x1(),
@@ -912,6 +940,7 @@ class CanvasWidget(QGraphicsView):
             return {
                 "type": "path",
                 "name": getattr(item, "layer_name", ""),
+                "layer": getattr(item, "layer", ""),
                 "x": item.x(),
                 "y": item.y(),
                 "points": pts,
@@ -925,6 +954,7 @@ class CanvasWidget(QGraphicsView):
             return {
                 "type": "text",
                 "name": getattr(item, "layer_name", ""),
+                "layer": getattr(item, "layer", ""),
                 "x": item.x(),
                 "y": item.y(),
                 "text": item.toPlainText(),
@@ -938,6 +968,7 @@ class CanvasWidget(QGraphicsView):
             return {
                 "type": "image",
                 "name": getattr(item, "layer_name", ""),
+                "layer": getattr(item, "layer", ""),
                 "x": item.x(),
                 "y": item.y(),
                 "w": r.width(),
@@ -1023,6 +1054,13 @@ class CanvasWidget(QGraphicsView):
         else:
             return None
         self.scene.addItem(item)
+        layer = data.get("layer")
+        if layer and layer in self.layers:
+            self.layers[layer].addToGroup(item)
+            item.layer = layer
+        elif self.current_layer:
+            self.current_layer.addToGroup(item)
+            item.layer = self.current_layer.layer_name
         name = data.get("name")
         if name:
             item.layer_name = name
@@ -1145,6 +1183,7 @@ class CanvasWidget(QGraphicsView):
             snap.get("dpi", 72),
             name=snap.get("name", ""),
         )
+        self.setup_layers(snap.get("layers", []))
         self.load_shapes(snap.get("shapes", []))
         self._loading_snapshot = False
 
@@ -1210,6 +1249,9 @@ class CanvasWidget(QGraphicsView):
             QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable
         )
         self._assign_layer_name(group, "group")
+        if self.current_layer:
+            self.current_layer.addToGroup(group)
+            group.layer = self.current_layer.layer_name
         self.scene.clearSelection()
         group.setSelected(True)
         self._schedule_scene_changed()
@@ -1239,6 +1281,58 @@ class CanvasWidget(QGraphicsView):
             QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable
         )
         self._assign_layer_name(group, name)
+        if self.current_layer:
+            self.current_layer.addToGroup(group)
+            group.layer = self.current_layer.layer_name
         self._schedule_scene_changed()
         return group
+
+    # --- Layer management -------------------------------------------
+    def create_layer(self, name: str | None = None, visible: bool = True):
+        """Crée un calque et le retourne."""
+        if name is None:
+            name = f"Layer {len(self.layers) + 1}"
+        group = TransparentItemGroup()
+        self.scene.addItem(group)
+        group.setFlags(
+            QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable
+        )
+        self._assign_layer_name(group, name)
+        group.setVisible(visible)
+        group.visible = visible
+        self.layers[group.layer_name] = group
+        if self.current_layer is None:
+            self.current_layer = group
+        self._schedule_scene_changed()
+        return group
+
+    def set_current_layer(self, name: str):
+        if name in self.layers:
+            self.current_layer = self.layers[name]
+
+    def set_layer_visible(self, name: str, visible: bool):
+        layer = self.layers.get(name)
+        if layer:
+            layer.setVisible(visible)
+            layer.visible = visible
+            self._schedule_scene_changed()
+
+    def layer_names(self):
+        return list(self.layers.keys())
+
+    def setup_layers(self, layers_data):
+        """Configure les calques depuis une liste de dicts."""
+        for layer in self.layers.values():
+            self.scene.removeItem(layer)
+        self.layers.clear()
+        self.current_layer = None
+        if not layers_data:
+            self.create_layer("Layer 1")
+            return
+        for layer in layers_data:
+            name = layer.get("name") or f"Layer {len(self.layers)+1}"
+            vis = layer.get("visible", True)
+            self.create_layer(name, vis)
+        first = layers_data[0]
+        self.set_current_layer(first.get("name", self.layer_names()[0]))
 
