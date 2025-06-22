@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import math
+import logging
 from PyQt5.QtWidgets import (
     QGraphicsView,
     QGraphicsScene,
@@ -22,6 +23,7 @@ from PyQt5.QtGui import (
 )
 from collections import OrderedDict
 from .shapes import Rect, Ellipse, Line, FreehandPath, TextItem, ImageItem
+logger = logging.getLogger(__name__)
 from .utils import to_pixels
 
 
@@ -106,6 +108,7 @@ class CanvasScene(QGraphicsScene):
 class CanvasWidget(QGraphicsView):
     def __init__(self, parent=None):
         super().__init__(parent)
+        logger.debug("CanvasWidget initialized")
 
         # Scène
         self.scene = CanvasScene(self)
@@ -227,6 +230,7 @@ class CanvasWidget(QGraphicsView):
         """
         Initialise un nouveau document selon les paramètres donnés.
         width/height en unité choisie, orientation et dpi sont pris en
+        logger.debug(f"New document {width}x{height}{unit}")
         compte ici.
         """
         w = to_pixels(width, unit, dpi)
@@ -290,6 +294,7 @@ class CanvasWidget(QGraphicsView):
     def load_shapes(self, shapes):
         """Charge depuis une liste de dicts (issue de export_project)."""
         self.scene.blockSignals(True)
+        logger.debug(f"Loading {len(shapes)} shapes")
         for s in shapes:
             self._create_item(s)
         self.scene.blockSignals(False)
@@ -304,6 +309,7 @@ class CanvasWidget(QGraphicsView):
         """
         shapes = []
         for item in reversed(self.scene.items()):
+        logger.debug("Exporting project")
             if item is self._frame_item:
                 continue
             data = self._serialize_item(item)
@@ -323,6 +329,7 @@ class CanvasWidget(QGraphicsView):
     def export_image(self, path: str, img_format: str = "PNG"):
         """Enregistre la scène actuelle dans un fichier image."""
         w = int(self._doc_rect.width())
+        logger.debug(f"Exporting image to {path}")
         h = int(self._doc_rect.height())
         image = QImage(w, h, QImage.Format_ARGB32)
         image.fill(Qt.white)
@@ -334,6 +341,7 @@ class CanvasWidget(QGraphicsView):
     def export_svg(self, path: str):
         """Enregistre la scène actuelle au format SVG (très basique)."""
         from xml.etree.ElementTree import Element, SubElement, ElementTree
+        logger.debug(f"Exporting SVG to {path}")
 
         w = int(self._doc_rect.width())
         h = int(self._doc_rect.height())

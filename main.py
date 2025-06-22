@@ -4,11 +4,13 @@ import os
 from PyQt5.QtWidgets import QApplication
 from pictocode.ui.main_window import MainWindow
 from pictocode.bug_report import install_excepthook
+from pictocode.logger import setup_logging
 
 
 def main():
     # Ensure uncaught exceptions are logged and reported
     install_excepthook()
+    setup_logging()
     if os.name == "nt":
         import ctypes
 

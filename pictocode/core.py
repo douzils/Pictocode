@@ -1,7 +1,9 @@
 # pictocode/core.py
 
+import logging
 from PyQt5.QtGui import QColor
 from .shapes import Rect, Ellipse, Line, FreehandPath, TextItem
+logger = logging.getLogger(__name__)
 
 
 class CanvasModel:
@@ -14,11 +16,14 @@ class CanvasModel:
 
     def __init__(self):
         self.shapes: list = []
+        logger.debug("CanvasModel initialized")
 
     def add_rect(self, x, y, w, h, color: QColor = QColor("black")):
+        logger.debug(f"Add rect at ({x},{y}) size {w}x{h}")
         rect = Rect(x, y, w, h, color=color)
         self.shapes.append(rect)
         return rect
+        logger.debug(f"Add ellipse at ({x},{y}) size {w}x{h}")
 
     def add_ellipse(self, x, y, w, h, color: QColor = QColor("black")):
         ellipse = Ellipse(x, y, w, h, color=color)

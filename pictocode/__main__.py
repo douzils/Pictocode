@@ -6,11 +6,13 @@ from PyQt5.QtGui import QPixmap, QPainter, QColor, QFont
 from PyQt5.QtCore import Qt, QSettings
 from pictocode.ui.main_window import MainWindow
 from pictocode.bug_report import install_excepthook
+from pictocode.logger import setup_logging
 
 
 def main():
     # Install global exception handler to log unexpected crashes
     install_excepthook()
+    setup_logging()
     if os.name == "nt":
         import ctypes
 
