@@ -33,19 +33,23 @@ class TransparentItemGroup(QGraphicsItemGroup):
         # ItemHasNoContents avoids painting the group while keeping a bounding rect
         self.setFlag(QGraphicsItem.ItemHasNoContents, True)
         if hasattr(self, "setHandlesChildEvents"):
-            # Let children receive events until the group becomes selected
+            # Qt6
             self.setHandlesChildEvents(False)
+        elif hasattr(self, "setFiltersChildEvents"):
+            # Qt5
+            self.setFiltersChildEvents(False)
         # Ignore mouse events when not selected so child items stay clickable
         self.setAcceptedMouseButtons(Qt.NoButton)
 
 
     def itemChange(self, change, value):
-        if change == QGraphicsItem.ItemSelectedHasChanged and hasattr(
-            self, "setHandlesChildEvents"
-        ):
+        if change == QGraphicsItem.ItemSelectedHasChanged:
+            if hasattr(self, "setHandlesChildEvents"):
+                self.setHandlesChildEvents(bool(value))
+            elif hasattr(self, "setFiltersChildEvents"):
+                self.setFiltersChildEvents(bool(value))
             # Forward events to the children when not selected so they remain
             # individually selectable.
-            self.setHandlesChildEvents(bool(value))
             self.setAcceptedMouseButtons(
                 Qt.AllButtons if value else Qt.NoButton
             )
