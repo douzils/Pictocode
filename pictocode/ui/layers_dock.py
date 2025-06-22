@@ -78,7 +78,7 @@ class LayersWidget(QWidget):
                 | Qt.ItemIsEditable
                 | Qt.ItemIsSelectable
             )
-            node.setCheckState(1, Qt.Checked if not getattr(layer, "locked", False) else Qt.Unchecked)
+            node.setCheckState(1, Qt.Checked if getattr(layer, "locked", False) else Qt.Unchecked)
             node.setCheckState(2, Qt.Checked if layer.isVisible() else Qt.Unchecked)
             btn = QToolButton()
             btn.setText("-")
@@ -109,7 +109,7 @@ class LayersWidget(QWidget):
                 item.setData(0, Qt.UserRole, new_name)
                 self.button.setText(new_name)
         elif column == 1:
-            locked = item.checkState(1) != Qt.Checked
+            locked = item.checkState(1) == Qt.Checked
             self.main.canvas.set_layer_locked(name, locked)
         elif column == 2:
             visible = item.checkState(2) == Qt.Checked
