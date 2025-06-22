@@ -245,6 +245,8 @@ class CanvasWidget(QGraphicsView):
 
         if not self._loading_snapshot:
             self._snapshot()
+        if hasattr(window, "layout"):
+            window.layout.populate()
 
     def update_document_properties(
         self, width, height, unit, orientation, color_mode, dpi, name=""
@@ -878,6 +880,8 @@ class CanvasWidget(QGraphicsView):
 
         if not self._loading_snapshot:
             self._snapshot()
+        if hasattr(window, "layout"):
+            window.layout.populate()
 
     # --- Clipboard / editing helpers ---------------------------------
     def _serialize_item(self, item):
@@ -1335,4 +1339,16 @@ class CanvasWidget(QGraphicsView):
             self.create_layer(name, vis)
         first = layers_data[0]
         self.set_current_layer(first.get("name", self.layer_names()[0]))
+
+
+    # --- Item lookup -------------------------------------------------
+    def select_item_by_name(self, name: str):
+        """Select the item having the given stored name."""
+        for it in self.scene.items():
+            if getattr(it, "layer_name", None) == name:
+                self.scene.clearSelection()
+                it.setSelected(True)
+                self.ensureVisible(it.sceneBoundingRect())
+                break
+
 

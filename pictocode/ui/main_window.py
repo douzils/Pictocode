@@ -28,6 +28,8 @@ from .animated_menu import AnimatedMenu
 from .shortcut_settings_dialog import ShortcutSettingsDialog
 from .imports_dock import ImportsWidget
 from .layers_dock import LayersWidget
+from .layout_dock import LayoutWidget
+
 
 PROJECTS_DIR = os.path.join(os.path.dirname(
     os.path.abspath(__file__)), "Projects")
@@ -127,6 +129,17 @@ class MainWindow(QMainWindow):
         self.addDockWidget(Qt.LeftDockWidgetArea, l_dock)
         l_dock.setVisible(False)
         self.layers_dock = l_dock
+
+
+        # Layout / outliner
+        self.layout = LayoutWidget(self)
+        lo_dock = QDockWidget("Plan", self)
+        lo_dock.setWidget(self.layout)
+        lo_dock.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
+        self.addDockWidget(Qt.LeftDockWidgetArea, lo_dock)
+        lo_dock.setVisible(False)
+        self.layout_dock = lo_dock
+
 
 
 
@@ -404,6 +417,14 @@ class MainWindow(QMainWindow):
         viewm.addAction(layers_act)
         self.actions["view_layers"] = layers_act
 
+
+        layout_act = QAction("Plan", self, checkable=True)
+        layout_act.toggled.connect(self.layout_dock.setVisible)
+        self.layout_dock.visibilityChanged.connect(layout_act.setChecked)
+        viewm.addAction(layout_act)
+        self.actions["view_layout"] = layout_act
+
+
         prefm = AnimatedMenu("Préférences", self)
         mb.addMenu(prefm)
         app_act = QAction("Apparence…", self)
@@ -473,11 +494,16 @@ class MainWindow(QMainWindow):
         )
         self.layers.populate()
 
+        self.layout.populate()
+
+
         # affiche toolbar et docks
         self.toolbar.setVisible(True)
         self.inspector_dock.setVisible(False)
         self.imports_dock.setVisible(True)
         self.layers_dock.setVisible(True)
+        self.layout_dock.setVisible(True)
+
         self._set_project_actions_enabled(True)
         self._update_view_checks()
         # bascule sur le canvas
@@ -541,6 +567,7 @@ class MainWindow(QMainWindow):
         self.canvas.setup_layers(layers or [])
 
         self.layers.populate()
+        self.layout.populate()
 
         # charge formes
         self.canvas.load_shapes(shapes or [])
@@ -549,6 +576,8 @@ class MainWindow(QMainWindow):
         self.inspector_dock.setVisible(False)
         self.imports_dock.setVisible(True)
         self.layers_dock.setVisible(True)
+        self.layout_dock.setVisible(True)
+
         self._set_project_actions_enabled(True)
         self._update_view_checks()
         self._switch_page(self.canvas)
@@ -1107,6 +1136,11 @@ class MainWindow(QMainWindow):
             act = self.actions.get("view_layers")
             if act:
                 act.setChecked(self.layers_dock.isVisible())
+
+            act = self.actions.get("view_layout")
+            if act:
+                act.setChecked(self.layout_dock.isVisible())
+
 
     # --- Gestion favoris et récents ------------------------------------
     def add_recent_project(self, path: str):

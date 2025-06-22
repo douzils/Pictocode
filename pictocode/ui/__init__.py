@@ -7,6 +7,9 @@ from .project_tile import ProjectTile
 from .gradient_editor import GradientEditorDialog
 from .layers_dock import LayersWidget
 
+from .layout_dock import LayoutWidget
+
+
 __all__ = [
     "MainWindow",
     "AnimatedMenu",
@@ -14,4 +17,7 @@ __all__ = [
     "ProjectTile",
     "GradientEditorDialog",
     "LayersWidget",
+
+    "LayoutWidget",
+
 ]
