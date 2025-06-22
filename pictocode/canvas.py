@@ -44,6 +44,13 @@ class TransparentItemGroup(QGraphicsItemGroup):
         # Ignore mouse events when not selected so child items stay clickable
         self.setAcceptedMouseButtons(Qt.NoButton)
 
+    def addToGroup(self, item: QGraphicsItem):
+        """Add item and preserve its interactivity."""
+        super().addToGroup(item)
+        item.setFlag(QGraphicsItem.ItemIsMovable, True)
+        item.setFlag(QGraphicsItem.ItemIsSelectable, True)
+        item.setFlag(QGraphicsItem.ItemSendsGeometryChanges, True)
+
 
     def itemChange(self, change, value):
         if change == QGraphicsItem.ItemSelectedHasChanged:
