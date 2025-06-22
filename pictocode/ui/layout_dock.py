@@ -49,6 +49,10 @@ class LayoutWidget(QWidget):
         # change the active layer, not select the underlying group which
         # would block interaction with its children on the canvas.
         if current.parent() is None:
+
+            # Avoid locking the canvas by leaving the layer group selected
+            self.main.canvas.deselect_all()
+
             self.main.canvas.set_current_layer(name)
         else:
             self.main.canvas.select_item_by_name(name)

@@ -281,6 +281,10 @@ class CanvasWidget(QGraphicsView):
             self._create_item(s)
         self.scene.blockSignals(False)
 
+        # Ensure layer and layout views stay in sync with the scene
+        self._schedule_scene_changed()
+
+
     def export_project(self):
         """
         Exporte la meta (self.current_meta) + toutes les formes en dict.
@@ -1123,6 +1127,10 @@ class CanvasWidget(QGraphicsView):
         for it in self.scene.items():
             if it is not self._frame_item:
                 it.setSelected(True)
+
+    def deselect_all(self):
+        """Clear selection on the scene."""
+        self.scene.clearSelection()
 
     def zoom_in(self):
         self.scale(1.25, 1.25)
