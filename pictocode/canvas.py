@@ -1358,6 +1358,75 @@ class CanvasWidget(QGraphicsView):
         self.set_current_layer(self.current_layer.layer_name)
         self._schedule_scene_changed()
 
+
+    def rename_layer(self, old: str, new: str):
+        if old not in self.layers or not new:
+            return
+        if new in self.layers:
+            base = new
+            i = 1
+            while f"{base} {i}" in self.layers:
+                i += 1
+            new = f"{base} {i}"
+        keys = list(self.layers.keys())
+        idx = keys.index(old)
+        layer = self.layers.pop(old)
+        layer.layer_name = new
+        for child in layer.childItems():
+            child.layer = new
+        keys[idx] = new
+        self.layers = OrderedDict((k, self.layers.get(k, layer) if k == new else self.layers[k]) for k in keys)
+        if self.current_layer is layer:
+            self.current_layer = layer
+        self._schedule_scene_changed()
+
+    def duplicate_layer(self, name: str):
+        if name not in self.layers:
+            return
+        src = self.layers[name]
+        base = f"{name} copy"
+        i = 1
+        new_name = base
+        while new_name in self.layers:
+            i += 1
+            new_name = f"{base} {i}"
+        new_layer = self.create_layer(new_name, src.isVisible())
+        idx = list(self.layers.keys()).index(name)
+        order = list(self.layers.keys())
+        order.remove(new_name)
+        order.insert(idx + 1, new_name)
+        self._reorder(order)
+        for item in src.childItems():
+            data = self._serialize_item(item)
+            if not data:
+                continue
+            for key in ("x", "x1", "x2"):
+                if key in data:
+                    data[key] += 10
+            for key in ("y", "y1", "y2"):
+                if key in data:
+                    data[key] += 10
+            data["layer"] = new_name
+            self._create_item(data)
+        self._schedule_scene_changed()
+
+    def move_layer(self, name: str, offset: int):
+        keys = list(self.layers.keys())
+        if name not in keys:
+            return
+        idx = keys.index(name)
+        new_idx = max(0, min(len(keys) - 1, idx + offset))
+        if new_idx == idx:
+            return
+        keys.insert(new_idx, keys.pop(idx))
+        self._reorder(keys)
+
+    def _reorder(self, names):
+        self.layers = OrderedDict((n, self.layers[n]) for n in names)
+        for z, n in enumerate(names):
+            self.layers[n].setZValue(z)
+
+
     def setup_layers(self, layers_data):
         """Configure les calques depuis une liste de dicts."""
         for layer in self.layers.values():
