@@ -1354,6 +1354,9 @@ class CanvasWidget(QGraphicsView):
         self.layers[group.layer_name] = group
         if self.current_layer is None:
             self.current_layer = group
+        logger.debug(
+            f"Create layer {group.layer_name} visible={visible}"
+        )
         self._schedule_scene_changed()
         return group
 
@@ -1366,16 +1369,21 @@ class CanvasWidget(QGraphicsView):
             if self.lock_others and layer is not self.current_layer:
                 effective_locked = True
             layer.setEnabled(not effective_locked)
+            logger.debug(
+                f"Layer {getattr(layer, 'layer_name', '')} locked={effective_locked}"
+            )
 
     def set_lock_others(self, enabled: bool):
         """Enable or disable locking of non-active layers."""
         self.lock_others = enabled
+        logger.debug(f"Lock others set to {enabled}")
         self._apply_lock_setting()
         self._schedule_scene_changed()
 
     def set_current_layer(self, name: str):
         if name in self.layers:
             self.current_layer = self.layers[name]
+            logger.debug(f"Current layer set to {name}")
             self._apply_lock_setting()
             self._schedule_scene_changed()
 
@@ -1390,6 +1398,7 @@ class CanvasWidget(QGraphicsView):
         layer = self.layers.get(name)
         if layer:
             layer.locked = locked
+            logger.debug(f"Layer {name} set locked={locked}")
             self._apply_lock_setting()
             self._schedule_scene_changed()
 
