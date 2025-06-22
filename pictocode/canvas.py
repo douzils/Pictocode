@@ -51,6 +51,14 @@ class TransparentItemGroup(QGraphicsItemGroup):
         item.setFlag(QGraphicsItem.ItemIsSelectable, True)
         item.setFlag(QGraphicsItem.ItemSendsGeometryChanges, True)
 
+        logger.debug(
+            "Added %s to %s flags=0x%x",
+            getattr(item, "layer_name", type(item).__name__),
+            getattr(self, "layer_name", "group"),
+            int(item.flags()),
+        )
+
+
 
     def itemChange(self, change, value):
         if change == QGraphicsItem.ItemSelectedHasChanged:
@@ -467,6 +475,11 @@ class CanvasWidget(QGraphicsView):
             f"Mouse press {event.button()} at {scene_pos.x():.1f},{scene_pos.y():.1f} "
             f"tool={self.current_tool} item={item_name}"
         )
+        if item:
+            flags = int(item.flags())
+            logger.debug(
+                f"Item flags=0x{flags:x} movable={bool(flags & QGraphicsItem.ItemIsMovable)}"
+            )
         if self.current_tool == "pan":
             super().mousePressEvent(event)
             return
