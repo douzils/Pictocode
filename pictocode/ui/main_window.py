@@ -507,18 +507,20 @@ class MainWindow(QMainWindow):
                         "dpi",
                     )
                 }
-                self.open_project(path, params, data.get("shapes", []))
+                self.open_project(path, params, data.get("shapes", []), data.get("layers", []))
             except Exception as e:
                 QMessageBox.critical(
                     self, "Erreur", f"Impossible d'ouvrir : {e}")
 
-    def open_project(self, path, params, shapes=None):
-        """Charge un projet existant (optionnellement avec formes)."""
+    def open_project(self, path, params, shapes=None, layers=None):
+        """Charge un projet existant."""
         if not self.maybe_save():
             return
         self.current_project_path = path
         # crée document
         self.canvas.new_document(**params)
+        # calques
+        self.canvas.setup_layers(layers or [])
         # charge formes
         self.canvas.load_shapes(shapes or [])
         # bascule UI
