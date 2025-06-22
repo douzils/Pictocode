@@ -514,6 +514,16 @@ class CanvasWidget(QGraphicsView):
                 base_item = base_item.parentItem()
             if base_item is self._frame_item:
                 base_item = None
+            # Select existing items unless Shift is held to override or using
+            # the erase tool, so clicking a shape works regardless of the
+            # current tool.
+            if (
+                base_item
+                and self.current_tool != "erase"
+                and not (event.modifiers() & self.override_select_modifier)
+            ):
+                super().mousePressEvent(event)
+                return
             if base_item:
                 self._new_item_z = base_item.zValue() + 0.1
             else:
