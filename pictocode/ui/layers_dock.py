@@ -92,11 +92,17 @@ class LayersTreeWidget(QTreeWidget):
         anim.setEndValue(end_color)
 
         def _update(value):
-            if item.treeWidget() is None:
+
+            try:
+                if item.treeWidget() is None:
+                    return
+                brush = QBrush(value)
+                for c in range(self.columnCount()):
+                    item.setBackground(c, brush)
+            except RuntimeError:
+                # The item was removed from the tree while the animation was
+                # running. Silently abort the update to avoid a crash.
                 return
-            brush = QBrush(value)
-            for c in range(self.columnCount()):
-                item.setBackground(c, brush)
 
         def _cleanup():
             self._highlight_anim = None
