@@ -13,9 +13,11 @@ from PyQt5.QtCore import Qt, QPoint
 class LayersWidget(QWidget):
     """Compact drop-down layer manager."""
 
+
     def __init__(self, main_window, parent=None):
         super().__init__(parent)
         self.main = main_window
+
 
         self.button = QToolButton(self)
         self.button.setPopupMode(QToolButton.InstantPopup)
@@ -41,16 +43,20 @@ class LayersWidget(QWidget):
         del_btn.setText("-")
         del_btn.clicked.connect(self._remove_layer)
 
+
         layout = QHBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self.button)
         layout.addWidget(add_btn)
         layout.addWidget(del_btn)
 
+
     # ------------------------------------------------------------------
     def populate(self):
+
         """Refresh drop-down list from canvas layers."""
         self.tree.blockSignals(True)
+
         self.tree.clear()
         canvas = self.main.canvas
         for name in canvas.layer_names():
@@ -141,3 +147,4 @@ class LayersWidget(QWidget):
         elif act == delete:
             self.main.canvas.remove_layer(name)
         self.populate()
+

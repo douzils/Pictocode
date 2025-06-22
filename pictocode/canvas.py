@@ -280,8 +280,10 @@ class CanvasWidget(QGraphicsView):
         for s in shapes:
             self._create_item(s)
         self.scene.blockSignals(False)
+
         # Ensure layer and layout views stay in sync with the scene
         self._schedule_scene_changed()
+
 
     def export_project(self):
         """
@@ -1356,6 +1358,7 @@ class CanvasWidget(QGraphicsView):
         self.set_current_layer(self.current_layer.layer_name)
         self._schedule_scene_changed()
 
+
     def rename_layer(self, old: str, new: str):
         if old not in self.layers or not new:
             return
@@ -1422,6 +1425,7 @@ class CanvasWidget(QGraphicsView):
         self.layers = OrderedDict((n, self.layers[n]) for n in names)
         for z, n in enumerate(names):
             self.layers[n].setZValue(z)
+
 
     def setup_layers(self, layers_data):
         """Configure les calques depuis une liste de dicts."""
