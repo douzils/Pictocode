@@ -46,6 +46,9 @@ class TransparentItemGroup(QGraphicsItemGroup):
 
     def itemChange(self, change, value):
         if change == QGraphicsItem.ItemSelectedHasChanged:
+            logger.debug(
+                f"Group {getattr(self, 'layer_name', '')} selected={bool(value)}"
+            )
             if hasattr(self, "setHandlesChildEvents"):
                 self.setHandlesChildEvents(bool(value))
             elif hasattr(self, "setFiltersChildEvents"):
@@ -203,6 +206,7 @@ class CanvasWidget(QGraphicsView):
 
     def set_tool(self, tool_name: str):
         """Définit l’outil courant depuis la toolbar."""
+        logger.debug(f"Tool set to {tool_name}")
         self.current_tool = tool_name
         if tool_name == "pan":
             self.setDragMode(QGraphicsView.ScrollHandDrag)
@@ -449,6 +453,12 @@ class CanvasWidget(QGraphicsView):
 
     def mousePressEvent(self, event):
         scene_pos = self.mapToScene(event.pos())
+        item = self.scene.itemAt(scene_pos, QTransform())
+        item_name = getattr(item, "layer_name", type(item).__name__ if item else None)
+        logger.debug(
+            f"Mouse press {event.button()} at {scene_pos.x():.1f},{scene_pos.y():.1f} "
+            f"tool={self.current_tool} item={item_name}"
+        )
         if self.current_tool == "pan":
             super().mousePressEvent(event)
             return
@@ -622,6 +632,11 @@ class CanvasWidget(QGraphicsView):
         super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event):
+        scene_pos = self.mapToScene(event.pos())
+        logger.debug(
+            f"Mouse release {event.button()} at {scene_pos.x():.1f},{scene_pos.y():.1f} "
+            f"tool={self.current_tool}"
+        )
         if self.current_tool == "pan":
             super().mouseReleaseEvent(event)
             return
@@ -629,7 +644,6 @@ class CanvasWidget(QGraphicsView):
             self._middle_pan = False
             self.setDragMode(self._prev_drag_mode or QGraphicsView.NoDrag)
             return
-        scene_pos = self.mapToScene(event.pos())
         if self.snap_to_grid:
             scale = self.transform().m11() or 1
             grid = self.grid_size / scale
@@ -870,9 +884,12 @@ class CanvasWidget(QGraphicsView):
         self.pen_color = color
 
     def _on_selection_changed(self):
+        items = self.scene.selectedItems()
+        names = [getattr(it, "layer_name", type(it).__name__) for it in items]
+        logger.debug(f"Selection changed: {names}")
         window = self.window()
         if hasattr(window, "inspector"):
-            items = self.scene.selectedItems()
+            # reuse computed items list above
             auto_show = getattr(window, "auto_show_inspector", True)
             if items:
                 window.inspector.set_target(items[0])
