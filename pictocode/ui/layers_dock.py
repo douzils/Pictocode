@@ -60,6 +60,7 @@ class LayersTreeWidget(QTreeWidget):
         # animations on some platforms.
         backup = []
 
+
         def strip_data(item):
             backup.append((item, item.data(0, Qt.UserRole)))
             item.setData(0, Qt.UserRole, None)
@@ -69,6 +70,7 @@ class LayersTreeWidget(QTreeWidget):
         try:
             for it in items:
                 strip_data(it)
+
             return super().mimeData(items)
         finally:
             for it, data in backup:
