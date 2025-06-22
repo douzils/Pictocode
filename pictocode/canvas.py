@@ -8,7 +8,6 @@ from PyQt5.QtWidgets import (
     QAction,
     QGraphicsItem,
     QGraphicsItemGroup,
-    QGraphicsObject,
 )
 from .ui.animated_menu import AnimatedMenu
 from PyQt5.QtCore import Qt, QRectF, QPointF, QSizeF, pyqtSignal, QTimer
@@ -281,7 +280,8 @@ class CanvasWidget(QGraphicsView):
         for s in shapes:
             self._create_item(s)
         self.scene.blockSignals(False)
-        window = self.window()
+        # Ensure layer and layout views stay in sync with the scene
+        self._schedule_scene_changed()
 
     def export_project(self):
         """
@@ -297,7 +297,11 @@ class CanvasWidget(QGraphicsView):
                 shapes.append(data)
         meta = getattr(self, "current_meta", {})
         layers = [
-            {"name": name, "visible": layer.isVisible()}
+            {
+                "name": name,
+                "visible": layer.isVisible(),
+                "locked": getattr(layer, "locked", False),
+            }
             for name, layer in self.layers.items()
         ]
         return {**meta, "shapes": shapes, "layers": layers}
@@ -1126,6 +1130,10 @@ class CanvasWidget(QGraphicsView):
             if it is not self._frame_item:
                 it.setSelected(True)
 
+    def deselect_all(self):
+        """Clear selection on the scene."""
+        self.scene.clearSelection()
+
     def zoom_in(self):
         self.scale(1.25, 1.25)
 
@@ -1298,12 +1306,12 @@ class CanvasWidget(QGraphicsView):
             name = f"Layer {len(self.layers) + 1}"
         group = TransparentItemGroup()
         self.scene.addItem(group)
-        group.setFlags(
-            QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable
-        )
+        # Layers should not be selectable so items are easy to manipulate
         self._assign_layer_name(group, name)
         group.setVisible(visible)
         group.visible = visible
+        group.locked = False
+        group.setEnabled(True)
         self.layers[group.layer_name] = group
         if self.current_layer is None:
             self.current_layer = group
@@ -1313,6 +1321,11 @@ class CanvasWidget(QGraphicsView):
     def set_current_layer(self, name: str):
         if name in self.layers:
             self.current_layer = self.layers[name]
+            for n, layer in self.layers.items():
+                locked = n != name
+                layer.locked = locked
+                layer.setEnabled(not locked)
+            self._schedule_scene_changed()
 
     def set_layer_visible(self, name: str, visible: bool):
         layer = self.layers.get(name)
@@ -1321,8 +1334,92 @@ class CanvasWidget(QGraphicsView):
             layer.visible = visible
             self._schedule_scene_changed()
 
+    def set_layer_locked(self, name: str, locked: bool):
+        layer = self.layers.get(name)
+        if layer:
+            layer.locked = locked
+            layer.setEnabled(not locked)
+            self._schedule_scene_changed()
+
     def layer_names(self):
         return list(self.layers.keys())
+
+    def remove_layer(self, name: str):
+        if name not in self.layers or len(self.layers) <= 1:
+            return
+        layer = self.layers.pop(name)
+        self.scene.removeItem(layer)
+        if self.current_layer is layer:
+            self.current_layer = next(iter(self.layers.values()))
+        self.set_current_layer(self.current_layer.layer_name)
+        self._schedule_scene_changed()
+
+    def rename_layer(self, old: str, new: str):
+        if old not in self.layers or not new:
+            return
+        if new in self.layers:
+            base = new
+            i = 1
+            while f"{base} {i}" in self.layers:
+                i += 1
+            new = f"{base} {i}"
+        keys = list(self.layers.keys())
+        idx = keys.index(old)
+        layer = self.layers.pop(old)
+        layer.layer_name = new
+        for child in layer.childItems():
+            child.layer = new
+        keys[idx] = new
+        self.layers = OrderedDict((k, self.layers.get(k, layer) if k == new else self.layers[k]) for k in keys)
+        if self.current_layer is layer:
+            self.current_layer = layer
+        self._schedule_scene_changed()
+
+    def duplicate_layer(self, name: str):
+        if name not in self.layers:
+            return
+        src = self.layers[name]
+        base = f"{name} copy"
+        i = 1
+        new_name = base
+        while new_name in self.layers:
+            i += 1
+            new_name = f"{base} {i}"
+        self.create_layer(new_name, src.isVisible())
+        idx = list(self.layers.keys()).index(name)
+        order = list(self.layers.keys())
+        order.remove(new_name)
+        order.insert(idx + 1, new_name)
+        self._reorder(order)
+        for item in src.childItems():
+            data = self._serialize_item(item)
+            if not data:
+                continue
+            for key in ("x", "x1", "x2"):
+                if key in data:
+                    data[key] += 10
+            for key in ("y", "y1", "y2"):
+                if key in data:
+                    data[key] += 10
+            data["layer"] = new_name
+            self._create_item(data)
+        self._schedule_scene_changed()
+
+    def move_layer(self, name: str, offset: int):
+        keys = list(self.layers.keys())
+        if name not in keys:
+            return
+        idx = keys.index(name)
+        new_idx = max(0, min(len(keys) - 1, idx + offset))
+        if new_idx == idx:
+            return
+        keys.insert(new_idx, keys.pop(idx))
+        self._reorder(keys)
+
+    def _reorder(self, names):
+        self.layers = OrderedDict((n, self.layers[n]) for n in names)
+        for z, n in enumerate(names):
+            self.layers[n].setZValue(z)
 
     def setup_layers(self, layers_data):
         """Configure les calques depuis une liste de dicts."""
@@ -1336,7 +1433,10 @@ class CanvasWidget(QGraphicsView):
         for layer in layers_data:
             name = layer.get("name") or f"Layer {len(self.layers)+1}"
             vis = layer.get("visible", True)
-            self.create_layer(name, vis)
+            grp = self.create_layer(name, vis)
+            if layer.get("locked"):
+                grp.locked = True
+                grp.setEnabled(False)
         first = layers_data[0]
         self.set_current_layer(first.get("name", self.layer_names()[0]))
 
