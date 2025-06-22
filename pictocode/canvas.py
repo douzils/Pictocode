@@ -280,7 +280,6 @@ class CanvasWidget(QGraphicsView):
         for s in shapes:
             self._create_item(s)
         self.scene.blockSignals(False)
-
         # Ensure layer and layout views stay in sync with the scene
         self._schedule_scene_changed()
 
@@ -1308,9 +1307,7 @@ class CanvasWidget(QGraphicsView):
             name = f"Layer {len(self.layers) + 1}"
         group = TransparentItemGroup()
         self.scene.addItem(group)
-        group.setFlags(
-            QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable
-        )
+        # Layers should not be selectable so items are easy to manipulate
         self._assign_layer_name(group, name)
         group.setVisible(visible)
         group.visible = visible
@@ -1358,7 +1355,6 @@ class CanvasWidget(QGraphicsView):
         self.set_current_layer(self.current_layer.layer_name)
         self._schedule_scene_changed()
 
-
     def rename_layer(self, old: str, new: str):
         if old not in self.layers or not new:
             return
@@ -1390,7 +1386,9 @@ class CanvasWidget(QGraphicsView):
         while new_name in self.layers:
             i += 1
             new_name = f"{base} {i}"
-        new_layer = self.create_layer(new_name, src.isVisible())
+
+        self.create_layer(new_name, src.isVisible())
+
         idx = list(self.layers.keys()).index(name)
         order = list(self.layers.keys())
         order.remove(new_name)

@@ -50,10 +50,8 @@ class LayersWidget(QWidget):
         layout.addWidget(add_btn)
         layout.addWidget(del_btn)
 
-
     # ------------------------------------------------------------------
     def populate(self):
-
         """Refresh drop-down list from canvas layers."""
         self.tree.blockSignals(True)
 
@@ -85,6 +83,8 @@ class LayersWidget(QWidget):
     def _on_item_clicked(self, item, column):
         name = item.data(0, Qt.UserRole)
         if name:
+            # Clear any selection so the layer group can't intercept events
+            self.main.canvas.deselect_all()
             self.main.canvas.set_current_layer(name)
             self.button.setText(name)
             self.menu.hide()
