@@ -1332,15 +1332,11 @@ class CanvasWidget(QGraphicsView):
         """Lock or unlock layers based on the current setting."""
         if not self.current_layer:
             return
-        if self.lock_others:
-            for n, layer in self.layers.items():
-                locked = layer is not self.current_layer
-                layer.locked = locked
-                layer.setEnabled(not locked)
-        else:
-            for layer in self.layers.values():
-                layer.locked = False
-                layer.setEnabled(True)
+        for layer in self.layers.values():
+            effective_locked = layer.locked
+            if self.lock_others and layer is not self.current_layer:
+                effective_locked = True
+            layer.setEnabled(not effective_locked)
 
     def set_lock_others(self, enabled: bool):
         """Enable or disable locking of non-active layers."""
@@ -1365,7 +1361,7 @@ class CanvasWidget(QGraphicsView):
         layer = self.layers.get(name)
         if layer:
             layer.locked = locked
-            layer.setEnabled(not locked)
+            self._apply_lock_setting()
             self._schedule_scene_changed()
 
     def layer_names(self):
