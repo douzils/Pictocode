@@ -308,8 +308,8 @@ class CanvasWidget(QGraphicsView):
         Prêt à sérialiser en JSON.
         """
         shapes = []
-        for item in reversed(self.scene.items()):
         logger.debug("Exporting project")
+        for item in reversed(self.scene.items()):
             if item is self._frame_item:
                 continue
             data = self._serialize_item(item)

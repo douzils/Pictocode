@@ -1,7 +1,8 @@
 # pictocode/ui/main_window.py
-import os, json
-from PyQt5.QtWidgets import (
+import os
+import json
 import logging
+from PyQt5.QtWidgets import (
     QMainWindow,
     QDockWidget,
     QStackedWidget,
