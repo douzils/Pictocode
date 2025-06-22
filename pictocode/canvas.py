@@ -299,7 +299,11 @@ class CanvasWidget(QGraphicsView):
                 shapes.append(data)
         meta = getattr(self, "current_meta", {})
         layers = [
-            {"name": name, "visible": layer.isVisible()}
+            {
+                "name": name,
+                "visible": layer.isVisible(),
+                "locked": getattr(layer, "locked", False),
+            }
             for name, layer in self.layers.items()
         ]
         return {**meta, "shapes": shapes, "layers": layers}
@@ -1310,6 +1314,8 @@ class CanvasWidget(QGraphicsView):
         self._assign_layer_name(group, name)
         group.setVisible(visible)
         group.visible = visible
+        group.locked = False
+        group.setEnabled(True)
         self.layers[group.layer_name] = group
         if self.current_layer is None:
             self.current_layer = group
@@ -1319,6 +1325,11 @@ class CanvasWidget(QGraphicsView):
     def set_current_layer(self, name: str):
         if name in self.layers:
             self.current_layer = self.layers[name]
+            for n, layer in self.layers.items():
+                locked = n != name
+                layer.locked = locked
+                layer.setEnabled(not locked)
+            self._schedule_scene_changed()
 
     def set_layer_visible(self, name: str, visible: bool):
         layer = self.layers.get(name)
@@ -1327,8 +1338,25 @@ class CanvasWidget(QGraphicsView):
             layer.visible = visible
             self._schedule_scene_changed()
 
+    def set_layer_locked(self, name: str, locked: bool):
+        layer = self.layers.get(name)
+        if layer:
+            layer.locked = locked
+            layer.setEnabled(not locked)
+            self._schedule_scene_changed()
+
     def layer_names(self):
         return list(self.layers.keys())
+
+    def remove_layer(self, name: str):
+        if name not in self.layers or len(self.layers) <= 1:
+            return
+        layer = self.layers.pop(name)
+        self.scene.removeItem(layer)
+        if self.current_layer is layer:
+            self.current_layer = next(iter(self.layers.values()))
+        self.set_current_layer(self.current_layer.layer_name)
+        self._schedule_scene_changed()
 
     def setup_layers(self, layers_data):
         """Configure les calques depuis une liste de dicts."""
@@ -1342,7 +1370,10 @@ class CanvasWidget(QGraphicsView):
         for layer in layers_data:
             name = layer.get("name") or f"Layer {len(self.layers)+1}"
             vis = layer.get("visible", True)
-            self.create_layer(name, vis)
+            grp = self.create_layer(name, vis)
+            if layer.get("locked"):
+                grp.locked = True
+                grp.setEnabled(False)
         first = layers_data[0]
         self.set_current_layer(first.get("name", self.layer_names()[0]))
 
