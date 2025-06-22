@@ -20,6 +20,9 @@ from PyQt5.QtGui import (
 )
 import math
 from PyQt5.QtCore import Qt, QPointF, QRectF
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class SnapToGridMixin:
@@ -33,6 +36,20 @@ class SnapToGridMixin:
                 grid = view.grid_size / scale
                 value.setX(round(value.x() / grid) * grid)
                 value.setY(round(value.y() / grid) * grid)
+            logger.debug(
+                f"{getattr(self, 'layer_name', type(self).__name__)} moving to "
+                f"{value.x():.1f},{value.y():.1f}"
+            )
+        elif change == QGraphicsItem.ItemPositionHasChanged:
+            logger.debug(
+                f"{getattr(self, 'layer_name', type(self).__name__)} position "
+                f"changed to {value.x():.1f},{value.y():.1f}"
+            )
+        elif change == QGraphicsItem.ItemSelectedHasChanged:
+            logger.debug(
+                f"{getattr(self, 'layer_name', type(self).__name__)} selected="
+                f"{bool(value)}"
+            )
         return super().itemChange(change, value)
 
 
@@ -537,6 +554,20 @@ class TextItem(ResizableMixin, SnapToGridMixin, QGraphicsTextItem):
                 grid = view.grid_size / scale
                 value.setX(round(value.x() / grid) * grid)
                 value.setY(round(value.y() / grid) * grid)
+            logger.debug(
+                f"{getattr(self, 'layer_name', type(self).__name__)} moving to "
+                f"{value.x():.1f},{value.y():.1f}"
+            )
+        elif change == QGraphicsItem.ItemPositionHasChanged:
+            logger.debug(
+                f"{getattr(self, 'layer_name', type(self).__name__)} position "
+                f"changed to {value.x():.1f},{value.y():.1f}"
+            )
+        elif change == QGraphicsItem.ItemSelectedHasChanged:
+            logger.debug(
+                f"{getattr(self, 'layer_name', type(self).__name__)} selected="
+                f"{bool(value)}"
+            )
         return super().itemChange(change, value)
 
     def rect(self):
