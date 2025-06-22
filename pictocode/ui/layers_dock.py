@@ -222,7 +222,8 @@ class LayersTreeWidget(QTreeWidget):
 
             line_y = rect.top() if pos == QAbstractItemView.AboveItem else rect.bottom()
         elif pos == QAbstractItemView.OnItem and item:
-            if event.modifiers() & Qt.ControlModifier:
+            if event.keyboardModifiers() & Qt.ControlModifier:
+
                 highlight = True
             else:
                 rect = self.visualItemRect(item)
