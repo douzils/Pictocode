@@ -35,6 +35,8 @@ class TransparentItemGroup(QGraphicsItemGroup):
         if hasattr(self, "setHandlesChildEvents"):
             # Let children receive events until the group becomes selected
             self.setHandlesChildEvents(False)
+        # Ignore mouse events when not selected so child items stay clickable
+        self.setAcceptedMouseButtons(Qt.NoButton)
 
 
     def itemChange(self, change, value):
@@ -44,6 +46,9 @@ class TransparentItemGroup(QGraphicsItemGroup):
             # Forward events to the children when not selected so they remain
             # individually selectable.
             self.setHandlesChildEvents(bool(value))
+            self.setAcceptedMouseButtons(
+                Qt.AllButtons if value else Qt.NoButton
+            )
         return super().itemChange(change, value)
 
     def shape(self):
