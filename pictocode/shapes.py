@@ -303,6 +303,7 @@ class Rect(ResizableMixin, SnapToGridMixin, QGraphicsRectItem):
         self.setAcceptHoverEvents(True)
         self.var_name = ""
         self.setToolTip("Clique droit pour modifier")
+        self.setTransformOriginPoint(w / 2, h / 2)
 
     def rect(self):
         return QGraphicsRectItem.rect(self)
@@ -333,6 +334,7 @@ class Ellipse(ResizableMixin, SnapToGridMixin, QGraphicsEllipseItem):
         self.setAcceptHoverEvents(True)
         self.var_name = ""
         self.setToolTip("Clique droit pour modifier")
+        self.setTransformOriginPoint(w / 2, h / 2)
 
     def rect(self):
         return QGraphicsEllipseItem.rect(self)
@@ -430,6 +432,8 @@ class Line(LineResizableMixin, SnapToGridMixin, QGraphicsLineItem):
         self.setAcceptHoverEvents(True)
         self.var_name = ""
         self.setToolTip("Clique droit pour modifier")
+        br = self.boundingRect()
+        self.setTransformOriginPoint(br.center())
 
 
 class FreehandPath(ResizableMixin, SnapToGridMixin, QGraphicsPathItem):
@@ -459,6 +463,8 @@ class FreehandPath(ResizableMixin, SnapToGridMixin, QGraphicsPathItem):
         self.setAcceptHoverEvents(True)
         self.var_name = ""
         self.setToolTip("Clique droit pour modifier")
+        br = self.boundingRect()
+        self.setTransformOriginPoint(br.width() / 2, br.height() / 2)
 
     def rect(self):
         return self.path().boundingRect()
@@ -520,6 +526,8 @@ class TextItem(ResizableMixin, SnapToGridMixin, QGraphicsTextItem):
         self.var_name = ""
         self.alignment = "left"
         self.setToolTip("Clique droit pour modifier")
+        br = self.boundingRect()
+        self.setTransformOriginPoint(br.width() / 2, br.height() / 2)
 
     def itemChange(self, change, value):
         if change == QGraphicsItem.ItemPositionChange and self.scene():
@@ -559,6 +567,7 @@ class ImageItem(ResizableMixin, SnapToGridMixin, QGraphicsPixmapItem):
             | QGraphicsPixmapItem.ItemSendsGeometryChanges
         )
         self.setAcceptHoverEvents(True)
+        self.setTransformOriginPoint(pix.width() / 2, pix.height() / 2)
         self.var_name = ""
 
     def rect(self):
