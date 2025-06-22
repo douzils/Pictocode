@@ -50,14 +50,12 @@ class TransparentItemGroup(QGraphicsItemGroup):
         item.setFlag(QGraphicsItem.ItemIsMovable, True)
         item.setFlag(QGraphicsItem.ItemIsSelectable, True)
         item.setFlag(QGraphicsItem.ItemSendsGeometryChanges, True)
-
         logger.debug(
             "Added %s to %s flags=0x%x",
             getattr(item, "layer_name", type(item).__name__),
             getattr(self, "layer_name", "group"),
             int(item.flags()),
         )
-
 
 
     def itemChange(self, change, value):
@@ -478,8 +476,21 @@ class CanvasWidget(QGraphicsView):
         if item:
             flags = int(item.flags())
             logger.debug(
-                f"Item flags=0x{flags:x} movable={bool(flags & QGraphicsItem.ItemIsMovable)}"
+
+                "Item flags=0x%x movable=%s selectable=%s enabled=%s",
+                flags,
+                bool(flags & QGraphicsItem.ItemIsMovable),
+                bool(flags & QGraphicsItem.ItemIsSelectable),
+                item.isEnabled(),
             )
+            parent = item.parentItem()
+            if parent:
+                logger.debug(
+                    "Parent %s enabled=%s",
+                    getattr(parent, "layer_name", type(parent).__name__),
+                    parent.isEnabled(),
+                )
+
         if self.current_tool == "pan":
             super().mousePressEvent(event)
             return
@@ -609,6 +620,11 @@ class CanvasWidget(QGraphicsView):
             logger.debug(f"Selection after press: {sel}")
 
     def mouseMoveEvent(self, event):
+        scene_pos = self.mapToScene(event.pos())
+        logger.debug(
+            f"Mouse move to {scene_pos.x():.1f},{scene_pos.y():.1f} "
+            f"buttons={int(event.buttons())} tool={self.current_tool}"
+        )
 
         if self.current_tool == "pan":
             super().mouseMoveEvent(event)
@@ -657,6 +673,12 @@ class CanvasWidget(QGraphicsView):
                 self._temp_item.setLine(x0, y0, scene_pos.x(), scene_pos.y())
             return
         super().mouseMoveEvent(event)
+        for it in self.scene.selectedItems():
+            pos = it.pos()
+            logger.debug(
+                f"Selected {getattr(it, 'layer_name', type(it).__name__)} "
+                f"at {pos.x():.1f},{pos.y():.1f}"
+            )
 
     def mouseReleaseEvent(self, event):
         scene_pos = self.mapToScene(event.pos())
@@ -729,6 +751,13 @@ class CanvasWidget(QGraphicsView):
                 for it in self.scene.selectedItems()
             ]
             logger.debug(f"Selection after release: {sel}")
+            for it in self.scene.selectedItems():
+                pos = it.pos()
+                logger.debug(
+                    f"Selected {getattr(it, 'layer_name', type(it).__name__)} "
+                    f"at {pos.x():.1f},{pos.y():.1f}"
+                )
+
 
     def mouseDoubleClickEvent(self, event):
         scene_pos = self.mapToScene(event.pos())
