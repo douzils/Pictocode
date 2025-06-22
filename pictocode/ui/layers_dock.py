@@ -13,7 +13,7 @@ from PyQt5.QtWidgets import (
     QFrame,
     QStyle,
 )
-from PyQt5.QtCore import Qt, QPropertyAnimation, QTimer
+from PyQt5.QtCore import Qt, QPropertyAnimation, QTimeLine, QTimer
 from PyQt5.QtWidgets import QGraphicsObject
 from PyQt5.QtGui import QBrush, QColor, QTransform, QDrag, QPainter
 from .animated_menu import AnimatedMenu
@@ -58,14 +58,21 @@ class LayersTreeWidget(QTreeWidget):
         # pointer so Qt's default implementation doesn't attempt to serialize it,
         # which would otherwise produce ``QVariant::save`` warnings and break drag
         # animations on some platforms.
-        backup = {}
-        for it in items:
-            backup[it] = it.data(0, Qt.UserRole)
-            it.setData(0, Qt.UserRole, None)
-        mime = super().mimeData(items)
-        for it in items:
-            it.setData(0, Qt.UserRole, backup[it])
-        return mime
+        backup = []
+
+        def strip_data(item):
+            backup.append((item, item.data(0, Qt.UserRole)))
+            item.setData(0, Qt.UserRole, None)
+            for i in range(item.childCount()):
+                strip_data(item.child(i))
+
+        try:
+            for it in items:
+                strip_data(it)
+            return super().mimeData(items)
+        finally:
+            for it, data in backup:
+                it.setData(0, Qt.UserRole, data)
 
     def mousePressEvent(self, event):
 
@@ -686,4 +693,21 @@ class LayersWidget(QWidget):
             self._z_anims[gitem] = z
             anim.start(QPropertyAnimation.DeleteWhenStopped)
         else:
-            gitem.setZValue(z)
+            current_target = self._z_anims.get(gitem)
+            if current_target == z:
+                return
+            start = gitem.zValue()
+            timeline = QTimeLine(150, self)
+            timeline.setFrameRange(0, 100)
+
+            def _update(frame):
+                value = start + (z - start) * frame / 100
+                gitem.setZValue(value)
+
+            def _cleanup():
+                self._z_anims.pop(gitem, None)
+
+            timeline.frameChanged.connect(_update)
+            timeline.finished.connect(_cleanup)
+            self._z_anims[gitem] = z
+            timeline.start()
