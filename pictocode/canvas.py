@@ -283,6 +283,7 @@ class CanvasWidget(QGraphicsView):
         # Ensure layer and layout views stay in sync with the scene
         self._schedule_scene_changed()
 
+
     def export_project(self):
         """
         Exporte la meta (self.current_meta) + toutes les formes en dict.
@@ -1385,7 +1386,9 @@ class CanvasWidget(QGraphicsView):
         while new_name in self.layers:
             i += 1
             new_name = f"{base} {i}"
+
         self.create_layer(new_name, src.isVisible())
+
         idx = list(self.layers.keys()).index(name)
         order = list(self.layers.keys())
         order.remove(new_name)
@@ -1420,6 +1423,7 @@ class CanvasWidget(QGraphicsView):
         self.layers = OrderedDict((n, self.layers[n]) for n in names)
         for z, n in enumerate(names):
             self.layers[n].setZValue(z)
+
 
     def setup_layers(self, layers_data):
         """Configure les calques depuis une liste de dicts."""
