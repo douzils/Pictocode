@@ -233,8 +233,6 @@ class CanvasWidget(QGraphicsView):
             "dpi": dpi,
         }
         window = self.window()
-        if hasattr(window, "layers"):
-            window.layers.update_layers(self)
 
         if not self._loading_snapshot:
             self._snapshot()
@@ -273,8 +271,6 @@ class CanvasWidget(QGraphicsView):
             self._create_item(s)
         self.scene.blockSignals(False)
         window = self.window()
-        if hasattr(window, "layers"):
-            window.layers.update_layers(self)
 
     def export_project(self):
         """
@@ -827,19 +823,13 @@ class CanvasWidget(QGraphicsView):
             auto_show = getattr(window, "auto_show_inspector", True)
             if items:
                 window.inspector.set_target(items[0])
-                if hasattr(window, "layers"):
-                    window.layers.highlight_item(items[0])
                 if auto_show and hasattr(window, "inspector_dock"):
                     window.inspector_dock.setVisible(True)
             else:
                 window.inspector.set_target(None)
                 if auto_show and hasattr(window, "inspector_dock"):
                     window.inspector_dock.setVisible(False)
-                if hasattr(window, "layers"):
-                    try:
-                        window.layers._clear_highlight()
-                    except AttributeError:
-                        pass
+
 
     def _mark_dirty(self):
         window = self.window()
@@ -853,8 +843,6 @@ class CanvasWidget(QGraphicsView):
     def _on_scene_changed(self):
         self._mark_dirty()
         window = self.window()
-        if hasattr(window, "layers"):
-            window.layers.update_layers(self)
 
         # Agrandit automatiquement la zone de la scène pour permettre
         # le déplacement libre des formes en dehors du document initial.

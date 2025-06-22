@@ -26,7 +26,6 @@ from .home_page import HomePage
 from .new_project_dialog import NewProjectDialog
 from .animated_menu import AnimatedMenu
 from .shortcut_settings_dialog import ShortcutSettingsDialog
-from .layers_dock import LayersWidget
 from .imports_dock import ImportsWidget
 
 PROJECTS_DIR = os.path.join(os.path.dirname(
@@ -107,14 +106,6 @@ class MainWindow(QMainWindow):
         dock.setVisible(False)
         self.inspector_dock = dock
 
-        # Calques
-        self.layers = LayersWidget(self)
-        l_dock = QDockWidget("Calques", self)
-        l_dock.setWidget(self.layers)
-        l_dock.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
-        self.addDockWidget(Qt.LeftDockWidgetArea, l_dock)
-        l_dock.setVisible(False)
-        self.layers_dock = l_dock
 
         # Images importées
         self.imports = ImportsWidget(self)
@@ -384,11 +375,6 @@ class MainWindow(QMainWindow):
         viewm.addAction(tool_act)
         self.actions["view_toolbar"] = tool_act
 
-        layers_act = QAction("Calques", self, checkable=True)
-        layers_act.toggled.connect(self.layers_dock.setVisible)
-        self.layers_dock.visibilityChanged.connect(layers_act.setChecked)
-        viewm.addAction(layers_act)
-        self.actions["view_layers"] = layers_act
 
         insp_act = QAction("Inspecteur", self, checkable=True)
         insp_act.toggled.connect(self.inspector_dock.setVisible)
@@ -473,7 +459,6 @@ class MainWindow(QMainWindow):
         # affiche toolbar et docks
         self.toolbar.setVisible(True)
         self.inspector_dock.setVisible(False)
-        self.layers_dock.setVisible(True)
         self.imports_dock.setVisible(True)
         self._set_project_actions_enabled(True)
         self._update_view_checks()
@@ -539,7 +524,6 @@ class MainWindow(QMainWindow):
         # bascule UI
         self.toolbar.setVisible(True)
         self.inspector_dock.setVisible(False)
-        self.layers_dock.setVisible(True)
         self.imports_dock.setVisible(True)
         self._set_project_actions_enabled(True)
         self._update_view_checks()
@@ -674,7 +658,6 @@ class MainWindow(QMainWindow):
         self._switch_page(self.home)
         self.toolbar.setVisible(False)
         self.inspector_dock.setVisible(False)
-        self.layers_dock.setVisible(False)
         self.imports_dock.setVisible(False)
         self._set_project_actions_enabled(False)
         self._update_view_checks()
@@ -1010,10 +993,10 @@ class MainWindow(QMainWindow):
         self.inspector.setStyleSheet(
             f"font-size: {dock_font_size}pt;"
         )
-        for dock in (self.layers_dock, self.imports_dock):
+        for dock in (self.imports_dock,):
             dock.setStyleSheet(
                 f"QDockWidget {{ background: {dock_color.name()}; }}")
-        for widget in (self.layers, self.imports):
+        for widget in (self.imports,):
             widget.setStyleSheet(f"font-size: {dock_font_size}pt;")
             if hasattr(widget, "apply_theme"):
                 widget.apply_theme()
@@ -1091,9 +1074,6 @@ class MainWindow(QMainWindow):
             act = self.actions.get("view_toolbar")
             if act:
                 act.setChecked(self.toolbar.isVisible())
-            act = self.actions.get("view_layers")
-            if act:
-                act.setChecked(self.layers_dock.isVisible())
             act = self.actions.get("view_inspector")
             if act:
                 act.setChecked(self.inspector_dock.isVisible())

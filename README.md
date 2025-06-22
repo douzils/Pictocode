@@ -142,8 +142,7 @@ l'application.
 
 ### Gestion des fenetres
 
-Un panneau lateral "Panneaux" permet d'activer ou non diverses fenetres : calques, proprietes, barre d'outils ou encore la liste des images importees.
-Les calques se réorganisent par glisser-déposer ou avec **Ctrl+↑** et **Ctrl+↓**.
+Un panneau lateral "Panneaux" permet d'activer ou non diverses fenetres : proprietes, barre d'outils ou encore la liste des images importees.
 La barre de titre personnalisée prend désormais en charge le déplacement système
 pour profiter des raccourcis de redimensionnement Windows (snap et agrandissement
 au bord de l'écran).
