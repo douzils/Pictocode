@@ -123,12 +123,7 @@ class MainWindow(QMainWindow):
 
         # Calques
         self.layers = LayersWidget(self)
-        l_dock = QDockWidget("Calques", self)
-        l_dock.setWidget(self.layers)
-        l_dock.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
-        self.addDockWidget(Qt.LeftDockWidgetArea, l_dock)
-        l_dock.setVisible(False)
-        self.layers_dock = l_dock
+        self.toolbar.addWidget(self.layers)
 
 
         # Layout / outliner
@@ -411,13 +406,6 @@ class MainWindow(QMainWindow):
         viewm.addAction(imp_act)
         self.actions["view_imports"] = imp_act
 
-        layers_act = QAction("Calques", self, checkable=True)
-        layers_act.toggled.connect(self.layers_dock.setVisible)
-        self.layers_dock.visibilityChanged.connect(layers_act.setChecked)
-        viewm.addAction(layers_act)
-        self.actions["view_layers"] = layers_act
-
-
         layout_act = QAction("Plan", self, checkable=True)
         layout_act.toggled.connect(self.layout_dock.setVisible)
         self.layout_dock.visibilityChanged.connect(layout_act.setChecked)
@@ -501,7 +489,6 @@ class MainWindow(QMainWindow):
         self.toolbar.setVisible(True)
         self.inspector_dock.setVisible(False)
         self.imports_dock.setVisible(True)
-        self.layers_dock.setVisible(True)
         self.layout_dock.setVisible(True)
 
         self._set_project_actions_enabled(True)
@@ -575,7 +562,6 @@ class MainWindow(QMainWindow):
         self.toolbar.setVisible(True)
         self.inspector_dock.setVisible(False)
         self.imports_dock.setVisible(True)
-        self.layers_dock.setVisible(True)
         self.layout_dock.setVisible(True)
 
         self._set_project_actions_enabled(True)
@@ -1133,10 +1119,6 @@ class MainWindow(QMainWindow):
             act = self.actions.get("view_imports")
             if act:
                 act.setChecked(self.imports_dock.isVisible())
-            act = self.actions.get("view_layers")
-            if act:
-                act.setChecked(self.layers_dock.isVisible())
-
             act = self.actions.get("view_layout")
             if act:
                 act.setChecked(self.layout_dock.isVisible())
