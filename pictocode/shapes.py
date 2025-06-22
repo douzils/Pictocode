@@ -50,7 +50,6 @@ class SnapToGridMixin:
                 f"{getattr(self, 'layer_name', type(self).__name__)} selected="
                 f"{bool(value)}"
             )
-
         return super().itemChange(change, value)
 
 

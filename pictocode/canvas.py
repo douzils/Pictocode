@@ -51,10 +51,13 @@ class TransparentItemGroup(QGraphicsItemGroup):
         item.setFlag(QGraphicsItem.ItemIsSelectable, True)
         item.setFlag(QGraphicsItem.ItemSendsGeometryChanges, True)
         logger.debug(
-            "Added %s to %s flags=0x%x",
+
+            "Added %s to %s flags=0x%x enabled=%s",
             getattr(item, "layer_name", type(item).__name__),
             getattr(self, "layer_name", "group"),
             int(item.flags()),
+            self.isEnabled(),
+
         )
 
 
@@ -618,6 +621,13 @@ class CanvasWidget(QGraphicsView):
                 for it in self.scene.selectedItems()
             ]
             logger.debug(f"Selection after press: {sel}")
+            if item and not sel:
+                logger.debug(
+                    "Clicked %s but nothing selected; layer enabled=%s",
+                    getattr(item, "layer_name", type(item).__name__),
+                    item.isEnabled(),
+                )
+
 
     def mouseMoveEvent(self, event):
         scene_pos = self.mapToScene(event.pos())
@@ -1163,6 +1173,13 @@ class CanvasWidget(QGraphicsView):
         else:
             return None
         self.scene.addItem(item)
+        logger.debug(
+            "Created %s flags=0x%x movable=%s selectable=%s",
+            type(item).__name__,
+            int(item.flags()),
+            bool(item.flags() & QGraphicsItem.ItemIsMovable),
+            bool(item.flags() & QGraphicsItem.ItemIsSelectable),
+        )
         layer = data.get("layer")
         if layer and layer in self.layers:
             self.layers[layer].addToGroup(item)
@@ -1433,7 +1450,8 @@ class CanvasWidget(QGraphicsView):
             layer.setEnabled(not effective_locked)
             logger.debug(
                 f"Layer {getattr(layer, 'layer_name', '')} locked={effective_locked} "
-                f"enabled={layer.isEnabled()}"
+                f"enabled={layer.isEnabled()} current={layer is self.current_layer}"
+
             )
 
     def set_lock_others(self, enabled: bool):
