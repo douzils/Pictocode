@@ -50,12 +50,14 @@ class TransparentItemGroup(QGraphicsItemGroup):
         item.setFlag(QGraphicsItem.ItemIsMovable, True)
         item.setFlag(QGraphicsItem.ItemIsSelectable, True)
         item.setFlag(QGraphicsItem.ItemSendsGeometryChanges, True)
+
         logger.debug(
             "Added %s to %s flags=0x%x",
             getattr(item, "layer_name", type(item).__name__),
             getattr(self, "layer_name", "group"),
             int(item.flags()),
         )
+
 
 
     def itemChange(self, change, value):
