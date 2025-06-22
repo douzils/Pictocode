@@ -92,6 +92,7 @@ class LayersTreeWidget(QTreeWidget):
         anim.setEndValue(end_color)
 
         def _update(value):
+
             try:
                 if item.treeWidget() is None:
                     return
