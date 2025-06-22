@@ -8,6 +8,8 @@ from .gradient_editor import GradientEditorDialog
 from .layers_dock import LayersWidget
 
 from .layout_dock import LayoutWidget
+from .logs_dock import LogsWidget
+
 
 
 __all__ = [
@@ -17,7 +19,6 @@ __all__ = [
     "ProjectTile",
     "GradientEditorDialog",
     "LayersWidget",
-
     "LayoutWidget",
-
+    "LogsWidget",
 ]

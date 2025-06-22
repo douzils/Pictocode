@@ -2,10 +2,12 @@
 """
 Fonctions d'export (génération de code), conversion de couleurs, etc.
 """
-
+import logging
+logger = logging.getLogger(__name__)
 
 def color_to_hex(qcolor):
     """Convertit un QColor en chaîne hex."""
+    logger.debug("color_to_hex called")
     r = qcolor.red()
     g = qcolor.green()
     b = qcolor.blue()
@@ -24,6 +26,7 @@ def get_contrast_color(qcolor):
 
 def generate_pycode(shapes):
     """Génère du code Python (PyQt5) reproduisant la scène fournie."""
+    logger.debug(f"Generating code for {len(shapes)} shapes")
 
     lines = [
         "from PyQt5.QtWidgets import (",

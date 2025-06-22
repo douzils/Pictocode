@@ -1,6 +1,7 @@
 # pictocode/ui/main_window.py
 import os, json
 from PyQt5.QtWidgets import (
+import logging
     QMainWindow,
     QDockWidget,
     QStackedWidget,
@@ -30,7 +31,9 @@ from .imports_dock import ImportsWidget
 from .layers_dock import LayersWidget
 from .layout_dock import LayoutWidget
 
+from .logs_dock import LogsWidget
 
+logger = logging.getLogger(__name__)
 PROJECTS_DIR = os.path.join(os.path.dirname(
     os.path.abspath(__file__)), "Projects")
 
@@ -38,6 +41,7 @@ PROJECTS_DIR = os.path.join(os.path.dirname(
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
+        logger.debug("MainWindow initialized")
         self.setWindowFlags(self.windowFlags() | Qt.FramelessWindowHint)
         self.setWindowTitle("Pictocode")
         self.resize(1024, 768)
@@ -134,6 +138,15 @@ class MainWindow(QMainWindow):
         self.addDockWidget(Qt.LeftDockWidgetArea, lo_dock)
         lo_dock.setVisible(False)
         self.layout_dock = lo_dock
+
+        # Logs viewer
+        self.logs_widget = LogsWidget(self)
+        lg_dock = QDockWidget("Logs", self)
+        lg_dock.setWidget(self.logs_widget)
+        lg_dock.setAllowedAreas(Qt.BottomDockWidgetArea | Qt.TopDockWidgetArea)
+        self.addDockWidget(Qt.BottomDockWidgetArea, lg_dock)
+        lg_dock.setVisible(False)
+        self.logs_dock = lg_dock
 
 
 
@@ -411,6 +424,12 @@ class MainWindow(QMainWindow):
         self.layout_dock.visibilityChanged.connect(layout_act.setChecked)
         viewm.addAction(layout_act)
         self.actions["view_layout"] = layout_act
+
+        logs_act = QAction("Logs", self, checkable=True)
+        logs_act.toggled.connect(self.logs_dock.setVisible)
+        self.logs_dock.visibilityChanged.connect(logs_act.setChecked)
+        viewm.addAction(logs_act)
+        self.actions["view_logs"] = logs_act
 
 
         prefm = AnimatedMenu("Préférences", self)
