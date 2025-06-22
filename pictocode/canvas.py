@@ -601,6 +601,12 @@ class CanvasWidget(QGraphicsView):
             self._show_context_menu(event)
             return
         super().mousePressEvent(event)
+        if event.button() == Qt.LeftButton:
+            sel = [
+                getattr(it, "layer_name", type(it).__name__)
+                for it in self.scene.selectedItems()
+            ]
+            logger.debug(f"Selection after press: {sel}")
 
     def mouseMoveEvent(self, event):
 
@@ -717,6 +723,12 @@ class CanvasWidget(QGraphicsView):
             return
         self._start_pos = None
         super().mouseReleaseEvent(event)
+        if event.button() == Qt.LeftButton:
+            sel = [
+                getattr(it, "layer_name", type(it).__name__)
+                for it in self.scene.selectedItems()
+            ]
+            logger.debug(f"Selection after release: {sel}")
 
     def mouseDoubleClickEvent(self, event):
         scene_pos = self.mapToScene(event.pos())
@@ -1391,7 +1403,8 @@ class CanvasWidget(QGraphicsView):
                 effective_locked = True
             layer.setEnabled(not effective_locked)
             logger.debug(
-                f"Layer {getattr(layer, 'layer_name', '')} locked={effective_locked}"
+                f"Layer {getattr(layer, 'layer_name', '')} locked={effective_locked} "
+                f"enabled={layer.isEnabled()}"
             )
 
     def set_lock_others(self, enabled: bool):
