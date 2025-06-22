@@ -159,3 +159,13 @@ Ces quelques lignes résument les commandes principales pour démarrer avec Pict
 - `python -m pictocode` pour lancer l'application depuis le module installé.
 - `python main.py` pour exécuter directement l'application.
 
+
+## Dépannage
+
+Si vous ne parvenez pas à déplacer une forme sur le canvas :
+
+- Sélectionnez d'abord l'outil **Sélection** dans la barre d'outils.
+- Vérifiez dans le panneau **Calques** que le calque contenant l'objet est actif et non verrouillé.
+- Si l'option « Lock other » est cochée, seuls les éléments du calque courant peuvent être modifiés.
+- Désactivez éventuellement l'aimantation à la grille (« Snap to grid ») pour tester un déplacement libre.
+

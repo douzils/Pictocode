@@ -44,6 +44,19 @@ class TransparentItemGroup(QGraphicsItemGroup):
         # Ignore mouse events when not selected so child items stay clickable
         self.setAcceptedMouseButtons(Qt.NoButton)
 
+    def addToGroup(self, item: QGraphicsItem):
+        """Add item and preserve its interactivity."""
+        super().addToGroup(item)
+        item.setFlag(QGraphicsItem.ItemIsMovable, True)
+        item.setFlag(QGraphicsItem.ItemIsSelectable, True)
+        item.setFlag(QGraphicsItem.ItemSendsGeometryChanges, True)
+        logger.debug(
+            "Added %s to %s flags=0x%x",
+            getattr(item, "layer_name", type(item).__name__),
+            getattr(self, "layer_name", "group"),
+            int(item.flags()),
+        )
+
 
     def itemChange(self, change, value):
         if change == QGraphicsItem.ItemSelectedHasChanged:
@@ -460,6 +473,22 @@ class CanvasWidget(QGraphicsView):
             f"Mouse press {event.button()} at {scene_pos.x():.1f},{scene_pos.y():.1f} "
             f"tool={self.current_tool} item={item_name}"
         )
+        if item:
+            flags = int(item.flags())
+            logger.debug(
+                "Item flags=0x%x movable=%s selectable=%s enabled=%s",
+                flags,
+                bool(flags & QGraphicsItem.ItemIsMovable),
+                bool(flags & QGraphicsItem.ItemIsSelectable),
+                item.isEnabled(),
+            )
+            parent = item.parentItem()
+            if parent:
+                logger.debug(
+                    "Parent %s enabled=%s",
+                    getattr(parent, "layer_name", type(parent).__name__),
+                    parent.isEnabled(),
+                )
         if self.current_tool == "pan":
             super().mousePressEvent(event)
             return
@@ -581,8 +610,19 @@ class CanvasWidget(QGraphicsView):
             self._show_context_menu(event)
             return
         super().mousePressEvent(event)
+        if event.button() == Qt.LeftButton:
+            sel = [
+                getattr(it, "layer_name", type(it).__name__)
+                for it in self.scene.selectedItems()
+            ]
+            logger.debug(f"Selection after press: {sel}")
 
     def mouseMoveEvent(self, event):
+        scene_pos = self.mapToScene(event.pos())
+        logger.debug(
+            f"Mouse move to {scene_pos.x():.1f},{scene_pos.y():.1f} "
+            f"buttons={int(event.buttons())} tool={self.current_tool}"
+        )
 
         if self.current_tool == "pan":
             super().mouseMoveEvent(event)
@@ -631,6 +671,12 @@ class CanvasWidget(QGraphicsView):
                 self._temp_item.setLine(x0, y0, scene_pos.x(), scene_pos.y())
             return
         super().mouseMoveEvent(event)
+        for it in self.scene.selectedItems():
+            pos = it.pos()
+            logger.debug(
+                f"Selected {getattr(it, 'layer_name', type(it).__name__)} "
+                f"at {pos.x():.1f},{pos.y():.1f}"
+            )
 
     def mouseReleaseEvent(self, event):
         scene_pos = self.mapToScene(event.pos())
@@ -697,6 +743,18 @@ class CanvasWidget(QGraphicsView):
             return
         self._start_pos = None
         super().mouseReleaseEvent(event)
+        if event.button() == Qt.LeftButton:
+            sel = [
+                getattr(it, "layer_name", type(it).__name__)
+                for it in self.scene.selectedItems()
+            ]
+            logger.debug(f"Selection after release: {sel}")
+            for it in self.scene.selectedItems():
+                pos = it.pos()
+                logger.debug(
+                    f"Selected {getattr(it, 'layer_name', type(it).__name__)} "
+                    f"at {pos.x():.1f},{pos.y():.1f}"
+                )
 
     def mouseDoubleClickEvent(self, event):
         scene_pos = self.mapToScene(event.pos())
@@ -1371,7 +1429,8 @@ class CanvasWidget(QGraphicsView):
                 effective_locked = True
             layer.setEnabled(not effective_locked)
             logger.debug(
-                f"Layer {getattr(layer, 'layer_name', '')} locked={effective_locked}"
+                f"Layer {getattr(layer, 'layer_name', '')} locked={effective_locked} "
+                f"enabled={layer.isEnabled()}"
             )
 
     def set_lock_others(self, enabled: bool):
