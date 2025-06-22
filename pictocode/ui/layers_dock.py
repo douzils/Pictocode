@@ -210,26 +210,41 @@ class LayersTreeWidget(QTreeWidget):
         event.setDropAction(Qt.MoveAction)
         super().dragMoveEvent(event)
         event.accept()
+
         item = self.itemAt(event.pos())
         pos = self.dropIndicatorPosition()
 
-        if (
-            pos in (QAbstractItemView.AboveItem, QAbstractItemView.BelowItem)
-            and item
-        ):
+        line_y = None
+        highlight = False
+
+        if pos in (QAbstractItemView.AboveItem, QAbstractItemView.BelowItem) and item:
             rect = self.visualItemRect(item)
-            y = (
-                rect.top()
-                if pos == QAbstractItemView.AboveItem
-                else rect.bottom()
-            )
-            self._drop_line.setGeometry(0, y, self.viewport().width(), 2)
+
+            line_y = rect.top() if pos == QAbstractItemView.AboveItem else rect.bottom()
+        elif pos == QAbstractItemView.OnItem and item:
+            if event.modifiers() & Qt.ControlModifier:
+                highlight = True
+            else:
+                rect = self.visualItemRect(item)
+                center = rect.center().y()
+                line_y = rect.bottom() if event.pos().y() >= center else rect.top()
+        elif pos == QAbstractItemView.OnViewport:
+            last = self.itemAt(self.viewport().rect().bottomLeft())
+            if last:
+                rect = self.visualItemRect(last)
+                line_y = rect.bottom()
+            else:
+                line_y = self.viewport().rect().top()
+
+        if line_y is not None:
+            self._drop_line.setGeometry(0, line_y, self.viewport().width(), 2)
+
             self._fade_widget(self._drop_line, show=True)
         else:
             if self._drop_line.isVisible():
                 self._fade_widget(self._drop_line, show=False)
 
-        if pos == QAbstractItemView.OnItem and item:
+        if highlight:
             if self._highlight_item is not item:
                 self._clear_highlight()
                 self._highlight_item = item
@@ -666,14 +681,11 @@ class LayersWidget(QWidget):
             and selected
             and target_item not in self.tree.selectedItems()
             and self.canvas
+            and (event.keyboardModifiers() & Qt.ControlModifier)
         ):
             target_gitem = target_item.data(0, Qt.UserRole)
-            if target_gitem and not isinstance(
-                target_gitem, QGraphicsItemGroup
-            ):
-                items = [target_gitem] + sorted(
-                    selected, key=lambda g: g.zValue()
-                )
+            if target_gitem and not isinstance(target_gitem, QGraphicsItemGroup):
+                items = [target_gitem] + sorted(selected, key=lambda g: g.zValue())
                 group = self.canvas.group_selected(items, sort_items=False)
                 if group:
                     event.accept()
