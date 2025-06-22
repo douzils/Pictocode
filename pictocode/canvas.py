@@ -476,6 +476,7 @@ class CanvasWidget(QGraphicsView):
         if item:
             flags = int(item.flags())
             logger.debug(
+
                 "Item flags=0x%x movable=%s selectable=%s enabled=%s",
                 flags,
                 bool(flags & QGraphicsItem.ItemIsMovable),
@@ -489,6 +490,7 @@ class CanvasWidget(QGraphicsView):
                     getattr(parent, "layer_name", type(parent).__name__),
                     parent.isEnabled(),
                 )
+
         if self.current_tool == "pan":
             super().mousePressEvent(event)
             return
@@ -755,6 +757,7 @@ class CanvasWidget(QGraphicsView):
                     f"Selected {getattr(it, 'layer_name', type(it).__name__)} "
                     f"at {pos.x():.1f},{pos.y():.1f}"
                 )
+
 
     def mouseDoubleClickEvent(self, event):
         scene_pos = self.mapToScene(event.pos())
