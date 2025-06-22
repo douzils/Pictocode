@@ -13,7 +13,7 @@ from PyQt5.QtWidgets import (
     QFrame,
     QStyle,
 )
-from PyQt5.QtCore import Qt, QPropertyAnimation, QTimeLine, QTimer
+from PyQt5.QtCore import Qt, QPropertyAnimation, QTimeLine, QTimer, QVariantAnimation
 from PyQt5.QtWidgets import QGraphicsObject
 from PyQt5.QtGui import QBrush, QColor, QTransform, QDrag, QPainter
 from .animated_menu import AnimatedMenu
@@ -48,9 +48,63 @@ class LayersTreeWidget(QTreeWidget):
         self._drop_line.setStyleSheet(f"background:{self.drop_color.name()};")
         self._drop_line.setAttribute(Qt.WA_TransparentForMouseEvents)
         self._drop_line.hide()
+        self._drop_anim = None
         # Use a custom drop indicator to avoid flicker with Qt's built-in one
         self.setDropIndicatorShown(False)
         self._highlight_item = None
+        self._highlight_anim = None
+
+    # ------------------------------------------------------------------
+    def _fade_widget(self, widget, *, show=True, duration=150):
+        """Fade ``widget`` in or out with an opacity animation."""
+        if self._drop_anim:
+            self._drop_anim.stop()
+        widget.setWindowOpacity(0.0 if show else 1.0)
+        if show:
+            widget.show()
+        anim = QPropertyAnimation(widget, b"windowOpacity", self)
+        anim.setDuration(duration)
+        anim.setStartValue(0.0 if show else 1.0)
+        anim.setEndValue(1.0 if show else 0.0)
+
+        def _cleanup():
+            if not show:
+                widget.hide()
+            self._drop_anim = None
+
+        anim.finished.connect(_cleanup)
+        self._drop_anim = anim
+        anim.start(QPropertyAnimation.DeleteWhenStopped)
+
+    def _animate_highlight(self, item, *, start_color=None, end_color=None, duration=150):
+        """Animate ``item`` background color between ``start_color`` and ``end_color``."""
+        if not item:
+            return
+        if self._highlight_anim:
+            self._highlight_anim.stop()
+        if start_color is None:
+            start_color = self.group_color
+        if end_color is None:
+            end_color = QColor(0, 0, 0, 0)
+        anim = QVariantAnimation(self)
+        anim.setDuration(duration)
+        anim.setStartValue(start_color)
+        anim.setEndValue(end_color)
+
+        def _update(value):
+            if item.treeWidget() is None:
+                return
+            brush = QBrush(value)
+            for c in range(self.columnCount()):
+                item.setBackground(c, brush)
+
+        def _cleanup():
+            self._highlight_anim = None
+
+        anim.valueChanged.connect(_update)
+        anim.finished.connect(_cleanup)
+        self._highlight_anim = anim
+        anim.start()
 
     def mimeData(self, items):
         """Return MIME data for ``items`` without serializing ``QGraphicsItem`` pointers."""
@@ -106,19 +160,10 @@ class LayersTreeWidget(QTreeWidget):
 
     def _clear_highlight(self):
         if self._highlight_item:
-            # The QTreeWidgetItem may have been removed from the tree during
-            # a drop operation. When this happens Qt deletes the underlying C++
-            # object and calling methods on it raises a RuntimeError. Guard by
-            # checking that the item still belongs to a tree before clearing
-            # its background colors. The call to ``treeWidget`` itself can
-            # raise ``RuntimeError`` if the wrapped C++ object has been
-            # deleted, so we also protect against that case.
             try:
                 if self._highlight_item.treeWidget() is not None:
-                    for c in range(self.columnCount()):
-                        self._highlight_item.setBackground(c, QBrush())
+                    self._animate_highlight(self._highlight_item)
             except RuntimeError:
-                # The underlying item was deleted; nothing to clear.
                 pass
         self._highlight_item = None
 
@@ -173,17 +218,16 @@ class LayersTreeWidget(QTreeWidget):
                 else rect.bottom()
             )
             self._drop_line.setGeometry(0, y, self.viewport().width(), 2)
-            self._drop_line.show()
+            self._fade_widget(self._drop_line, show=True)
         else:
-            self._drop_line.hide()
+            if self._drop_line.isVisible():
+                self._fade_widget(self._drop_line, show=False)
 
         if pos == QAbstractItemView.OnItem and item:
             if self._highlight_item is not item:
                 self._clear_highlight()
                 self._highlight_item = item
-                brush = QBrush(self.group_color)
-                for c in range(self.columnCount()):
-                    item.setBackground(c, brush)
+                self._animate_highlight(item, start_color=self.group_color, end_color=self.group_color)
         elif item is not self._highlight_item:
             self._clear_highlight()
 
@@ -196,7 +240,8 @@ class LayersTreeWidget(QTreeWidget):
         self._handle_tree_drop(event)
 
     def _handle_tree_drop(self, event):
-        self._drop_line.hide()
+        if self._drop_line.isVisible():
+            self._fade_widget(self._drop_line, show=False)
         self._clear_highlight()
         super().dropEvent(event)
         if self._parent and hasattr(self._parent, "_handle_tree_drop"):
@@ -204,7 +249,8 @@ class LayersTreeWidget(QTreeWidget):
 
     def dragLeaveEvent(self, event):
         """Remove any drop indicators when the drag leaves the widget."""
-        self._drop_line.hide()
+        if self._drop_line.isVisible():
+            self._fade_widget(self._drop_line, show=False)
         self._clear_highlight()
         super().dragLeaveEvent(event)
 
