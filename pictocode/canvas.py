@@ -8,7 +8,6 @@ from PyQt5.QtWidgets import (
     QAction,
     QGraphicsItem,
     QGraphicsItemGroup,
-    QGraphicsObject,
 )
 from .ui.animated_menu import AnimatedMenu
 from PyQt5.QtCore import Qt, QRectF, QPointF, QSizeF, pyqtSignal, QTimer
@@ -281,7 +280,6 @@ class CanvasWidget(QGraphicsView):
         for s in shapes:
             self._create_item(s)
         self.scene.blockSignals(False)
-        window = self.window()
 
     def export_project(self):
         """
