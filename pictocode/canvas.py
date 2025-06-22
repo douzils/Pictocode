@@ -280,8 +280,10 @@ class CanvasWidget(QGraphicsView):
         for s in shapes:
             self._create_item(s)
         self.scene.blockSignals(False)
+
         # Ensure layer and layout views stay in sync with the scene
         self._schedule_scene_changed()
+
 
     def export_project(self):
         """
