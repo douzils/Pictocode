@@ -539,7 +539,9 @@ class MainWindow(QMainWindow):
         self.canvas.new_document(**params)
         # calques
         self.canvas.setup_layers(layers or [])
+
         self.layers.populate()
+
         # charge formes
         self.canvas.load_shapes(shapes or [])
         # bascule UI
