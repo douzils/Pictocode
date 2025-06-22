@@ -13,7 +13,7 @@ from PyQt5.QtWidgets import (
     QFrame,
     QStyle,
 )
-from PyQt5.QtCore import Qt, QPropertyAnimation, QTimer
+from PyQt5.QtCore import Qt, QPropertyAnimation, QTimeLine, QTimer
 from PyQt5.QtWidgets import QGraphicsObject
 from PyQt5.QtGui import QBrush, QColor, QTransform, QDrag, QPainter
 from .animated_menu import AnimatedMenu
@@ -695,4 +695,21 @@ class LayersWidget(QWidget):
             self._z_anims[gitem] = z
             anim.start(QPropertyAnimation.DeleteWhenStopped)
         else:
-            gitem.setZValue(z)
+            current_target = self._z_anims.get(gitem)
+            if current_target == z:
+                return
+            start = gitem.zValue()
+            timeline = QTimeLine(150, self)
+            timeline.setFrameRange(0, 100)
+
+            def _update(frame):
+                value = start + (z - start) * frame / 100
+                gitem.setZValue(value)
+
+            def _cleanup():
+                self._z_anims.pop(gitem, None)
+
+            timeline.frameChanged.connect(_update)
+            timeline.finished.connect(_cleanup)
+            self._z_anims[gitem] = z
+            timeline.start()
