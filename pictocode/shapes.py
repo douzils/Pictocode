@@ -21,7 +21,6 @@ from PyQt5.QtGui import (
     QTransform,
     QPolygonF,
     QCursor,
-
 )
 import math
 from PyQt5.QtCore import Qt, QPointF, QRectF
@@ -49,11 +48,13 @@ def _resize_cursor(angle: float) -> QCursor:
         painter.setPen(pen)
         l = size / 4
         head = 6
-        painter.drawLine(-l, 0, l, 0)
-        painter.drawLine(-l, 0, -l + head, -head)
-        painter.drawLine(-l, 0, -l + head, head)
-        painter.drawLine(l, 0, l - head, -head)
-        painter.drawLine(l, 0, l - head, head)
+        p1 = QPointF(-l, 0)
+        p2 = QPointF(l, 0)
+        painter.drawLine(p1, p2)
+        painter.drawLine(p1, QPointF(-l + head, -head))
+        painter.drawLine(p1, QPointF(-l + head, head))
+        painter.drawLine(p2, QPointF(l - head, -head))
+        painter.drawLine(p2, QPointF(l - head, head))
         painter.end()
         _cursor_cache[key] = QCursor(pix, size // 2, size // 2)
     return _cursor_cache[key]
@@ -165,7 +166,6 @@ class ResizableMixin:
         path = super().shape()
         extra = QPainterPath()
         for h in self._corner_handles():
-
             if self.handle_shape == "circle":
                 extra.addEllipse(h)
             else:
@@ -202,13 +202,17 @@ class ResizableMixin:
     def _shape_path(self):
         """Return a QPainterPath representing the pure shape (without
         handles)."""
-        if hasattr(self, "path"):
+        if isinstance(self, QGraphicsPathItem):
             return QPainterPath(self.path())
-        if hasattr(self, "line"):
+        if isinstance(self, QGraphicsLineItem):
             l = self.line()
             p = QPainterPath()
             p.moveTo(l.p1())
             p.lineTo(l.p2())
+            return p
+        if isinstance(self, QGraphicsPolygonItem):
+            p = QPainterPath()
+            p.addPolygon(self.polygon())
             return p
         if hasattr(self, "rect"):
             p = QPainterPath()
@@ -227,7 +231,6 @@ class ResizableMixin:
             painter.setBrush(QBrush(Qt.white))
             painter.setPen(QPen(self.handle_color))
             for handle in self._corner_handles():
-
                 if self.handle_shape == 'circle':
                     painter.drawEllipse(handle)
                 else:
@@ -247,7 +250,6 @@ class ResizableMixin:
             corner_handles = self._corner_handles()
             side_rects = self._side_rects()
             rot_handle = self._rotation_rect()
-
             for idx, handle in enumerate(corner_handles):
                 if handle.contains(event.pos()):
                     self._resizing = True
