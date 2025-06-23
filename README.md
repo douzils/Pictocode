@@ -145,6 +145,7 @@ l'application.
 Un panneau lateral "Panneaux" permet d'activer ou non diverses fenetres : proprietes, barre d'outils ou encore la liste des images importees.
 Par defaut, ces fenetres sont rattachees a la fenetre principale et ne flottent plus.
 Le plan de travail reste centré : lorsqu'un panneau est masqué ou affiché, la vue est recentrée sur la même zone du document.
+
 La barre de titre personnalisée prend désormais en charge le déplacement système
 pour profiter des raccourcis de redimensionnement Windows (snap et agrandissement
 au bord de l'écran).
