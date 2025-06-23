@@ -78,8 +78,12 @@ class TransparentItemGroup(QGraphicsItemGroup):
         return super().itemChange(change, value)
 
     def shape(self):
-        """Return the combined shape of children for hit tests."""
-        return super().shape()
+
+        """Return an empty path when not selected to let children receive clicks."""
+        if self.isSelected():
+            return super().shape()
+        return QPainterPath()
+
 
     def mousePressEvent(self, event):
         if self.isSelected():
@@ -508,8 +512,17 @@ class CanvasWidget(QGraphicsView):
                 scene_pos.setX(round(scene_pos.x() / grid) * grid)
                 scene_pos.setY(round(scene_pos.y() / grid) * grid)
             base_item = self.scene.itemAt(scene_pos, QTransform())
-            while base_item and base_item.parentItem():
-                base_item = base_item.parentItem()
+            # Walk up the hierarchy to find the nearest selectable ancestor
+            # so clicking a child of a group selects that child unless the
+            # group itself is selectable (e.g. when grouping shapes).
+            item = base_item
+            while (
+                item
+                and not (item.flags() & QGraphicsItem.ItemIsSelectable)
+                and item.parentItem() is not None
+            ):
+                item = item.parentItem()
+            base_item = item
             if base_item is self._frame_item:
                 base_item = None
             # Select existing items unless Shift is held to override or using
