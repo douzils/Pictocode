@@ -310,6 +310,9 @@ class MainWindow(QMainWindow):
         dock.installEventFilter(self)
         if dock.widget():
             dock.widget().installEventFilter(self)
+        if widget:
+            widget.installEventFilter(self)
+
         self.docks.append(dock)
         return dock
 
@@ -1093,7 +1096,9 @@ class MainWindow(QMainWindow):
                 background-color: {menu_color.darker(130).name()};
             }}
             QWidget#drag_indicator {{
-                background: {accent.name()};
+
+                background: red;
+
                 border: 1px solid {accent.darker(150).name()};
             }}
             """
@@ -1157,10 +1162,13 @@ class MainWindow(QMainWindow):
 
     def eventFilter(self, obj, event):
         dock = None
-        if isinstance(obj, QDockWidget):
-            dock = obj
-        elif obj.parent() and isinstance(obj.parent(), QDockWidget):
-            dock = obj.parent()
+
+        o = obj
+        while o is not None and not isinstance(o, QDockWidget):
+            o = o.parent()
+        if isinstance(o, QDockWidget):
+            dock = o
+
         if dock:
             if event.type() == QEvent.Close:
                 view = self.canvas.viewport()
@@ -1196,16 +1204,16 @@ class MainWindow(QMainWindow):
                     self._corner_dragging = True
                     self._corner_dragging_dock = dock
                     self._corner_start = event.globalPos()
-
                     self._show_drag_indicator(event.globalPos())
                     return True
             elif event.type() == QEvent.MouseMove and self._corner_dragging and dock is self._corner_dragging_dock:
                 delta = event.globalPos() - self._corner_start
                 self._update_drag_indicator(event.globalPos())
                 if abs(delta.x()) > 5 or abs(delta.y()) > 5:
-                    self._split_orientation = (
-                        Qt.Horizontal if abs(delta.x()) >= abs(delta.y()) else Qt.Vertical
-                    )
+                    if abs(delta.y()) >= abs(delta.x()):
+                        self._split_orientation = Qt.Vertical
+                    else:
+                        self._split_orientation = Qt.Horizontal
                     self.show_corner_tabs(dock, create_new=True)
                     self._hide_drag_indicator()
 
@@ -1215,9 +1223,10 @@ class MainWindow(QMainWindow):
             elif event.type() == QEvent.MouseButtonRelease and self._corner_dragging and dock is self._corner_dragging_dock:
                 delta = event.globalPos() - self._corner_start
                 if abs(delta.x()) > 5 or abs(delta.y()) > 5:
-                    self._split_orientation = (
-                        Qt.Horizontal if abs(delta.x()) >= abs(delta.y()) else Qt.Vertical
-                    )
+                    if abs(delta.y()) >= abs(delta.x()):
+                        self._split_orientation = Qt.Vertical
+                    else:
+                        self._split_orientation = Qt.Horizontal
                     self.show_corner_tabs(dock, create_new=True)
                 self._corner_dragging = False
                 self._corner_dragging_dock = None
@@ -1269,16 +1278,19 @@ class MainWindow(QMainWindow):
                 local.y() - self.corner_tabs.height(),
             )
 
-
     def _show_drag_indicator(self, gpos):
         pos = self.mapFromGlobal(gpos)
         self.drag_indicator.move(pos.x() + 5, pos.y() + 5)
         self.drag_indicator.show()
+        self.drag_indicator.raise_()
+
 
     def _update_drag_indicator(self, gpos):
         if self.drag_indicator.isVisible():
             pos = self.mapFromGlobal(gpos)
             self.drag_indicator.move(pos.x() + 5, pos.y() + 5)
+            self.drag_indicator.raise_()
+
 
     def _hide_drag_indicator(self):
         self.drag_indicator.hide()
@@ -1301,7 +1313,6 @@ class MainWindow(QMainWindow):
             if header:
                 self.corner_tabs.selector.setCurrentText(header.selector.currentText())
             self._hide_drag_indicator()
-
             self.corner_tabs.show()
             self._update_corner_tabs_pos(dock)
             self.corner_tabs.raise_()
