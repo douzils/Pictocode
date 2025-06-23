@@ -1,3 +1,4 @@
+
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QComboBox
 from PyQt5.QtCore import Qt, pyqtSignal
 
@@ -19,6 +20,7 @@ class CornerTabs(QWidget):
         self.selector.currentTextChanged.connect(self._emit_change)
         if overlay:
             self.hide()
+
 
     def add_tab(self, widget, label: str):
         """Compatibility shim for the previous API.
