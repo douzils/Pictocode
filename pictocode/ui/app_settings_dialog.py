@@ -36,6 +36,7 @@ class AppSettingsDialog(QDialog):
         autosave_enabled: bool = False,
         autosave_interval: int = 5,
         auto_show_inspector: bool = True,
+        float_docks: bool = False,
         parent=None,
     ):
 
@@ -153,6 +154,10 @@ class AppSettingsDialog(QDialog):
         self.auto_show_chk.setChecked(bool(auto_show_inspector))
         form.addRow("Ouvrir inspecteur sur sélection :", self.auto_show_chk)
 
+        self.float_docks_chk = QCheckBox()
+        self.float_docks_chk.setChecked(bool(float_docks))
+        form.addRow("Fenêtres flottantes :", self.float_docks_chk)
+
         buttons = QDialogButtonBox(
             QDialogButtonBox.Ok | QDialogButtonBox.Cancel, Qt.Horizontal, self
         )
@@ -218,3 +223,6 @@ class AppSettingsDialog(QDialog):
 
     def get_auto_show_inspector(self) -> bool:
         return self.auto_show_chk.isChecked()
+
+    def get_float_docks(self) -> bool:
+        return self.float_docks_chk.isChecked()

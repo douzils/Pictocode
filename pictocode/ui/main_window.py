@@ -88,6 +88,8 @@ class MainWindow(QMainWindow):
             self.settings.value("autosave_interval", 5))
         self.auto_show_inspector = self.settings.value(
             "auto_show_inspector", True, type=bool)
+        self.float_docks = self.settings.value(
+            "float_docks", False, type=bool)
         self._autosave_timer = QTimer(self)
         self._autosave_timer.timeout.connect(self._autosave)
         if self.autosave_enabled:
@@ -147,6 +149,8 @@ class MainWindow(QMainWindow):
         self.addDockWidget(Qt.BottomDockWidgetArea, lg_dock)
         lg_dock.setVisible(False)
         self.logs_dock = lg_dock
+
+        self._apply_float_docks()
 
         # Dialog nouveau projet
         self.new_proj_dlg = NewProjectDialog(self)
@@ -835,6 +839,7 @@ class MainWindow(QMainWindow):
             self.autosave_enabled,
             self.autosave_interval,
             self.auto_show_inspector,
+            self.float_docks,
             self,
         )
         if dlg.exec_() == QDialog.Accepted:
@@ -855,10 +860,12 @@ class MainWindow(QMainWindow):
             self.autosave_enabled = dlg.get_autosave_enabled()
             self.autosave_interval = dlg.get_autosave_interval()
             self.auto_show_inspector = dlg.get_auto_show_inspector()
+            self.float_docks = dlg.get_float_docks()
 
             if self.auto_show_inspector:
                 items = self.canvas.scene.selectedItems()
                 self.inspector_dock.setVisible(bool(items))
+            self._apply_float_docks()
 
             self.apply_theme(
                 theme,
@@ -886,6 +893,7 @@ class MainWindow(QMainWindow):
             self.settings.setValue(
                 "auto_show_inspector", self.auto_show_inspector
             )
+            self.settings.setValue("float_docks", self.float_docks)
             if self.autosave_enabled:
                 self._autosave_timer.start(self.autosave_interval * 60000)
             else:
@@ -1103,6 +1111,22 @@ class MainWindow(QMainWindow):
             )
             if seq:
                 action.setShortcut(QKeySequence(seq))
+
+    def _apply_float_docks(self):
+        """Set all dock widgets to floating or dockable mode."""
+        docks = [
+            (self.inspector_dock, Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea),
+            (self.imports_dock, Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea),
+            (self.layout_dock, Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea),
+            (self.logs_dock, Qt.BottomDockWidgetArea | Qt.TopDockWidgetArea),
+        ]
+        for dock, areas in docks:
+            if self.float_docks:
+                dock.setAllowedAreas(Qt.NoDockWidgetArea)
+                dock.setFloating(True)
+            else:
+                dock.setAllowedAreas(areas)
+                dock.setFloating(False)
 
     def _apply_handle_settings(self):
         from ..shapes import ResizableMixin
