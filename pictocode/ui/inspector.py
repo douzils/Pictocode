@@ -10,6 +10,7 @@ from PyQt5.QtWidgets import (
     QDialog,
     QHBoxLayout,
 )
+import logging
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QLinearGradient, QBrush, QColor
 from .gradient_editor import GradientEditorDialog
@@ -229,8 +230,10 @@ class Inspector(QWidget):
                 value = fld.text()
             setter(value)
             self._notify_change()
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).exception(
+                "Failed to update %s", fld, exc_info=exc
+            )
 
     def _pick_color(self, event=None):
         if not self._item:
@@ -365,4 +368,3 @@ class Inspector(QWidget):
                 view = views[0]
                 if hasattr(view, "_mark_dirty"):
                     view._mark_dirty()
-
