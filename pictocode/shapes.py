@@ -15,16 +15,48 @@ from PyQt5.QtGui import (
     QBrush,
     QColor,
     QPainterPath,
+    QPainter,
     QFont,
     QPixmap,
     QTransform,
     QPolygonF,
+    QCursor,
+
 )
 import math
 from PyQt5.QtCore import Qt, QPointF, QRectF
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+_cursor_cache: dict[int, QCursor] = {}
+
+
+def _resize_cursor(angle: float) -> QCursor:
+    """Return a double arrow cursor rotated to the given angle."""
+    key = int(round(angle)) % 360
+    if key not in _cursor_cache:
+        size = 32
+        pix = QPixmap(size, size)
+        pix.fill(Qt.transparent)
+        painter = QPainter(pix)
+        painter.setRenderHint(QPainter.Antialiasing)
+        painter.translate(size / 2, size / 2)
+        painter.rotate(key)
+        pen = QPen(Qt.black)
+        pen.setWidth(2)
+        painter.setPen(pen)
+        l = size / 4
+        head = 6
+        painter.drawLine(-l, 0, l, 0)
+        painter.drawLine(-l, 0, -l + head, -head)
+        painter.drawLine(-l, 0, -l + head, head)
+        painter.drawLine(l, 0, l - head, -head)
+        painter.drawLine(l, 0, l - head, head)
+        painter.end()
+        _cursor_cache[key] = QCursor(pix, size // 2, size // 2)
+    return _cursor_cache[key]
 
 
 class SnapToGridMixin:
@@ -132,7 +164,6 @@ class ResizableMixin:
         """Extend the shape with resize and rotation handles for hit tests."""
         path = super().shape()
         extra = QPainterPath()
-
         for h in self._corner_handles():
 
             if self.handle_shape == "circle":
@@ -140,7 +171,6 @@ class ResizableMixin:
             else:
                 extra.addRect(h)
         for rect in self._side_rects():
-
             extra.addRect(rect)
 
         rot_handle = self._rotation_rect()
@@ -196,7 +226,6 @@ class ResizableMixin:
 
             painter.setBrush(QBrush(Qt.white))
             painter.setPen(QPen(self.handle_color))
-
             for handle in self._corner_handles():
 
                 if self.handle_shape == 'circle':
@@ -215,7 +244,6 @@ class ResizableMixin:
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton and self.isSelected():
             r = self.rect()
-
             corner_handles = self._corner_handles()
             side_rects = self._side_rects()
             rot_handle = self._rotation_rect()
@@ -345,15 +373,15 @@ class ResizableMixin:
             pos = event.pos()
             for idx, rect in enumerate(self._corner_handles()):
                 if rect.contains(pos):
-                    curs = (
-                        Qt.SizeFDiagCursor if idx in (0, 2) else Qt.SizeBDiagCursor
-                    )
-                    self.setCursor(curs)
+                    base = 135 if idx in (0, 2) else 45
+                    angle = base + self.rotation()
+                    self.setCursor(_resize_cursor(angle))
                     return
             for idx, rect in enumerate(self._side_rects(), start=4):
                 if rect.contains(pos):
-                    curs = Qt.SizeVerCursor if idx in (4, 6) else Qt.SizeHorCursor
-                    self.setCursor(curs)
+                    base = {4: 90, 5: 0, 6: -90, 7: 180}[idx]
+                    angle = base + self.rotation()
+                    self.setCursor(_resize_cursor(angle))
                     return
             if self._rotation_rect().contains(pos):
                 self.setCursor(Qt.CrossCursor)
