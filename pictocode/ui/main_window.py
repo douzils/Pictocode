@@ -1141,8 +1141,26 @@ class MainWindow(QMainWindow):
                 dock.setFloating(False)
 
     def _toggle_dock(self, dock: QWidget, visible: bool):
-        """Simply show or hide a dock widget."""
+
+        """Show or hide a dock while keeping the same view area."""
+        h_val = self.canvas.horizontalScrollBar().value()
+        v_val = self.canvas.verticalScrollBar().value()
         dock.setVisible(visible)
+        def restore():
+            self.canvas.horizontalScrollBar().setValue(h_val)
+            self.canvas.verticalScrollBar().setValue(v_val)
+        QTimer.singleShot(0, restore)
+
+    def eventFilter(self, obj, event):
+        if isinstance(obj, QDockWidget) and event.type() == QEvent.Close:
+            h_val = self.canvas.horizontalScrollBar().value()
+            v_val = self.canvas.verticalScrollBar().value()
+            def restore():
+                self.canvas.horizontalScrollBar().setValue(h_val)
+                self.canvas.verticalScrollBar().setValue(v_val)
+            QTimer.singleShot(0, restore)
+        return super().eventFilter(obj, event)
+
 
     def _apply_handle_settings(self):
         from ..shapes import ResizableMixin
