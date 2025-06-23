@@ -19,6 +19,8 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import Qt, QSettings, QPropertyAnimation, QTimer, QEvent, QPointF
 
+from .corner_tabs import CornerTabs
+
 from PyQt5.QtGui import QPalette, QColor, QKeySequence
 from PyQt5.QtWidgets import QApplication
 from ..utils import generate_pycode, get_contrast_color
@@ -44,6 +46,7 @@ PROJECTS_DIR = os.path.join(os.path.dirname(
 
 class MainWindow(QMainWindow):
     EDGE_MARGIN = 6
+    CORNER_REGION = 20
 
     def __init__(self):
         super().__init__()
@@ -79,6 +82,8 @@ class MainWindow(QMainWindow):
         self._resize_edges = Qt.Edges()
         self._start_pos = None
         self._start_geom = None
+        self._corner_dragging = False
+        self._corner_start = QPointF()
 
         # Paramètres de l'application
         self.settings = QSettings("pictocode", "pictocode")
@@ -162,6 +167,15 @@ class MainWindow(QMainWindow):
         lg_dock.setFloating(self.float_docks)
         lg_dock.setVisible(False)
         self.logs_dock = lg_dock
+
+        # Corner tabs overlay
+        self.corner_tabs = CornerTabs(self)
+        self.corner_tabs.add_tab(QLabel("Propriétés"), "Propriétés")
+        self.corner_tabs.add_tab(QLabel("Imports"), "Imports")
+        self.corner_tabs.add_tab(QLabel("Objets"), "Objets")
+        self.corner_tabs.add_tab(QLabel("Logs"), "Logs")
+        self.corner_tabs.resize(300, 200)
+        self._update_corner_tabs_pos()
 
         self._apply_float_docks()
 
@@ -1251,6 +1265,19 @@ class MainWindow(QMainWindow):
             if act:
                 act.setChecked(self.layout_dock.isVisible())
 
+    def _update_corner_tabs_pos(self):
+        if hasattr(self, "corner_tabs"):
+            self.corner_tabs.move(
+                self.width() - self.corner_tabs.width(),
+                self.height() - self.corner_tabs.height(),
+            )
+
+    def show_corner_tabs(self):
+        if hasattr(self, "corner_tabs"):
+            self.corner_tabs.show()
+            self._update_corner_tabs_pos()
+            self.corner_tabs.raise_()
+
     # --- Gestion favoris et récents ------------------------------------
     def add_recent_project(self, path: str):
         if path in self.recent_projects:
@@ -1296,6 +1323,14 @@ class MainWindow(QMainWindow):
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
             edges = self._edges_at_pos(event.pos())
+            if (
+                not edges
+                and event.pos().x() >= self.width() - self.CORNER_REGION
+                and event.pos().y() >= self.height() - self.CORNER_REGION
+            ):
+                self._corner_dragging = True
+                self._corner_start = event.pos()
+                return
             if edges:
                 handle = self.windowHandle()
                 if handle and hasattr(handle, "startSystemResize"):
@@ -1310,6 +1345,12 @@ class MainWindow(QMainWindow):
         super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event):
+        if self._corner_dragging:
+            delta = event.pos() - self._corner_start
+            if abs(delta.x()) > 5 or abs(delta.y()) > 5:
+                self.show_corner_tabs()
+                self._corner_dragging = False
+            return
         if self._resizing and (not hasattr(self.windowHandle(), "startSystemResize")):
             delta = event.globalPos() - self._start_pos
             g = self._start_geom
@@ -1342,9 +1383,19 @@ class MainWindow(QMainWindow):
         super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event):
+        if self._corner_dragging:
+            delta = event.pos() - self._corner_start
+            if abs(delta.x()) > 5 or abs(delta.y()) > 5:
+                self.show_corner_tabs()
+            self._corner_dragging = False
+            return
         self._resizing = False
         self.setCursor(Qt.ArrowCursor)
         super().mouseReleaseEvent(event)
+
+    def resizeEvent(self, event):
+        self._update_corner_tabs_pos()
+        super().resizeEvent(event)
 
 
 def main(app, argv):
