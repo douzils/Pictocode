@@ -12,7 +12,6 @@ from .logs_dock import LogsWidget
 from .debug_dialog import DebugDialog
 
 
-
 __all__ = [
     "MainWindow",
     "AnimatedMenu",

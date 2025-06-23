@@ -1624,12 +1624,16 @@ class CanvasWidget(QGraphicsView):
 
     def get_debug_report(self) -> str:
         """Return a textual report about the current project state."""
-        lines = []
+
+        lines: list[str] = []
+
         meta = getattr(self, "current_meta", {})
         lines.append("== Meta ==")
-        for k, v in meta.items():
-            lines.append(f"{k}: {v}")
+        for key, val in meta.items():
+            lines.append(f"{key}: {val}")
         lines.append("")
+
+
         lines.append("== Layers ==")
         for name, layer in self.layers.items():
             locked = getattr(layer, "locked", False)
@@ -1637,9 +1641,14 @@ class CanvasWidget(QGraphicsView):
                 f"{name}: visible={layer.isVisible()} locked={locked} enabled={layer.isEnabled()}"
             )
         lines.append("")
-        lines.append(f"Current layer: {getattr(self.current_layer, 'layer_name', '')}")
+
+
+        current = getattr(self.current_layer, "layer_name", "")
+        lines.append(f"Current layer: {current}")
         lines.append(f"Lock others: {self.lock_others}")
         lines.append("")
+
+
         lines.append("== Selection ==")
         selected = [
             getattr(it, "layer_name", type(it).__name__)
@@ -1647,10 +1656,25 @@ class CanvasWidget(QGraphicsView):
         ]
         lines.append(", ".join(selected) if selected else "(none)")
         lines.append("")
+
+
+        lines.append("== History ==")
+        lines.append(f"index: {self._history_index} / {len(self._history)}")
+        for i, snap in enumerate(self._history):
+            count = len(snap.get("shapes", []))
+            name = snap.get("name", "")
+            lines.append(f"  {i}: {name} shapes={count}")
+        lines.append("")
+
+        lines.append(f"Tool: {self.current_tool}")
         lines.append(
-            f"History index: {self._history_index} / {len(self._history)}"
+            f"Snap to grid: {self.snap_to_grid} size={self.grid_size} show={self.show_grid}"
         )
-        lines.append(f"Snap to grid: {self.snap_to_grid} size={self.grid_size}")
+        lines.append(f"Document rect: {self._doc_rect}")
+        zoom = self.transform().m11() if self.transform().m11() else 1.0
+        lines.append(f"Zoom: {zoom:.2f}")
         lines.append(f"Items in scene: {len(self.scene.items())}")
+
+
         return "\n".join(lines)
 

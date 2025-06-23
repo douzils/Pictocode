@@ -593,7 +593,7 @@ class MainWindow(QMainWindow):
         self._set_project_actions_enabled(True)
         self._update_view_checks()
         self._switch_page(self.canvas)
-        self.setWindowTitle(f"Pictocode — {params.get('name','')}")
+        self.setWindowTitle(f"Pictocode — {params.get('name', '')}")
         self.set_dirty(False)
         self.add_recent_project(path)
         self.home.populate_lists()
@@ -605,7 +605,8 @@ class MainWindow(QMainWindow):
         self.show_status("Enregistrement…")
         try:
             if self.current_project_path.lower().endswith(".ptc"):
-                import zipfile, tempfile
+                import zipfile
+                import tempfile
 
                 tmp_thumb = tempfile.mkstemp(suffix=".png")[1]
                 self.canvas.export_image(tmp_thumb, "PNG")
