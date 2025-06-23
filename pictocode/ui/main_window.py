@@ -16,7 +16,8 @@ from PyQt5.QtWidgets import (
     QDialog,
     QGraphicsOpacityEffect,
 )
-from PyQt5.QtCore import Qt, QSettings, QPropertyAnimation, QTimer, QEvent
+from PyQt5.QtCore import Qt, QSettings, QPropertyAnimation, QTimer, QEvent, QPointF
+
 from PyQt5.QtGui import QPalette, QColor, QKeySequence
 from PyQt5.QtWidgets import QApplication
 from ..utils import generate_pycode, get_contrast_color
@@ -160,14 +161,6 @@ class MainWindow(QMainWindow):
         lg_dock.setFloating(self.float_docks)
         lg_dock.setVisible(False)
         self.logs_dock = lg_dock
-
-        for d in (
-            self.inspector_dock,
-            self.imports_dock,
-            self.layout_dock,
-            self.logs_dock,
-        ):
-            d.installEventFilter(self)
 
         self._apply_float_docks()
 
@@ -1150,6 +1143,7 @@ class MainWindow(QMainWindow):
 
     def _toggle_dock(self, dock: QWidget, visible: bool):
         """Show or hide a dock without shifting the viewport."""
+
         view = self.canvas.viewport()
         old_w = view.width()
         old_h = view.height()
@@ -1181,6 +1175,7 @@ class MainWindow(QMainWindow):
 
     def eventFilter(self, obj, event):
         if isinstance(obj, QDockWidget) and event.type() == QEvent.Close:
+
             view = self.canvas.viewport()
             old_w = view.width()
             old_h = view.height()
@@ -1204,6 +1199,7 @@ class MainWindow(QMainWindow):
 
             QTimer.singleShot(0, restore)
         return super().eventFilter(obj, event)
+
 
     def _apply_handle_settings(self):
         from ..shapes import ResizableMixin
