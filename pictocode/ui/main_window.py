@@ -28,6 +28,47 @@ from PyQt5.QtCore import (
 )
 
 from .corner_tabs import CornerTabs
+
+class DockContainer(QWidget):
+    """Container widget for docks with a draggable corner handle."""
+
+    def __init__(self, dock, callback, parent=None):
+        super().__init__(parent)
+        self._dock = dock
+        self._callback = callback
+        self._start = None
+        self.handle = QWidget(self)
+        self.handle.setObjectName("corner_handle")
+        self.handle.setCursor(Qt.OpenHandCursor)
+        self.handle.setFixedSize(20, 20)
+        self.handle.installEventFilter(self)
+
+    def resizeEvent(self, event):
+        self.handle.move(
+            self.width() - self.handle.width(),
+            self.height() - self.handle.height(),
+        )
+        super().resizeEvent(event)
+
+    def eventFilter(self, obj, event):
+        if obj is self.handle:
+            if event.type() == QEvent.MouseButtonPress and event.button() == Qt.LeftButton:
+                self._start = event.pos()
+                return True
+            elif event.type() == QEvent.MouseMove and self._start:
+                delta = event.pos() - self._start
+                if abs(delta.x()) > 5 or abs(delta.y()) > 5:
+                    self._callback(self._dock)
+                    self._start = None
+                return True
+            elif event.type() == QEvent.MouseButtonRelease and self._start:
+                delta = event.pos() - self._start
+                if abs(delta.x()) > 5 or abs(delta.y()) > 5:
+                    self._callback(self._dock)
+                self._start = None
+                return True
+        return super().eventFilter(obj, event)
+
 from PyQt5.QtGui import QPalette, QColor, QKeySequence, QCursor
 
 from PyQt5.QtWidgets import QApplication
@@ -151,31 +192,14 @@ class MainWindow(QMainWindow):
         self.layers = LayersWidget(self)
         self.toolbar.addWidget(self.layers)
 
-        def _make_dock(label, area):
-            dock = QDockWidget(label, self)
-            container = QWidget(dock)
-            lay = QVBoxLayout(container)
-            lay.setContentsMargins(0, 0, 0, 0)
-            header = CornerTabs(container)
-            header.selector.setCurrentText(label)
-            header.tab_selected.connect(lambda text, d=dock: self.set_dock_category(d, text))
-            lay.addWidget(header)
-            widget = self.category_widgets[label]
-            lay.addWidget(widget)
-            dock.setWidget(container)
-            dock.setAllowedAreas(area)
-            self.addDockWidget(area, dock)
-            dock.setFloating(self.float_docks)
-            dock.setVisible(False)
-            self.widget_docks[widget] = dock
-            self.dock_headers[dock] = header
-            self.dock_current_widget[dock] = widget
-            return dock
 
-        self.inspector_dock = _make_dock("Propriétés", Qt.RightDockWidgetArea)
-        self.imports_dock = _make_dock("Imports", Qt.LeftDockWidgetArea)
-        self.layout_dock = _make_dock("Objets", Qt.LeftDockWidgetArea)
-        self.logs_dock = _make_dock("Logs", Qt.BottomDockWidgetArea)
+        self.docks = []
+
+        self.inspector_dock = self._create_dock("Propriétés", Qt.RightDockWidgetArea)
+        self.imports_dock = self._create_dock("Imports", Qt.LeftDockWidgetArea)
+        self.layout_dock = self._create_dock("Objets", Qt.LeftDockWidgetArea)
+        self.logs_dock = self._create_dock("Logs", Qt.BottomDockWidgetArea)
+
 
         # Corner tabs overlay
         self.corner_tabs = CornerTabs(self, overlay=True)
@@ -290,6 +314,35 @@ class MainWindow(QMainWindow):
         self._apply_handle_settings()
         self._load_shortcuts()
         self._set_project_actions_enabled(False)
+
+    def _create_dock(self, label, area):
+        dock = QDockWidget(label, self)
+        container = DockContainer(dock, lambda d=dock: self.show_corner_tabs(d, create_new=True))
+        lay = QVBoxLayout(container)
+        lay.setContentsMargins(0, 0, 0, 0)
+        header = CornerTabs(container)
+        header.selector.setCurrentText(label)
+        header.tab_selected.connect(lambda text, d=dock: self.set_dock_category(d, text))
+        lay.addWidget(header)
+        widget = self.category_widgets[label]
+        lay.addWidget(widget)
+        container.setLayout(lay)
+        dock.setWidget(container)
+        if self.float_docks:
+            dock.setAllowedAreas(Qt.NoDockWidgetArea)
+        else:
+            dock.setAllowedAreas(Qt.AllDockWidgetAreas)
+        self.addDockWidget(area, dock)
+        dock.setFloating(self.float_docks)
+        dock.setVisible(True)
+        self.widget_docks[widget] = dock
+        self.dock_headers[dock] = header
+        self.dock_current_widget[dock] = widget
+        dock.installEventFilter(self)
+        if dock.widget():
+            dock.widget().installEventFilter(self)
+        self.docks.append(dock)
+        return dock
 
     def _build_menu(self):
         mb = self.menu_bar
@@ -1121,18 +1174,12 @@ class MainWindow(QMainWindow):
 
     def _apply_float_docks(self):
         """Set all dock widgets to floating or dockable mode."""
-        docks = [
-            (self.inspector_dock, Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea),
-            (self.imports_dock, Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea),
-            (self.layout_dock, Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea),
-            (self.logs_dock, Qt.BottomDockWidgetArea | Qt.TopDockWidgetArea),
-        ]
-        for dock, areas in docks:
+        for dock in self.docks:
             if self.float_docks:
                 dock.setAllowedAreas(Qt.NoDockWidgetArea)
                 dock.setFloating(True)
             else:
-                dock.setAllowedAreas(areas)
+                dock.setAllowedAreas(Qt.AllDockWidgetAreas)
                 dock.setFloating(False)
 
     def eventFilter(self, obj, event):
@@ -1165,50 +1212,6 @@ class MainWindow(QMainWindow):
                     vbar.setValue(v)
 
                 QTimer.singleShot(0, restore)
-            elif event.type() in (QEvent.Enter, QEvent.MouseMove):
-                pos = (event.pos() if hasattr(event, "pos") else obj.mapFromGlobal(QCursor.pos()))
-                if obj is not dock:
-                    pos = obj.mapTo(dock, pos)
-                if (
-                    pos.x() >= dock.width() - self.CORNER_REGION
-                    and pos.y() >= dock.height() - self.CORNER_REGION
-                ):
-                    dock.setCursor(Qt.OpenHandCursor)
-                elif not self._corner_dragging_dock:
-                    dock.unsetCursor()
-            elif event.type() == QEvent.Leave:
-                if not self._corner_dragging_dock:
-                    dock.unsetCursor()
-            elif event.type() == QEvent.MouseButtonPress and event.button() == Qt.LeftButton:
-                pos = event.pos()
-                if obj is not dock:
-                    pos = obj.mapTo(dock, pos)
-                if (
-                    pos.x() >= dock.width() - self.CORNER_REGION
-                    and pos.y() >= dock.height() - self.CORNER_REGION
-                ):
-                    self._corner_dragging_dock = dock
-                    self._corner_start = pos
-                    return True
-            elif event.type() == QEvent.MouseMove and self._corner_dragging_dock is dock:
-                pos = event.pos()
-                if obj is not dock:
-                    pos = obj.mapTo(dock, pos)
-                delta = pos - self._corner_start
-                if abs(delta.x()) > 5 or abs(delta.y()) > 5:
-                    self.show_corner_tabs(dock)
-                    self._corner_dragging_dock = None
-                return True
-            elif event.type() == QEvent.MouseButtonRelease and self._corner_dragging_dock is dock:
-                pos = event.pos()
-                if obj is not dock:
-                    pos = obj.mapTo(dock, pos)
-                delta = pos - self._corner_start
-                if abs(delta.x()) > 5 or abs(delta.y()) > 5:
-                    self.show_corner_tabs(dock)
-                self._corner_dragging_dock = None
-                dock.unsetCursor()
-                return True
         return super().eventFilter(obj, event)
 
 
@@ -1254,7 +1257,8 @@ class MainWindow(QMainWindow):
                 local.y() - self.corner_tabs.height(),
             )
 
-    def show_corner_tabs(self, dock=None):
+    def show_corner_tabs(self, dock=None, create_new=False):
+
         """Display the small tab panel for the given dock.
 
         Parameters
@@ -1267,6 +1271,8 @@ class MainWindow(QMainWindow):
             if dock is None:
                 dock = self.inspector_dock
             self._corner_current_dock = dock
+            self._corner_create_new = create_new
+
             header = self.dock_headers.get(dock)
             if header:
                 self.corner_tabs.selector.setCurrentText(header.selector.currentText())
@@ -1276,7 +1282,16 @@ class MainWindow(QMainWindow):
 
     def _on_corner_tab(self, label: str):
         dock = self._corner_current_dock or self.inspector_dock
-        self.set_dock_category(dock, label)
+
+        create_new = getattr(self, "_corner_create_new", False)
+        self._corner_create_new = False
+        if create_new:
+            area = self.dockWidgetArea(dock)
+            new_dock = self._create_dock(label, area)
+            self._update_corner_tabs_pos(new_dock)
+        else:
+            self.set_dock_category(dock, label)
+
         self.corner_tabs.hide()
 
     def set_dock_category(self, dock, label):
