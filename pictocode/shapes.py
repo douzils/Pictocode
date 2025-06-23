@@ -21,6 +21,7 @@ from PyQt5.QtGui import (
     QTransform,
     QPolygonF,
     QCursor,
+
 )
 import math
 from PyQt5.QtCore import Qt, QPointF, QRectF
@@ -164,6 +165,7 @@ class ResizableMixin:
         path = super().shape()
         extra = QPainterPath()
         for h in self._corner_handles():
+
             if self.handle_shape == "circle":
                 extra.addEllipse(h)
             else:
@@ -225,6 +227,7 @@ class ResizableMixin:
             painter.setBrush(QBrush(Qt.white))
             painter.setPen(QPen(self.handle_color))
             for handle in self._corner_handles():
+
                 if self.handle_shape == 'circle':
                     painter.drawEllipse(handle)
                 else:
@@ -244,6 +247,7 @@ class ResizableMixin:
             corner_handles = self._corner_handles()
             side_rects = self._side_rects()
             rot_handle = self._rotation_rect()
+
             for idx, handle in enumerate(corner_handles):
                 if handle.contains(event.pos()):
                     self._resizing = True
