@@ -28,9 +28,7 @@ from PyQt5.QtCore import (
 )
 
 from .corner_tabs import CornerTabs
-
 from PyQt5.QtGui import QPalette, QColor, QKeySequence, QCursor
-
 from PyQt5.QtWidgets import QApplication
 from ..utils import generate_pycode, get_contrast_color
 from ..canvas import CanvasWidget
@@ -279,13 +277,17 @@ class MainWindow(QMainWindow):
     def _create_dock(self, label, area):
         dock = QDockWidget(label, self)
 
+        # header placed in the title bar
+        header = CornerTabs(dock)
+        header.selector.setCurrentText(label)
+        header.tab_selected.connect(
+            lambda text, d=dock: self.set_dock_category(d, text)
+        )
+        dock.setTitleBarWidget(header)
+
         container = QWidget()
         lay = QVBoxLayout(container)
         lay.setContentsMargins(0, 0, 0, 0)
-        header = CornerTabs(container)
-        header.selector.setCurrentText(label)
-        header.tab_selected.connect(lambda text, d=dock: self.set_dock_category(d, text))
-        lay.addWidget(header)
         widget = self.category_widgets[label]
         lay.addWidget(widget)
         container.setLayout(lay)
@@ -1200,7 +1202,6 @@ class MainWindow(QMainWindow):
                 self._corner_dragging = False
                 self._corner_dragging_dock = None
                 return True
-
         return super().eventFilter(obj, event)
 
 
