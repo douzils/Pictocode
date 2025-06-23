@@ -751,7 +751,9 @@ class CanvasWidget(QGraphicsView):
                 if self.current_layer:
                     self.current_layer.addToGroup(self._current_path_item)
                     self._current_path_item.layer = self.current_layer.layer_name
+
                 self.scene.clearSelection()
+
                 self._current_path_item.setSelected(True)
             self._current_path_item = None
             self._freehand_points = None
@@ -772,7 +774,9 @@ class CanvasWidget(QGraphicsView):
             if self.current_layer:
                 self.current_layer.addToGroup(self._temp_item)
                 self._temp_item.layer = self.current_layer.layer_name
+
             self.scene.clearSelection()
+
             self._temp_item.setSelected(True)
             self._temp_item = None
             self._mark_dirty()
@@ -815,6 +819,7 @@ class CanvasWidget(QGraphicsView):
                 self.current_layer.addToGroup(self._polygon_item)
                 self._polygon_item.layer = self.current_layer.layer_name
             self.scene.clearSelection()
+
             self._polygon_item.setSelected(True)
             self.scene.removeItem(self._poly_preview_line)
             self._poly_preview_line = None
