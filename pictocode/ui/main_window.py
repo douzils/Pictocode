@@ -53,7 +53,6 @@ PROJECTS_DIR = os.path.join(os.path.dirname(
 class MainWindow(QMainWindow):
     EDGE_MARGIN = 6
     CORNER_REGION = 20
-
     def __init__(self):
         super().__init__()
         logger.debug("MainWindow initialized")
@@ -166,6 +165,12 @@ class MainWindow(QMainWindow):
         self.corner_tabs.resize(200, 40)
         self._corner_current_dock = self.inspector_dock
         self._update_corner_tabs_pos(self.inspector_dock)
+
+        # Small square shown during corner drag
+        self.drag_indicator = QWidget(self)
+        self.drag_indicator.setObjectName("drag_indicator")
+        self.drag_indicator.setFixedSize(10, 10)
+        self.drag_indicator.hide()
 
         for dock in (
             self.inspector_dock,
@@ -1087,6 +1092,10 @@ class MainWindow(QMainWindow):
             QMenu::item:selected {{
                 background-color: {menu_color.darker(130).name()};
             }}
+            QWidget#drag_indicator {{
+                background: {accent.name()};
+                border: 1px solid {accent.darker(150).name()};
+            }}
             """
         )
         self.inspector_dock.setStyleSheet(
@@ -1187,14 +1196,19 @@ class MainWindow(QMainWindow):
                     self._corner_dragging = True
                     self._corner_dragging_dock = dock
                     self._corner_start = event.globalPos()
+
+                    self._show_drag_indicator(event.globalPos())
                     return True
             elif event.type() == QEvent.MouseMove and self._corner_dragging and dock is self._corner_dragging_dock:
                 delta = event.globalPos() - self._corner_start
+                self._update_drag_indicator(event.globalPos())
                 if abs(delta.x()) > 5 or abs(delta.y()) > 5:
                     self._split_orientation = (
                         Qt.Horizontal if abs(delta.x()) >= abs(delta.y()) else Qt.Vertical
                     )
                     self.show_corner_tabs(dock, create_new=True)
+                    self._hide_drag_indicator()
+
                     self._corner_dragging = False
                     self._corner_dragging_dock = None
                 return True
@@ -1207,6 +1221,8 @@ class MainWindow(QMainWindow):
                     self.show_corner_tabs(dock, create_new=True)
                 self._corner_dragging = False
                 self._corner_dragging_dock = None
+                self._hide_drag_indicator()
+
                 return True
         return super().eventFilter(obj, event)
 
@@ -1253,6 +1269,20 @@ class MainWindow(QMainWindow):
                 local.y() - self.corner_tabs.height(),
             )
 
+
+    def _show_drag_indicator(self, gpos):
+        pos = self.mapFromGlobal(gpos)
+        self.drag_indicator.move(pos.x() + 5, pos.y() + 5)
+        self.drag_indicator.show()
+
+    def _update_drag_indicator(self, gpos):
+        if self.drag_indicator.isVisible():
+            pos = self.mapFromGlobal(gpos)
+            self.drag_indicator.move(pos.x() + 5, pos.y() + 5)
+
+    def _hide_drag_indicator(self):
+        self.drag_indicator.hide()
+
     def show_corner_tabs(self, dock=None, create_new=False):
         """Display the small tab panel for the given dock.
 
@@ -1270,6 +1300,8 @@ class MainWindow(QMainWindow):
             header = self.dock_headers.get(dock)
             if header:
                 self.corner_tabs.selector.setCurrentText(header.selector.currentText())
+            self._hide_drag_indicator()
+
             self.corner_tabs.show()
             self._update_corner_tabs_pos(dock)
             self.corner_tabs.raise_()
