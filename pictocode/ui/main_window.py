@@ -28,8 +28,6 @@ from PyQt5.QtCore import (
 )
 
 from .corner_tabs import CornerTabs
-
-
 from PyQt5.QtGui import QPalette, QColor, QKeySequence, QCursor
 
 from PyQt5.QtWidgets import QApplication
@@ -1328,8 +1326,19 @@ class MainWindow(QMainWindow):
                 local.y() - self.corner_tabs.height(),
             )
 
-    def show_corner_tabs(self, dock):
+    def show_corner_tabs(self, dock=None):
+        """Display the small tab panel for the given dock.
+
+        Parameters
+        ----------
+        dock : QDockWidget, optional
+            The dock from which the panel should appear. If omitted,
+            the inspector dock is used.
+        """
         if hasattr(self, "corner_tabs"):
+            if dock is None:
+                dock = self.inspector_dock
+
             self._corner_current_dock = dock
             self.corner_tabs.show()
             self._update_corner_tabs_pos(dock)
@@ -1455,7 +1464,6 @@ class MainWindow(QMainWindow):
             # reposition relative to the last dock if possible
             dock = self._corner_current_dock or self.inspector_dock
             self._update_corner_tabs_pos(dock)
-
         super().resizeEvent(event)
 
 

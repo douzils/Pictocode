@@ -5,7 +5,6 @@ from PyQt5.QtWidgets import (
     QComboBox,
     QStackedLayout,
 )
-
 from PyQt5.QtCore import Qt
 
 class CornerTabs(QWidget):
@@ -25,7 +24,6 @@ class CornerTabs(QWidget):
         self.selector.currentIndexChanged.connect(
             self.stack.setCurrentIndex
         )
-
         self.hide()
 
     def add_tab(self, widget, label):
@@ -33,6 +31,5 @@ class CornerTabs(QWidget):
 
         self.selector.addItem(label)
         self.stack.addWidget(widget)
-
 
 
