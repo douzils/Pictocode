@@ -1624,6 +1624,7 @@ class CanvasWidget(QGraphicsView):
 
     def get_debug_report(self) -> str:
         """Return a textual report about the current project state."""
+
         lines: list[str] = []
 
         meta = getattr(self, "current_meta", {})
@@ -1631,6 +1632,7 @@ class CanvasWidget(QGraphicsView):
         for key, val in meta.items():
             lines.append(f"{key}: {val}")
         lines.append("")
+
 
         lines.append("== Layers ==")
         for name, layer in self.layers.items():
@@ -1640,10 +1642,12 @@ class CanvasWidget(QGraphicsView):
             )
         lines.append("")
 
+
         current = getattr(self.current_layer, "layer_name", "")
         lines.append(f"Current layer: {current}")
         lines.append(f"Lock others: {self.lock_others}")
         lines.append("")
+
 
         lines.append("== Selection ==")
         selected = [
@@ -1652,6 +1656,7 @@ class CanvasWidget(QGraphicsView):
         ]
         lines.append(", ".join(selected) if selected else "(none)")
         lines.append("")
+
 
         lines.append("== History ==")
         lines.append(f"index: {self._history_index} / {len(self._history)}")
@@ -1669,6 +1674,7 @@ class CanvasWidget(QGraphicsView):
         zoom = self.transform().m11() if self.transform().m11() else 1.0
         lines.append(f"Zoom: {zoom:.2f}")
         lines.append(f"Items in scene: {len(self.scene.items())}")
+
 
         return "\n".join(lines)
 
