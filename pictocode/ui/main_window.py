@@ -33,6 +33,7 @@ from .layers_dock import LayersWidget
 from .layout_dock import LayoutWidget
 
 from .logs_dock import LogsWidget
+from .debug_dialog import DebugDialog
 
 logger = logging.getLogger(__name__)
 PROJECTS_DIR = os.path.join(os.path.dirname(
@@ -396,6 +397,11 @@ class MainWindow(QMainWindow):
         props_act.triggered.connect(self.open_project_settings)
         projectm.addAction(props_act)
         self.actions["project_props"] = props_act
+
+        debug_act = QAction("Debug", self)
+        debug_act.triggered.connect(self.show_debug_dialog)
+        projectm.addAction(debug_act)
+        self.actions["debug"] = debug_act
 
         viewm = AnimatedMenu("Affichage", self)
         mb.addMenu(viewm)
@@ -901,6 +907,14 @@ class MainWindow(QMainWindow):
                 if action is not None:
                     action.setShortcut(QKeySequence(seq))
                     self.settings.setValue(f"shortcut_{name}", seq)
+
+    def show_debug_dialog(self):
+        """Display a dialog with debug information about the project."""
+        if not hasattr(self, "canvas"):
+            return
+        text = self.canvas.get_debug_report()
+        dlg = DebugDialog(text, self)
+        dlg.exec_()
 
     def _switch_page(self, widget):
         current = self.stack.currentWidget()

@@ -1621,3 +1621,36 @@ class CanvasWidget(QGraphicsView):
                 break
 
 
+
+    def get_debug_report(self) -> str:
+        """Return a textual report about the current project state."""
+        lines = []
+        meta = getattr(self, "current_meta", {})
+        lines.append("== Meta ==")
+        for k, v in meta.items():
+            lines.append(f"{k}: {v}")
+        lines.append("")
+        lines.append("== Layers ==")
+        for name, layer in self.layers.items():
+            locked = getattr(layer, "locked", False)
+            lines.append(
+                f"{name}: visible={layer.isVisible()} locked={locked} enabled={layer.isEnabled()}"
+            )
+        lines.append("")
+        lines.append(f"Current layer: {getattr(self.current_layer, 'layer_name', '')}")
+        lines.append(f"Lock others: {self.lock_others}")
+        lines.append("")
+        lines.append("== Selection ==")
+        selected = [
+            getattr(it, "layer_name", type(it).__name__)
+            for it in self.scene.selectedItems()
+        ]
+        lines.append(", ".join(selected) if selected else "(none)")
+        lines.append("")
+        lines.append(
+            f"History index: {self._history_index} / {len(self._history)}"
+        )
+        lines.append(f"Snap to grid: {self.snap_to_grid} size={self.grid_size}")
+        lines.append(f"Items in scene: {len(self.scene.items())}")
+        return "\n".join(lines)
+
