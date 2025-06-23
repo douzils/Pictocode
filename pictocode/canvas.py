@@ -591,6 +591,7 @@ class CanvasWidget(QGraphicsView):
                     self.current_layer.addToGroup(item)
                     item.layer = self.current_layer.layer_name
                 self._assign_layer_name(item)
+                self.scene.clearSelection()
                 item.setSelected(True)
                 item.setTextInteractionFlags(Qt.TextEditorInteraction)
                 self._mark_dirty()
@@ -750,6 +751,9 @@ class CanvasWidget(QGraphicsView):
                 if self.current_layer:
                     self.current_layer.addToGroup(self._current_path_item)
                     self._current_path_item.layer = self.current_layer.layer_name
+
+                self.scene.clearSelection()
+
                 self._current_path_item.setSelected(True)
             self._current_path_item = None
             self._freehand_points = None
@@ -770,6 +774,9 @@ class CanvasWidget(QGraphicsView):
             if self.current_layer:
                 self.current_layer.addToGroup(self._temp_item)
                 self._temp_item.layer = self.current_layer.layer_name
+
+            self.scene.clearSelection()
+
             self._temp_item.setSelected(True)
             self._temp_item = None
             self._mark_dirty()
@@ -811,6 +818,9 @@ class CanvasWidget(QGraphicsView):
             if self.current_layer:
                 self.current_layer.addToGroup(self._polygon_item)
                 self._polygon_item.layer = self.current_layer.layer_name
+
+            self.scene.clearSelection()
+
             self._polygon_item.setSelected(True)
             self.scene.removeItem(self._poly_preview_line)
             self._poly_preview_line = None
@@ -1642,12 +1652,10 @@ class CanvasWidget(QGraphicsView):
             )
         lines.append("")
 
-
         current = getattr(self.current_layer, "layer_name", "")
         lines.append(f"Current layer: {current}")
         lines.append(f"Lock others: {self.lock_others}")
         lines.append("")
-
 
         lines.append("== Selection ==")
         selected = [
@@ -1656,7 +1664,6 @@ class CanvasWidget(QGraphicsView):
         ]
         lines.append(", ".join(selected) if selected else "(none)")
         lines.append("")
-
 
         lines.append("== History ==")
         lines.append(f"index: {self._history_index} / {len(self._history)}")
