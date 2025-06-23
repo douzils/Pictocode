@@ -818,7 +818,6 @@ class CanvasWidget(QGraphicsView):
             if self.current_layer:
                 self.current_layer.addToGroup(self._polygon_item)
                 self._polygon_item.layer = self.current_layer.layer_name
-
             self.scene.clearSelection()
 
             self._polygon_item.setSelected(True)
@@ -1634,7 +1633,6 @@ class CanvasWidget(QGraphicsView):
 
     def get_debug_report(self) -> str:
         """Return a textual report about the current project state."""
-
         lines: list[str] = []
 
         meta = getattr(self, "current_meta", {})
@@ -1642,7 +1640,6 @@ class CanvasWidget(QGraphicsView):
         for key, val in meta.items():
             lines.append(f"{key}: {val}")
         lines.append("")
-
 
         lines.append("== Layers ==")
         for name, layer in self.layers.items():
@@ -1681,7 +1678,6 @@ class CanvasWidget(QGraphicsView):
         zoom = self.transform().m11() if self.transform().m11() else 1.0
         lines.append(f"Zoom: {zoom:.2f}")
         lines.append(f"Items in scene: {len(self.scene.items())}")
-
 
         return "\n".join(lines)
 
