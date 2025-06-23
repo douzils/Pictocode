@@ -88,6 +88,8 @@ class MainWindow(QMainWindow):
             self.settings.value("autosave_interval", 5))
         self.auto_show_inspector = self.settings.value(
             "auto_show_inspector", True, type=bool)
+        self.float_docks = self.settings.value(
+            "float_docks", False, type=bool)
         self._autosave_timer = QTimer(self)
         self._autosave_timer.timeout.connect(self._autosave)
         if self.autosave_enabled:
@@ -112,6 +114,7 @@ class MainWindow(QMainWindow):
         dock.setWidget(self.inspector)
         dock.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
         self.addDockWidget(Qt.RightDockWidgetArea, dock)
+        dock.setFloating(self.float_docks)
         dock.setVisible(False)
         self.inspector_dock = dock
 
@@ -121,6 +124,7 @@ class MainWindow(QMainWindow):
         i_dock.setWidget(self.imports)
         i_dock.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
         self.addDockWidget(Qt.LeftDockWidgetArea, i_dock)
+        i_dock.setFloating(self.float_docks)
         i_dock.setVisible(False)
         self.imports_dock = i_dock
         for img in self.imported_images:
@@ -136,6 +140,7 @@ class MainWindow(QMainWindow):
         lo_dock.setWidget(self.layout)
         lo_dock.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
         self.addDockWidget(Qt.LeftDockWidgetArea, lo_dock)
+        lo_dock.setFloating(self.float_docks)
         lo_dock.setVisible(False)
         self.layout_dock = lo_dock
 
@@ -145,6 +150,7 @@ class MainWindow(QMainWindow):
         lg_dock.setWidget(self.logs_widget)
         lg_dock.setAllowedAreas(Qt.BottomDockWidgetArea | Qt.TopDockWidgetArea)
         self.addDockWidget(Qt.BottomDockWidgetArea, lg_dock)
+        lg_dock.setFloating(self.float_docks)
         lg_dock.setVisible(False)
         self.logs_dock = lg_dock
 
@@ -835,6 +841,7 @@ class MainWindow(QMainWindow):
             self.autosave_enabled,
             self.autosave_interval,
             self.auto_show_inspector,
+            self.float_docks,
             self,
         )
         if dlg.exec_() == QDialog.Accepted:
@@ -855,10 +862,14 @@ class MainWindow(QMainWindow):
             self.autosave_enabled = dlg.get_autosave_enabled()
             self.autosave_interval = dlg.get_autosave_interval()
             self.auto_show_inspector = dlg.get_auto_show_inspector()
+            self.float_docks = dlg.get_float_docks()
 
             if self.auto_show_inspector:
                 items = self.canvas.scene.selectedItems()
                 self.inspector_dock.setVisible(bool(items))
+            for dock in (self.inspector_dock, self.imports_dock,
+                         self.layout_dock, self.logs_dock):
+                dock.setFloating(self.float_docks)
 
             self.apply_theme(
                 theme,
@@ -886,6 +897,7 @@ class MainWindow(QMainWindow):
             self.settings.setValue(
                 "auto_show_inspector", self.auto_show_inspector
             )
+            self.settings.setValue("float_docks", self.float_docks)
             if self.autosave_enabled:
                 self._autosave_timer.start(self.autosave_interval * 60000)
             else:
