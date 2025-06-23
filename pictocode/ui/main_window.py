@@ -94,8 +94,9 @@ class MainWindow(QMainWindow):
             self.settings.value("autosave_interval", 5))
         self.auto_show_inspector = self.settings.value(
             "auto_show_inspector", True, type=bool)
+        # By default dock widgets are attached to the main window
         self.float_docks = self.settings.value(
-            "float_docks", True, type=bool)
+            "float_docks", False, type=bool)
         self._autosave_timer = QTimer(self)
         self._autosave_timer.timeout.connect(self._autosave)
         if self.autosave_enabled:
