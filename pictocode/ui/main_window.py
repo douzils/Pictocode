@@ -26,7 +26,6 @@ from PyQt5.QtCore import (
     QPointF,
     QPoint,
 )
-
 from .corner_tabs import CornerTabs
 from PyQt5.QtGui import QPalette, QColor, QKeySequence, QCursor
 from PyQt5.QtWidgets import QApplication
@@ -95,6 +94,7 @@ class MainWindow(QMainWindow):
         self._corner_dragging_dock = None
         self._corner_start = QPointF()
         self._corner_current_dock = None
+        self._split_orientation = Qt.Horizontal
 
         # Paramètres de l'application
         self.settings = QSettings("pictocode", "pictocode")
@@ -1191,6 +1191,9 @@ class MainWindow(QMainWindow):
             elif event.type() == QEvent.MouseMove and self._corner_dragging and dock is self._corner_dragging_dock:
                 delta = event.globalPos() - self._corner_start
                 if abs(delta.x()) > 5 or abs(delta.y()) > 5:
+                    self._split_orientation = (
+                        Qt.Horizontal if abs(delta.x()) >= abs(delta.y()) else Qt.Vertical
+                    )
                     self.show_corner_tabs(dock, create_new=True)
                     self._corner_dragging = False
                     self._corner_dragging_dock = None
@@ -1198,6 +1201,9 @@ class MainWindow(QMainWindow):
             elif event.type() == QEvent.MouseButtonRelease and self._corner_dragging and dock is self._corner_dragging_dock:
                 delta = event.globalPos() - self._corner_start
                 if abs(delta.x()) > 5 or abs(delta.y()) > 5:
+                    self._split_orientation = (
+                        Qt.Horizontal if abs(delta.x()) >= abs(delta.y()) else Qt.Vertical
+                    )
                     self.show_corner_tabs(dock, create_new=True)
                 self._corner_dragging = False
                 self._corner_dragging_dock = None
@@ -1275,6 +1281,10 @@ class MainWindow(QMainWindow):
         if create_new:
             area = self.dockWidgetArea(dock)
             new_dock = self._create_dock(label, area)
+            try:
+                self.splitDockWidget(dock, new_dock, self._split_orientation)
+            except Exception:
+                pass
             self._update_corner_tabs_pos(new_dock)
         else:
             self.set_dock_category(dock, label)
