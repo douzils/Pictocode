@@ -26,9 +26,7 @@ from PyQt5.QtCore import (
     QPointF,
     QPoint,
 )
-
 from .corner_tabs import CornerTabs
-
 from PyQt5.QtGui import QPalette, QColor, QKeySequence, QCursor
 from PyQt5.QtWidgets import QApplication
 from ..utils import generate_pycode, get_contrast_color
@@ -55,7 +53,6 @@ PROJECTS_DIR = os.path.join(os.path.dirname(
 class MainWindow(QMainWindow):
     EDGE_MARGIN = 6
     CORNER_REGION = 20
-    
     def __init__(self):
         super().__init__()
         logger.debug("MainWindow initialized")
@@ -313,9 +310,9 @@ class MainWindow(QMainWindow):
         dock.installEventFilter(self)
         if dock.widget():
             dock.widget().installEventFilter(self)
-        # also monitor the contained widget for drag events
         if widget:
             widget.installEventFilter(self)
+
         self.docks.append(dock)
         return dock
 
@@ -1099,7 +1096,9 @@ class MainWindow(QMainWindow):
                 background-color: {menu_color.darker(130).name()};
             }}
             QWidget#drag_indicator {{
+
                 background: red;
+
                 border: 1px solid {accent.darker(150).name()};
             }}
             """
@@ -1163,11 +1162,13 @@ class MainWindow(QMainWindow):
 
     def eventFilter(self, obj, event):
         dock = None
+
         o = obj
         while o is not None and not isinstance(o, QDockWidget):
             o = o.parent()
         if isinstance(o, QDockWidget):
             dock = o
+
         if dock:
             if event.type() == QEvent.Close:
                 view = self.canvas.viewport()
@@ -1215,6 +1216,7 @@ class MainWindow(QMainWindow):
                         self._split_orientation = Qt.Horizontal
                     self.show_corner_tabs(dock, create_new=True)
                     self._hide_drag_indicator()
+
                     self._corner_dragging = False
                     self._corner_dragging_dock = None
                 return True
@@ -1229,6 +1231,7 @@ class MainWindow(QMainWindow):
                 self._corner_dragging = False
                 self._corner_dragging_dock = None
                 self._hide_drag_indicator()
+
                 return True
         return super().eventFilter(obj, event)
 
@@ -1281,11 +1284,13 @@ class MainWindow(QMainWindow):
         self.drag_indicator.show()
         self.drag_indicator.raise_()
 
+
     def _update_drag_indicator(self, gpos):
         if self.drag_indicator.isVisible():
             pos = self.mapFromGlobal(gpos)
             self.drag_indicator.move(pos.x() + 5, pos.y() + 5)
             self.drag_indicator.raise_()
+
 
     def _hide_drag_indicator(self):
         self.drag_indicator.hide()
@@ -1408,6 +1413,14 @@ class MainWindow(QMainWindow):
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
             edges = self._edges_at_pos(event.pos())
+            if (
+                not edges
+                and event.pos().x() >= self.width() - self.CORNER_REGION
+                and event.pos().y() >= self.height() - self.CORNER_REGION
+            ):
+                self._corner_dragging = True
+                self._corner_start = event.pos()
+                return
             if edges:
                 handle = self.windowHandle()
                 if handle and hasattr(handle, "startSystemResize"):
@@ -1422,6 +1435,12 @@ class MainWindow(QMainWindow):
         super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event):
+        if self._corner_dragging:
+            delta = event.pos() - self._corner_start
+            if abs(delta.x()) > 5 or abs(delta.y()) > 5:
+                self.show_corner_tabs()
+                self._corner_dragging = False
+            return
         if self._resizing and (not hasattr(self.windowHandle(), "startSystemResize")):
             delta = event.globalPos() - self._start_pos
             g = self._start_geom
@@ -1454,6 +1473,12 @@ class MainWindow(QMainWindow):
         super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event):
+        if self._corner_dragging:
+            delta = event.pos() - self._corner_start
+            if abs(delta.x()) > 5 or abs(delta.y()) > 5:
+                self.show_corner_tabs()
+            self._corner_dragging = False
+            return
         self._resizing = False
         self.setCursor(Qt.ArrowCursor)
         super().mouseReleaseEvent(event)
