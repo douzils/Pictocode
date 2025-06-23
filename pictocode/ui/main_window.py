@@ -15,6 +15,7 @@ from PyQt5.QtWidgets import (
     QMessageBox,
     QDialog,
     QGraphicsOpacityEffect,
+    QToolBar,
 )
 from PyQt5.QtCore import Qt, QSettings, QPropertyAnimation, QTimer, QEvent, QPointF
 
@@ -1175,7 +1176,6 @@ class MainWindow(QMainWindow):
 
     def eventFilter(self, obj, event):
         if isinstance(obj, QDockWidget) and event.type() == QEvent.Close:
-
             view = self.canvas.viewport()
             old_w = view.width()
             old_h = view.height()
