@@ -16,7 +16,8 @@ from PyQt5.QtWidgets import (
     QDialog,
     QGraphicsOpacityEffect,
 )
-from PyQt5.QtCore import Qt, QSettings, QPropertyAnimation, QTimer
+from PyQt5.QtCore import Qt, QSettings, QPropertyAnimation, QTimer, QEvent, QPointF
+
 from PyQt5.QtGui import QPalette, QColor, QKeySequence
 from PyQt5.QtWidgets import QApplication
 from ..utils import generate_pycode, get_contrast_color
@@ -1141,7 +1142,6 @@ class MainWindow(QMainWindow):
                 dock.setFloating(False)
 
     def _toggle_dock(self, dock: QWidget, visible: bool):
-
         """Show or hide a dock without shifting the viewport."""
         top_left = self.canvas.mapToScene(0, 0)
         dock.setVisible(visible)
@@ -1149,18 +1149,15 @@ class MainWindow(QMainWindow):
             view = self.canvas.viewport().rect()
             center = top_left + QPointF(view.width() / 2, view.height() / 2)
             self.canvas.centerOn(center)
-
         QTimer.singleShot(0, restore)
 
     def eventFilter(self, obj, event):
         if isinstance(obj, QDockWidget) and event.type() == QEvent.Close:
-
             top_left = self.canvas.mapToScene(0, 0)
             def restore():
                 view = self.canvas.viewport().rect()
                 center = top_left + QPointF(view.width() / 2, view.height() / 2)
                 self.canvas.centerOn(center)
-
             QTimer.singleShot(0, restore)
         return super().eventFilter(obj, event)
 
