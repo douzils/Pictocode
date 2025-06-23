@@ -17,6 +17,10 @@ class Toolbar(QToolBar):
         ell_act.triggered.connect(lambda: self.canvas.set_tool("ellipse"))
         self.addAction(ell_act)
 
+        tri_act = QAction("Triangle", self)
+        tri_act.triggered.connect(lambda: self.canvas.set_tool("triangle"))
+        self.addAction(tri_act)
+
         # Ligne (à ajouter dans shapes.py / canvas.py si besoin)
         line_act = QAction("Ligne", self)
         line_act.triggered.connect(lambda: self.canvas.set_tool("line"))

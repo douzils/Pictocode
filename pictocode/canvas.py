@@ -23,7 +23,7 @@ from PyQt5.QtGui import (
     QTransform,
 )
 from collections import OrderedDict
-from .shapes import Rect, Ellipse, Line, FreehandPath, TextItem, ImageItem
+from .shapes import Rect, Ellipse, Line, Triangle, FreehandPath, TextItem, ImageItem
 logger = logging.getLogger(__name__)
 from .utils import to_pixels
 
@@ -554,7 +554,7 @@ class CanvasWidget(QGraphicsView):
                     self.scene.removeItem(items[0])
                     self._mark_dirty()
                     self._schedule_scene_changed()
-            elif self.current_tool in ("rect", "ellipse", "line"):
+            elif self.current_tool in ("rect", "ellipse", "line", "triangle"):
                 items = [
                     it
                     for it in self.scene.items(scene_pos)
@@ -581,6 +581,10 @@ class CanvasWidget(QGraphicsView):
                         scene_pos.x(),
                         scene_pos.y(),
                         self.pen_color,
+                    )
+                elif self.current_tool == "triangle":
+                    self._temp_item = Triangle(
+                        scene_pos.x(), scene_pos.y(), 0, 0, self.pen_color
                     )
                 if self._temp_item:
                     self._temp_item.setZValue(self._new_item_z)
@@ -699,7 +703,7 @@ class CanvasWidget(QGraphicsView):
                 self._current_path_item.setPath(path)
         elif self._temp_item and self._start_pos:
             x0, y0 = self._start_pos.x(), self._start_pos.y()
-            if self.current_tool in ("rect", "ellipse"):
+            if self.current_tool in ("rect", "ellipse", "triangle"):
                 rect = QRectF(x0, y0, scene_pos.x() - x0,
                               scene_pos.y() - y0).normalized()
                 self._temp_item.setRect(
@@ -763,7 +767,7 @@ class CanvasWidget(QGraphicsView):
             self._schedule_scene_changed()
         elif self._temp_item and self._start_pos:
             x0, y0 = self._start_pos.x(), self._start_pos.y()
-            if self.current_tool in ("rect", "ellipse"):
+            if self.current_tool in ("rect", "ellipse", "triangle"):
                 rect = QRectF(x0, y0, scene_pos.x() - x0,
                               scene_pos.y() - y0).normalized()
                 self._temp_item.setRect(

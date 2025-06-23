@@ -103,6 +103,26 @@ def generate_pycode(shapes):
                 lines.append(f"line{i}.setZValue({shp.zValue()})")
             lines.append(f"scene.addItem(line{i})")
 
+        elif cls == "Triangle":
+            poly = shp.polygon()
+            lines.append(f"tri{i} = QPolygonF([")
+            for p in poly:
+                lines.append(f"    QPointF({p.x()}, {p.y()}),")
+            lines.append("])")
+            lines.append(f"tri_item{i} = QGraphicsPolygonItem(tri{i})")
+            color = shp.pen().color().name()
+            width = shp.pen().width()
+            lines.append(f"tri_item{i}.setPen(QPen(QColor('{color}'), {width}))")
+            if shp.brush().style() != 0:
+                fill = shp.brush().color().name()
+                lines.append(f"tri_item{i}.setBrush(QBrush(QColor('{fill}')))")
+            lines.append(f"tri_item{i}.setPos({shp.x()}, {shp.y()})")
+            if shp.rotation() != 0:
+                lines.append(f"tri_item{i}.setRotation({shp.rotation()})")
+            if shp.zValue() != 0:
+                lines.append(f"tri_item{i}.setZValue({shp.zValue()})")
+            lines.append(f"scene.addItem(tri_item{i})")
+
         elif cls == "FreehandPath":
             path = shp.path()
             pts = [path.elementAt(j) for j in range(path.elementCount())]
