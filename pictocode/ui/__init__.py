@@ -9,8 +9,7 @@ from .layers_dock import LayersWidget
 
 from .layout_dock import LayoutWidget
 from .logs_dock import LogsWidget
-
-
+from .debug_dialog import DebugDialog
 
 __all__ = [
     "MainWindow",
@@ -21,4 +20,5 @@ __all__ = [
     "LayersWidget",
     "LayoutWidget",
     "LogsWidget",
+    "DebugDialog",
 ]

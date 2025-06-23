@@ -23,9 +23,9 @@ class CanvasModel:
         rect = Rect(x, y, w, h, color=color)
         self.shapes.append(rect)
         return rect
-        logger.debug(f"Add ellipse at ({x},{y}) size {w}x{h}")
 
     def add_ellipse(self, x, y, w, h, color: QColor = QColor("black")):
+        logger.debug(f"Add ellipse at ({x},{y}) size {w}x{h}")
         ellipse = Ellipse(x, y, w, h, color=color)
         self.shapes.append(ellipse)
         return ellipse

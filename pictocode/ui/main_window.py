@@ -33,6 +33,7 @@ from .layers_dock import LayersWidget
 from .layout_dock import LayoutWidget
 
 from .logs_dock import LogsWidget
+from .debug_dialog import DebugDialog
 
 logger = logging.getLogger(__name__)
 PROJECTS_DIR = os.path.join(os.path.dirname(
@@ -114,7 +115,6 @@ class MainWindow(QMainWindow):
         dock.setVisible(False)
         self.inspector_dock = dock
 
-
         # Images importées
         self.imports = ImportsWidget(self)
         i_dock = QDockWidget("Imports", self)
@@ -129,7 +129,6 @@ class MainWindow(QMainWindow):
         # Calques
         self.layers = LayersWidget(self)
         self.toolbar.addWidget(self.layers)
-
 
         # Layout / outliner
         self.layout = LayoutWidget(self)
@@ -148,9 +147,6 @@ class MainWindow(QMainWindow):
         self.addDockWidget(Qt.BottomDockWidgetArea, lg_dock)
         lg_dock.setVisible(False)
         self.logs_dock = lg_dock
-
-
-
 
         # Dialog nouveau projet
         self.new_proj_dlg = NewProjectDialog(self)
@@ -397,6 +393,11 @@ class MainWindow(QMainWindow):
         projectm.addAction(props_act)
         self.actions["project_props"] = props_act
 
+        debug_act = QAction("Debug", self)
+        debug_act.triggered.connect(self.show_debug_dialog)
+        projectm.addAction(debug_act)
+        self.actions["debug"] = debug_act
+
         viewm = AnimatedMenu("Affichage", self)
         mb.addMenu(viewm)
         self.view_menu = viewm
@@ -406,7 +407,6 @@ class MainWindow(QMainWindow):
         self.toolbar.visibilityChanged.connect(tool_act.setChecked)
         viewm.addAction(tool_act)
         self.actions["view_toolbar"] = tool_act
-
 
         insp_act = QAction("Inspecteur", self, checkable=True)
         insp_act.toggled.connect(self.inspector_dock.setVisible)
@@ -431,7 +431,6 @@ class MainWindow(QMainWindow):
         self.logs_dock.visibilityChanged.connect(logs_act.setChecked)
         viewm.addAction(logs_act)
         self.actions["view_logs"] = logs_act
-
 
         prefm = AnimatedMenu("Préférences", self)
         mb.addMenu(prefm)
@@ -504,7 +503,6 @@ class MainWindow(QMainWindow):
 
         self.layout.populate()
 
-
         # affiche toolbar et docks
         self.toolbar.setVisible(True)
         self.inspector_dock.setVisible(False)
@@ -558,7 +556,9 @@ class MainWindow(QMainWindow):
                         "dpi",
                     )
                 }
-                self.open_project(path, params, data.get("shapes", []), data.get("layers", []))
+                shapes = data.get("shapes", [])
+                layers = data.get("layers", [])
+                self.open_project(path, params, shapes, layers)
             except Exception as e:
                 QMessageBox.critical(
                     self, "Erreur", f"Impossible d'ouvrir : {e}")
@@ -587,7 +587,7 @@ class MainWindow(QMainWindow):
         self._set_project_actions_enabled(True)
         self._update_view_checks()
         self._switch_page(self.canvas)
-        self.setWindowTitle(f"Pictocode — {params.get('name','')}")
+        self.setWindowTitle(f"Pictocode — {params.get('name', '')}")
         self.set_dirty(False)
         self.add_recent_project(path)
         self.home.populate_lists()
@@ -599,7 +599,8 @@ class MainWindow(QMainWindow):
         self.show_status("Enregistrement…")
         try:
             if self.current_project_path.lower().endswith(".ptc"):
-                import zipfile, tempfile
+                import zipfile
+                import tempfile
 
                 tmp_thumb = tempfile.mkstemp(suffix=".png")[1]
                 self.canvas.export_image(tmp_thumb, "PNG")
@@ -882,7 +883,9 @@ class MainWindow(QMainWindow):
             )
             self.settings.setValue("autosave_enabled", self.autosave_enabled)
             self.settings.setValue("autosave_interval", self.autosave_interval)
-            self.settings.setValue("auto_show_inspector", self.auto_show_inspector)
+            self.settings.setValue(
+                "auto_show_inspector", self.auto_show_inspector
+            )
             if self.autosave_enabled:
                 self._autosave_timer.start(self.autosave_interval * 60000)
             else:
@@ -901,6 +904,14 @@ class MainWindow(QMainWindow):
                 if action is not None:
                     action.setShortcut(QKeySequence(seq))
                     self.settings.setValue(f"shortcut_{name}", seq)
+
+    def show_debug_dialog(self):
+        """Display a dialog with debug information about the project."""
+        if not hasattr(self, "canvas"):
+            return
+        text = self.canvas.get_debug_report()
+        dlg = DebugDialog(text, self)
+        dlg.exec_()
 
     def _switch_page(self, widget):
         current = self.stack.currentWidget()
@@ -1060,7 +1071,6 @@ class MainWindow(QMainWindow):
             if hasattr(widget, "apply_theme"):
                 widget.apply_theme()
 
-
         self.current_theme = theme
         self.accent_color = accent
         self.font_size = font_size
@@ -1142,7 +1152,6 @@ class MainWindow(QMainWindow):
             act = self.actions.get("view_layout")
             if act:
                 act.setChecked(self.layout_dock.isVisible())
-
 
     # --- Gestion favoris et récents ------------------------------------
     def add_recent_project(self, path: str):
