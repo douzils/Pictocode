@@ -771,8 +771,8 @@ class ImageItem(ResizableMixin, SnapToGridMixin, QGraphicsPixmapItem):
         self.setPos(x, y)
         if w > 0 and h > 0:
             scaled = self._orig_pixmap.scaled(
-                w,
-                h,
+                int(round(w)),
+                int(round(h)),
                 Qt.KeepAspectRatio,
                 Qt.SmoothTransformation,
             )
