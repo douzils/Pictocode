@@ -45,8 +45,9 @@ class TransparentItemGroup(QGraphicsItemGroup):
         self.setAcceptedMouseButtons(Qt.NoButton)
 
     def addToGroup(self, item: QGraphicsItem):
-        """Add item and preserve its interactivity."""
-        super().addToGroup(item)
+        """Add item to this group without disabling its interactivity."""
+        self.prepareGeometryChange()
+        item.setParentItem(self)
         item.setFlag(QGraphicsItem.ItemIsMovable, True)
         item.setFlag(QGraphicsItem.ItemIsSelectable, True)
         item.setFlag(QGraphicsItem.ItemSendsGeometryChanges, True)
@@ -59,6 +60,15 @@ class TransparentItemGroup(QGraphicsItemGroup):
             self.isEnabled(),
 
         )
+
+    def removeFromGroup(self, item: QGraphicsItem):
+        """Remove an item from this group."""
+        if item.parentItem() is self:
+            self.prepareGeometryChange()
+            item.setParentItem(None)
+
+    def boundingRect(self):
+        return self.childrenBoundingRect()
 
 
     def itemChange(self, change, value):
@@ -78,10 +88,11 @@ class TransparentItemGroup(QGraphicsItemGroup):
         return super().itemChange(change, value)
 
     def shape(self):
-
-        """Return an empty path when not selected to let children receive clicks."""
+        """Return an empty path when not selected so children get events."""
         if self.isSelected():
-            return super().shape()
+            path = QPainterPath()
+            path.addRect(self.boundingRect())
+            return path
         return QPainterPath()
 
 
@@ -751,7 +762,6 @@ class CanvasWidget(QGraphicsView):
                 if self.current_layer:
                     self.current_layer.addToGroup(self._current_path_item)
                     self._current_path_item.layer = self.current_layer.layer_name
-
                 self.scene.clearSelection()
 
                 self._current_path_item.setSelected(True)
@@ -774,7 +784,6 @@ class CanvasWidget(QGraphicsView):
             if self.current_layer:
                 self.current_layer.addToGroup(self._temp_item)
                 self._temp_item.layer = self.current_layer.layer_name
-
             self.scene.clearSelection()
 
             self._temp_item.setSelected(True)
@@ -819,7 +828,6 @@ class CanvasWidget(QGraphicsView):
                 self.current_layer.addToGroup(self._polygon_item)
                 self._polygon_item.layer = self.current_layer.layer_name
             self.scene.clearSelection()
-
             self._polygon_item.setSelected(True)
             self.scene.removeItem(self._poly_preview_line)
             self._poly_preview_line = None
