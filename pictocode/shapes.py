@@ -237,8 +237,6 @@ class ResizableMixin:
             start_local = self.mapFromScene(self._start_scene_pos)
             current_local = self.mapFromScene(event.scenePos())
             delta_item = current_local - start_local
-            delta_scene = self.mapToScene(
-                current_local) - self.mapToScene(start_local)
 
             x = self._start_item_pos.x()
             y = self._start_item_pos.y()
@@ -246,37 +244,61 @@ class ResizableMixin:
             h = self._start_rect.height()
 
             if self._active_handle == 0:  # top-left
-                x += delta_scene.x()
-                y += delta_scene.y()
                 w -= delta_item.x()
                 h -= delta_item.y()
             elif self._active_handle == 1:  # top-right
-                y += delta_scene.y()
                 w += delta_item.x()
                 h -= delta_item.y()
             elif self._active_handle == 2:  # bottom-right
                 w += delta_item.x()
                 h += delta_item.y()
             elif self._active_handle == 3:  # bottom-left
-                x += delta_scene.x()
                 w -= delta_item.x()
                 h += delta_item.y()
             elif self._active_handle == 4:  # top
-                y += delta_scene.y()
                 h -= delta_item.y()
             elif self._active_handle == 5:  # right
                 w += delta_item.x()
             elif self._active_handle == 6:  # bottom
                 h += delta_item.y()
             elif self._active_handle == 7:  # left
-                x += delta_scene.x()
                 w -= delta_item.x()
+
             if event.modifiers() & Qt.ShiftModifier and w and h:
                 aspect = self._start_rect.width() / self._start_rect.height()
                 if abs(w) / aspect > abs(h):
                     h = abs(w) / aspect * (1 if h >= 0 else -1)
                 else:
                     w = abs(h) * aspect * (1 if w >= 0 else -1)
+
+            angle_rad = math.radians(self.rotation())
+            cos_a = math.cos(angle_rad)
+            sin_a = math.sin(angle_rad)
+            origin_x = w / 2
+            origin_y = h / 2
+
+            if self._active_handle == 0:
+                handle_x, handle_y = 0, 0
+            elif self._active_handle == 1:
+                handle_x, handle_y = w, 0
+            elif self._active_handle == 2:
+                handle_x, handle_y = w, h
+            elif self._active_handle == 3:
+                handle_x, handle_y = 0, h
+            elif self._active_handle == 4:
+                handle_x, handle_y = w / 2, 0
+            elif self._active_handle == 5:
+                handle_x, handle_y = w, h / 2
+            elif self._active_handle == 6:
+                handle_x, handle_y = w / 2, h
+            else:  # self._active_handle == 7
+                handle_x, handle_y = 0, h / 2
+
+            dx = cos_a * (handle_x - origin_x) - sin_a * (handle_y - origin_y)
+            dy = sin_a * (handle_x - origin_x) + cos_a * (handle_y - origin_y)
+            x = event.scenePos().x() - dx - origin_x
+            y = event.scenePos().y() - dy - origin_y
+
             self.setRect(x, y, w, h)
             event.accept()
             return
