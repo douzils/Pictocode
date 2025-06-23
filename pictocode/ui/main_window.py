@@ -28,7 +28,6 @@ from PyQt5.QtCore import (
 )
 
 from .corner_tabs import CornerTabs
-
 from PyQt5.QtGui import QPalette, QColor, QKeySequence, QCursor
 
 from PyQt5.QtWidgets import QApplication
@@ -194,24 +193,6 @@ class MainWindow(QMainWindow):
             dock.installEventFilter(self)
             if dock.widget():
                 dock.widget().installEventFilter(self)
-
-        # Corner tabs overlay
-        self.corner_tabs = CornerTabs(self)
-        self.corner_tabs.add_tab(QLabel("Propriétés"), "Propriétés")
-        self.corner_tabs.add_tab(QLabel("Imports"), "Imports")
-        self.corner_tabs.add_tab(QLabel("Objets"), "Objets")
-        self.corner_tabs.add_tab(QLabel("Logs"), "Logs")
-        self.corner_tabs.resize(300, 200)
-        self._corner_current_dock = self.inspector_dock
-        self._update_corner_tabs_pos(self.inspector_dock)
-
-        for dock in (
-            self.inspector_dock,
-            self.imports_dock,
-            self.layout_dock,
-            self.logs_dock,
-        ):
-            dock.installEventFilter(self)
 
         self._apply_float_docks()
 
@@ -1161,7 +1142,6 @@ class MainWindow(QMainWindow):
         elif obj.parent() and isinstance(obj.parent(), QDockWidget):
             dock = obj.parent()
         if dock:
-
             if event.type() == QEvent.Close:
                 view = self.canvas.viewport()
                 old_w = view.width()
@@ -1333,33 +1313,6 @@ class MainWindow(QMainWindow):
             header.selector.blockSignals(True)
             header.selector.setCurrentText(label)
             header.selector.blockSignals(False)
-
-    def _update_corner_tabs_pos(self, dock):
-        if hasattr(self, "corner_tabs"):
-            gpos = dock.mapToGlobal(dock.rect().bottomRight())
-            local = self.mapFromGlobal(gpos)
-            self.corner_tabs.move(
-                local.x() - self.corner_tabs.width(),
-                local.y() - self.corner_tabs.height(),
-            )
-
-    def show_corner_tabs(self, dock=None):
-        """Display the small tab panel for the given dock.
-
-        Parameters
-        ----------
-        dock : QDockWidget, optional
-            The dock from which the panel should appear. If omitted,
-            the inspector dock is used.
-        """
-        if hasattr(self, "corner_tabs"):
-            if dock is None:
-                dock = self.inspector_dock
-
-            self._corner_current_dock = dock
-            self.corner_tabs.show()
-            self._update_corner_tabs_pos(dock)
-            self.corner_tabs.raise_()
 
     # --- Gestion favoris et récents ------------------------------------
     def add_recent_project(self, path: str):
