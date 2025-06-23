@@ -114,6 +114,7 @@ class MainWindow(QMainWindow):
         dock.setWidget(self.inspector)
         dock.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
         self.addDockWidget(Qt.RightDockWidgetArea, dock)
+        dock.setFloating(self.float_docks)
         dock.setVisible(False)
         self.inspector_dock = dock
 
@@ -123,6 +124,7 @@ class MainWindow(QMainWindow):
         i_dock.setWidget(self.imports)
         i_dock.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
         self.addDockWidget(Qt.LeftDockWidgetArea, i_dock)
+        i_dock.setFloating(self.float_docks)
         i_dock.setVisible(False)
         self.imports_dock = i_dock
         for img in self.imported_images:
@@ -138,6 +140,7 @@ class MainWindow(QMainWindow):
         lo_dock.setWidget(self.layout)
         lo_dock.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
         self.addDockWidget(Qt.LeftDockWidgetArea, lo_dock)
+        lo_dock.setFloating(self.float_docks)
         lo_dock.setVisible(False)
         self.layout_dock = lo_dock
 
@@ -147,6 +150,7 @@ class MainWindow(QMainWindow):
         lg_dock.setWidget(self.logs_widget)
         lg_dock.setAllowedAreas(Qt.BottomDockWidgetArea | Qt.TopDockWidgetArea)
         self.addDockWidget(Qt.BottomDockWidgetArea, lg_dock)
+        lg_dock.setFloating(self.float_docks)
         lg_dock.setVisible(False)
         self.logs_dock = lg_dock
 
@@ -866,6 +870,7 @@ class MainWindow(QMainWindow):
                 items = self.canvas.scene.selectedItems()
                 self.inspector_dock.setVisible(bool(items))
             self._apply_float_docks()
+
 
             self.apply_theme(
                 theme,
