@@ -79,6 +79,11 @@ class ResizableMixin:
         self._active_handle = None
         self._start_angle = 0.0
 
+    def itemChange(self, change, value):
+        if change == QGraphicsItem.ItemSelectedHasChanged:
+            self.update()
+        return super().itemChange(change, value)
+
     # -- Geometry ----------------------------------------------------
     def boundingRect(self):
         """Extend the base bounding rect so handles are always repainted."""
