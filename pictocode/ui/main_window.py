@@ -1142,22 +1142,25 @@ class MainWindow(QMainWindow):
 
     def _toggle_dock(self, dock: QWidget, visible: bool):
 
-        """Show or hide a dock while keeping the same view area."""
-        h_val = self.canvas.horizontalScrollBar().value()
-        v_val = self.canvas.verticalScrollBar().value()
+        """Show or hide a dock without shifting the viewport."""
+        top_left = self.canvas.mapToScene(0, 0)
         dock.setVisible(visible)
         def restore():
-            self.canvas.horizontalScrollBar().setValue(h_val)
-            self.canvas.verticalScrollBar().setValue(v_val)
+            view = self.canvas.viewport().rect()
+            center = top_left + QPointF(view.width() / 2, view.height() / 2)
+            self.canvas.centerOn(center)
+
         QTimer.singleShot(0, restore)
 
     def eventFilter(self, obj, event):
         if isinstance(obj, QDockWidget) and event.type() == QEvent.Close:
-            h_val = self.canvas.horizontalScrollBar().value()
-            v_val = self.canvas.verticalScrollBar().value()
+
+            top_left = self.canvas.mapToScene(0, 0)
             def restore():
-                self.canvas.horizontalScrollBar().setValue(h_val)
-                self.canvas.verticalScrollBar().setValue(v_val)
+                view = self.canvas.viewport().rect()
+                center = top_left + QPointF(view.width() / 2, view.height() / 2)
+                self.canvas.centerOn(center)
+
             QTimer.singleShot(0, restore)
         return super().eventFilter(obj, event)
 
