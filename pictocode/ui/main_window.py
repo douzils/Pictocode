@@ -131,6 +131,10 @@ class MainWindow(QMainWindow):
         self._resize_edges = Qt.Edges()
         self._start_pos = None
         self._start_geom = None
+        # Compatibility flag for older code paths
+        # that expected ``_corner_dragging`` to exist.
+        self._corner_dragging = False
+
         self._corner_dragging_dock = None
         self._corner_start = QPointF()
         self._corner_current_dock = None
@@ -192,14 +196,12 @@ class MainWindow(QMainWindow):
         self.layers = LayersWidget(self)
         self.toolbar.addWidget(self.layers)
 
-
         self.docks = []
 
         self.inspector_dock = self._create_dock("Propriétés", Qt.RightDockWidgetArea)
         self.imports_dock = self._create_dock("Imports", Qt.LeftDockWidgetArea)
         self.layout_dock = self._create_dock("Objets", Qt.LeftDockWidgetArea)
         self.logs_dock = self._create_dock("Logs", Qt.BottomDockWidgetArea)
-
 
         # Corner tabs overlay
         self.corner_tabs = CornerTabs(self, overlay=True)
@@ -1272,7 +1274,6 @@ class MainWindow(QMainWindow):
                 dock = self.inspector_dock
             self._corner_current_dock = dock
             self._corner_create_new = create_new
-
             header = self.dock_headers.get(dock)
             if header:
                 self.corner_tabs.selector.setCurrentText(header.selector.currentText())
@@ -1282,7 +1283,6 @@ class MainWindow(QMainWindow):
 
     def _on_corner_tab(self, label: str):
         dock = self._corner_current_dock or self.inspector_dock
-
         create_new = getattr(self, "_corner_create_new", False)
         self._corner_create_new = False
         if create_new:
@@ -1291,7 +1291,6 @@ class MainWindow(QMainWindow):
             self._update_corner_tabs_pos(new_dock)
         else:
             self.set_dock_category(dock, label)
-
         self.corner_tabs.hide()
 
     def set_dock_category(self, dock, label):
