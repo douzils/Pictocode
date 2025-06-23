@@ -78,10 +78,12 @@ class TransparentItemGroup(QGraphicsItemGroup):
         return super().itemChange(change, value)
 
     def shape(self):
+
         """Return an empty path when not selected to let children receive clicks."""
         if self.isSelected():
             return super().shape()
         return QPainterPath()
+
 
     def mousePressEvent(self, event):
         if self.isSelected():
