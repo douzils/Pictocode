@@ -16,7 +16,7 @@ from PyQt5.QtWidgets import (
     QDialog,
     QGraphicsOpacityEffect,
 )
-from PyQt5.QtCore import Qt, QSettings, QPropertyAnimation, QTimer
+from PyQt5.QtCore import Qt, QSettings, QPropertyAnimation, QTimer, QEvent
 from PyQt5.QtGui import QPalette, QColor, QKeySequence
 from PyQt5.QtWidgets import QApplication
 from ..utils import generate_pycode, get_contrast_color
@@ -159,6 +159,14 @@ class MainWindow(QMainWindow):
         lg_dock.setFloating(self.float_docks)
         lg_dock.setVisible(False)
         self.logs_dock = lg_dock
+
+        for d in (
+            self.inspector_dock,
+            self.imports_dock,
+            self.layout_dock,
+            self.logs_dock,
+        ):
+            d.installEventFilter(self)
 
         self._apply_float_docks()
 
@@ -417,31 +425,31 @@ class MainWindow(QMainWindow):
         self.view_menu = viewm
 
         tool_act = QAction("Barre d'outils", self, checkable=True)
-        tool_act.toggled.connect(self.toolbar.setVisible)
+        tool_act.toggled.connect(lambda v: self._toggle_dock(self.toolbar, v))
         self.toolbar.visibilityChanged.connect(tool_act.setChecked)
         viewm.addAction(tool_act)
         self.actions["view_toolbar"] = tool_act
 
         insp_act = QAction("Inspecteur", self, checkable=True)
-        insp_act.toggled.connect(self.inspector_dock.setVisible)
+        insp_act.toggled.connect(lambda v: self._toggle_dock(self.inspector_dock, v))
         self.inspector_dock.visibilityChanged.connect(insp_act.setChecked)
         viewm.addAction(insp_act)
         self.actions["view_inspector"] = insp_act
 
         imp_act = QAction("Imports", self, checkable=True)
-        imp_act.toggled.connect(self.imports_dock.setVisible)
+        imp_act.toggled.connect(lambda v: self._toggle_dock(self.imports_dock, v))
         self.imports_dock.visibilityChanged.connect(imp_act.setChecked)
         viewm.addAction(imp_act)
         self.actions["view_imports"] = imp_act
 
         layout_act = QAction("Objets", self, checkable=True)
-        layout_act.toggled.connect(self.layout_dock.setVisible)
+        layout_act.toggled.connect(lambda v: self._toggle_dock(self.layout_dock, v))
         self.layout_dock.visibilityChanged.connect(layout_act.setChecked)
         viewm.addAction(layout_act)
         self.actions["view_layout"] = layout_act
 
         logs_act = QAction("Logs", self, checkable=True)
-        logs_act.toggled.connect(self.logs_dock.setVisible)
+        logs_act.toggled.connect(lambda v: self._toggle_dock(self.logs_dock, v))
         self.logs_dock.visibilityChanged.connect(logs_act.setChecked)
         viewm.addAction(logs_act)
         self.actions["view_logs"] = logs_act
@@ -1138,6 +1146,18 @@ class MainWindow(QMainWindow):
             else:
                 dock.setAllowedAreas(areas)
                 dock.setFloating(False)
+
+    def _toggle_dock(self, dock: QWidget, visible: bool):
+        """Show or hide a dock without shifting the canvas."""
+        center = self.canvas.mapToScene(self.canvas.viewport().rect().center())
+        dock.setVisible(visible)
+        QTimer.singleShot(0, lambda c=center: self.canvas.centerOn(c))
+
+    def eventFilter(self, obj, event):
+        if isinstance(obj, QDockWidget) and event.type() == QEvent.Close:
+            center = self.canvas.mapToScene(self.canvas.viewport().rect().center())
+            QTimer.singleShot(0, lambda c=center: self.canvas.centerOn(c))
+        return super().eventFilter(obj, event)
 
     def _apply_handle_settings(self):
         from ..shapes import ResizableMixin
