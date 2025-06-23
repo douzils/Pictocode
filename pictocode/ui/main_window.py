@@ -158,7 +158,6 @@ class MainWindow(QMainWindow):
         self.imports_dock = self._create_dock("Imports", Qt.LeftDockWidgetArea)
         self.layout_dock = self._create_dock("Objets", Qt.LeftDockWidgetArea)
         self.logs_dock = self._create_dock("Logs", Qt.BottomDockWidgetArea)
-
         self.corner_tabs = None
         self._corner_current_dock = None
 
@@ -306,7 +305,6 @@ class MainWindow(QMainWindow):
         dock.installEventFilter(self)
         if dock.widget():
             dock.widget().installEventFilter(self)
-
         # also monitor the contained widget for drag events
         if widget:
             widget.installEventFilter(self)
@@ -1094,7 +1092,6 @@ class MainWindow(QMainWindow):
             }}
             QWidget#drag_indicator {{
                 background: red;
-
                 border: 1px solid {accent.darker(150).name()};
             }}
             """
@@ -1228,7 +1225,6 @@ class MainWindow(QMainWindow):
                 self._corner_dragging = False
                 self._corner_dragging_dock = None
                 self._hide_drag_indicator()
-
                 return True
         return super().eventFilter(obj, event)
 
@@ -1282,7 +1278,10 @@ class MainWindow(QMainWindow):
 
     def _split_current_dock(self, dock, delta):
         """Create a new dock based on the drag delta."""
-        label = "Objets"
+        label = dock.windowTitle()
+        header = self.dock_headers.get(dock)
+        if header:
+            label = header.selector.currentText()
         area = self.dockWidgetArea(dock)
         new_dock = self._create_dock(label, area)
         try:
@@ -1298,48 +1297,6 @@ class MainWindow(QMainWindow):
             h1 = max(50, dock.height() - abs(delta.y()))
             h2 = max(50, abs(delta.y()))
             self.resizeDocks([dock, new_dock], [h1, h2], Qt.Vertical)
-=======
-
-    def _hide_drag_indicator(self):
-        self.drag_indicator.hide()
-
-    def show_corner_tabs(self, dock=None, create_new=False):
-        """Display the small tab panel for the given dock.
-
-        Parameters
-        ----------
-        dock : QDockWidget, optional
-            The dock from which the panel should appear. If omitted,
-            the inspector dock is used.
-        """
-        if hasattr(self, "corner_tabs"):
-            if dock is None:
-                dock = self.inspector_dock
-            self._corner_current_dock = dock
-            self._corner_create_new = create_new
-            header = self.dock_headers.get(dock)
-            if header:
-                self.corner_tabs.selector.setCurrentText(header.selector.currentText())
-            self._hide_drag_indicator()
-            self.corner_tabs.show()
-            self._update_corner_tabs_pos(dock)
-            self.corner_tabs.raise_()
-
-    def _on_corner_tab(self, label: str):
-        dock = self._corner_current_dock or self.inspector_dock
-        create_new = getattr(self, "_corner_create_new", False)
-        self._corner_create_new = False
-        if create_new:
-            area = self.dockWidgetArea(dock)
-            new_dock = self._create_dock(label, area)
-            try:
-                self.splitDockWidget(dock, new_dock, self._split_orientation)
-            except Exception:
-                pass
-            self._update_corner_tabs_pos(new_dock)
-        else:
-            self.set_dock_category(dock, label)
-        self.corner_tabs.hide()
 
     def set_dock_category(self, dock, label):
         widget = self.category_widgets.get(label)
