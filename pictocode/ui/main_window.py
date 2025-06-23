@@ -33,6 +33,7 @@ from .layers_dock import LayersWidget
 from .layout_dock import LayoutWidget
 
 from .logs_dock import LogsWidget
+from .debug_dialog import DebugDialog
 
 logger = logging.getLogger(__name__)
 PROJECTS_DIR = os.path.join(os.path.dirname(
@@ -397,6 +398,11 @@ class MainWindow(QMainWindow):
         projectm.addAction(props_act)
         self.actions["project_props"] = props_act
 
+        debug_act = QAction("Debug", self)
+        debug_act.triggered.connect(self.show_debug_dialog)
+        projectm.addAction(debug_act)
+        self.actions["debug"] = debug_act
+
         viewm = AnimatedMenu("Affichage", self)
         mb.addMenu(viewm)
         self.view_menu = viewm
@@ -587,7 +593,7 @@ class MainWindow(QMainWindow):
         self._set_project_actions_enabled(True)
         self._update_view_checks()
         self._switch_page(self.canvas)
-        self.setWindowTitle(f"Pictocode — {params.get('name','')}")
+        self.setWindowTitle(f"Pictocode — {params.get('name', '')}")
         self.set_dirty(False)
         self.add_recent_project(path)
         self.home.populate_lists()
@@ -599,7 +605,8 @@ class MainWindow(QMainWindow):
         self.show_status("Enregistrement…")
         try:
             if self.current_project_path.lower().endswith(".ptc"):
-                import zipfile, tempfile
+                import zipfile
+                import tempfile
 
                 tmp_thumb = tempfile.mkstemp(suffix=".png")[1]
                 self.canvas.export_image(tmp_thumb, "PNG")
@@ -901,6 +908,14 @@ class MainWindow(QMainWindow):
                 if action is not None:
                     action.setShortcut(QKeySequence(seq))
                     self.settings.setValue(f"shortcut_{name}", seq)
+
+    def show_debug_dialog(self):
+        """Display a dialog with debug information about the project."""
+        if not hasattr(self, "canvas"):
+            return
+        text = self.canvas.get_debug_report()
+        dlg = DebugDialog(text, self)
+        dlg.exec_()
 
     def _switch_page(self, widget):
         current = self.stack.currentWidget()
