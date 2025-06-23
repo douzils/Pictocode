@@ -9,6 +9,7 @@ from PyQt5.QtWidgets import (
     QAction,
     QGraphicsItem,
     QGraphicsItemGroup,
+    QGraphicsObject,
 )
 from .ui.animated_menu import AnimatedMenu
 from PyQt5.QtCore import Qt, QRectF, QPointF, QSizeF, pyqtSignal, QTimer
@@ -27,26 +28,19 @@ logger = logging.getLogger(__name__)
 from .utils import to_pixels
 
 
-class TransparentItemGroup(QGraphicsItemGroup):
-    """Item group that handles events only when selected."""
+class TransparentItemGroup(QGraphicsObject):
+    """Lightweight container that keeps children individually selectable."""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # ItemHasNoContents avoids painting the group while keeping a bounding rect
+        # Avoid painting anything while still providing a bounding rect
         self.setFlag(QGraphicsItem.ItemHasNoContents, True)
-        # Forward events directly to children by default so shapes remain
-        # selectable even when wrapped in a layer group.  Support both the
-        # Qt6 and Qt5 APIs to avoid platform specific issues.
-        if hasattr(self, "setHandlesChildEvents"):
-            self.setHandlesChildEvents(False)
-        if hasattr(self, "setFiltersChildEvents"):
-            self.setFiltersChildEvents(False)
-        # Ignore mouse events when not selected so child items stay clickable
         self.setAcceptedMouseButtons(Qt.NoButton)
 
     def addToGroup(self, item: QGraphicsItem):
-        """Add item and preserve its interactivity."""
-        super().addToGroup(item)
+        """Add item to this group without disabling its interactivity."""
+        self.prepareGeometryChange()
+        item.setParentItem(self)
         item.setFlag(QGraphicsItem.ItemIsMovable, True)
         item.setFlag(QGraphicsItem.ItemIsSelectable, True)
         item.setFlag(QGraphicsItem.ItemSendsGeometryChanges, True)
@@ -59,6 +53,15 @@ class TransparentItemGroup(QGraphicsItemGroup):
             self.isEnabled(),
 
         )
+
+    def removeFromGroup(self, item: QGraphicsItem):
+        """Remove an item from this group."""
+        if item.parentItem() is self:
+            self.prepareGeometryChange()
+            item.setParentItem(None)
+
+    def boundingRect(self):
+        return self.childrenBoundingRect()
 
 
     def itemChange(self, change, value):
@@ -78,10 +81,11 @@ class TransparentItemGroup(QGraphicsItemGroup):
         return super().itemChange(change, value)
 
     def shape(self):
-
-        """Return an empty path when not selected to let children receive clicks."""
+        """Return an empty path when not selected so children get events."""
         if self.isSelected():
-            return super().shape()
+            path = QPainterPath()
+            path.addRect(self.boundingRect())
+            return path
         return QPainterPath()
 
 
@@ -591,6 +595,7 @@ class CanvasWidget(QGraphicsView):
                     self.current_layer.addToGroup(item)
                     item.layer = self.current_layer.layer_name
                 self._assign_layer_name(item)
+                self.scene.clearSelection()
                 item.setSelected(True)
                 item.setTextInteractionFlags(Qt.TextEditorInteraction)
                 self._mark_dirty()
@@ -750,6 +755,8 @@ class CanvasWidget(QGraphicsView):
                 if self.current_layer:
                     self.current_layer.addToGroup(self._current_path_item)
                     self._current_path_item.layer = self.current_layer.layer_name
+                self.scene.clearSelection()
+                self._current_path_item.setSelected(True)
             self._current_path_item = None
             self._freehand_points = None
             self._mark_dirty()
@@ -769,6 +776,8 @@ class CanvasWidget(QGraphicsView):
             if self.current_layer:
                 self.current_layer.addToGroup(self._temp_item)
                 self._temp_item.layer = self.current_layer.layer_name
+            self.scene.clearSelection()
+            self._temp_item.setSelected(True)
             self._temp_item = None
             self._mark_dirty()
             self._schedule_scene_changed()
@@ -809,6 +818,8 @@ class CanvasWidget(QGraphicsView):
             if self.current_layer:
                 self.current_layer.addToGroup(self._polygon_item)
                 self._polygon_item.layer = self.current_layer.layer_name
+            self.scene.clearSelection()
+            self._polygon_item.setSelected(True)
             self.scene.removeItem(self._poly_preview_line)
             self._poly_preview_line = None
             self._polygon_item = None
@@ -1410,7 +1421,7 @@ class CanvasWidget(QGraphicsView):
 
     def ungroup_item(self, group):
         """Détruit un groupe et re-sélectionne ses enfants."""
-        if not isinstance(group, QGraphicsItemGroup):
+        if not isinstance(group, (QGraphicsItemGroup, TransparentItemGroup)):
             return
         children = group.childItems()
         if isinstance(group, TransparentItemGroup):
@@ -1612,9 +1623,74 @@ class CanvasWidget(QGraphicsView):
         """Select the item having the given stored name."""
         for it in self.scene.items():
             if getattr(it, "layer_name", None) == name:
+                logger.debug("Selecting item %s", name)
                 self.scene.clearSelection()
                 it.setSelected(True)
                 self.ensureVisible(it.sceneBoundingRect())
                 break
 
+        else:
+            logger.debug("Item %s not found", name)
+
+
+    def get_debug_report(self) -> str:
+        """Return a textual report about the current project state."""
+        lines: list[str] = []
+
+        meta = getattr(self, "current_meta", {})
+        lines.append("== Meta ==")
+        for key, val in meta.items():
+            lines.append(f"{key}: {val}")
+        lines.append("")
+
+        lines.append("== Layers ==")
+        for name, layer in self.layers.items():
+            locked = getattr(layer, "locked", False)
+            count = len(layer.childItems())
+            lines.append(
+                f"{name}: visible={layer.isVisible()} locked={locked} "
+                f"enabled={layer.isEnabled()} items={count}"
+            )
+        lines.append("")
+
+        current = getattr(self.current_layer, "layer_name", "")
+        lines.append(f"Current layer: {current}")
+        lines.append(f"Lock others: {self.lock_others}")
+        lines.append("")
+
+        lines.append("== Selection ==")
+        selected = [
+            getattr(it, "layer_name", type(it).__name__)
+            for it in self.scene.selectedItems()
+        ]
+        lines.append(", ".join(selected) if selected else "(none)")
+        lines.append("")
+
+        lines.append("== History ==")
+        lines.append(f"index: {self._history_index} / {len(self._history)}")
+        for i, snap in enumerate(self._history):
+            count = len(snap.get("shapes", []))
+            name = snap.get("name", "")
+            lines.append(f"  {i}: {name} shapes={count}")
+        lines.append("")
+
+        lines.append(f"Tool: {self.current_tool}")
+        lines.append(
+            f"Snap to grid: {self.snap_to_grid} size={self.grid_size} show={self.show_grid}"
+        )
+        lines.append(f"Document rect: {self._doc_rect}")
+        zoom = self.transform().m11() if self.transform().m11() else 1.0
+        lines.append(f"Zoom: {zoom:.2f}")
+        lines.append(f"Items in scene: {len(self.scene.items())}")
+
+        lines.append("")
+        lines.append("== Items by layer ==")
+        for name, layer in self.layers.items():
+            children = [
+                getattr(it, "layer_name", type(it).__name__)
+                for it in layer.childItems()
+            ]
+            lines.append(f"{name}: " + (", ".join(children) if children else "(empty)"))
+
+        return "\n".join(lines)
 
