@@ -154,6 +154,8 @@ class MainWindow(QMainWindow):
         lg_dock.setVisible(False)
         self.logs_dock = lg_dock
 
+        self._apply_float_docks()
+
         # Dialog nouveau projet
         self.new_proj_dlg = NewProjectDialog(self)
         self.new_proj_dlg.accepted.connect(self._on_new_project_accepted)
@@ -867,9 +869,8 @@ class MainWindow(QMainWindow):
             if self.auto_show_inspector:
                 items = self.canvas.scene.selectedItems()
                 self.inspector_dock.setVisible(bool(items))
-            for dock in (self.inspector_dock, self.imports_dock,
-                         self.layout_dock, self.logs_dock):
-                dock.setFloating(self.float_docks)
+            self._apply_float_docks()
+
 
             self.apply_theme(
                 theme,
@@ -1115,6 +1116,22 @@ class MainWindow(QMainWindow):
             )
             if seq:
                 action.setShortcut(QKeySequence(seq))
+
+    def _apply_float_docks(self):
+        """Set all dock widgets to floating or dockable mode."""
+        docks = [
+            (self.inspector_dock, Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea),
+            (self.imports_dock, Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea),
+            (self.layout_dock, Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea),
+            (self.logs_dock, Qt.BottomDockWidgetArea | Qt.TopDockWidgetArea),
+        ]
+        for dock, areas in docks:
+            if self.float_docks:
+                dock.setAllowedAreas(Qt.NoDockWidgetArea)
+                dock.setFloating(True)
+            else:
+                dock.setAllowedAreas(areas)
+                dock.setFloating(False)
 
     def _apply_handle_settings(self):
         from ..shapes import ResizableMixin
