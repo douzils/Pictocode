@@ -82,6 +82,39 @@ class ResizableMixin:
         self._start_angle = 0.0
         self._anchor_scene = QPointF()
 
+    # ------------------------------------------------------------------
+    def _corner_handles(self) -> list[QRectF]:
+        """Return rectangles for the 4 corner handles."""
+        r = self.rect()
+        s = self.handle_size
+        return [
+            QRectF(r.left() - s / 2, r.top() - s / 2, s, s),
+            QRectF(r.right() - s / 2, r.top() - s / 2, s, s),
+            QRectF(r.right() - s / 2, r.bottom() - s / 2, s, s),
+            QRectF(r.left() - s / 2, r.bottom() - s / 2, s, s),
+        ]
+
+    def _side_rects(self) -> list[QRectF]:
+        """Return rectangles for the 4 side hit zones."""
+        r = self.rect()
+        s = self.handle_size
+        return [
+            QRectF(r.left(), r.top() - s / 2, r.width(), s),
+            QRectF(r.right() - s / 2, r.top(), s, r.height()),
+            QRectF(r.left(), r.bottom() - s / 2, r.width(), s),
+            QRectF(r.left() - s / 2, r.top(), s, r.height()),
+        ]
+
+    def _rotation_rect(self) -> QRectF:
+        r = self.rect()
+        rot_s = self.rotation_handle_size
+        return QRectF(
+            r.center().x() - rot_s / 2,
+            r.top() - self.rotation_offset - rot_s / 2,
+            rot_s,
+            rot_s,
+        )
+
     def itemChange(self, change, value):
         if change == QGraphicsItem.ItemSelectedHasChanged:
             self.update()
@@ -98,36 +131,19 @@ class ResizableMixin:
     def shape(self):
         """Extend the shape with resize and rotation handles for hit tests."""
         path = super().shape()
-        r = self.rect()
-        s = self.handle_size
         extra = QPainterPath()
-        corner_handles = [
-            QRectF(r.left() - s / 2, r.top() - s / 2, s, s),
-            QRectF(r.right() - s / 2, r.top() - s / 2, s, s),
-            QRectF(r.right() - s / 2, r.bottom() - s / 2, s, s),
-            QRectF(r.left() - s / 2, r.bottom() - s / 2, s, s),
-        ]
-        side_rects = [
-            QRectF(r.left(), r.top() - s / 2, r.width(), s),
-            QRectF(r.right() - s / 2, r.top(), s, r.height()),
-            QRectF(r.left(), r.bottom() - s / 2, r.width(), s),
-            QRectF(r.left() - s / 2, r.top(), s, r.height()),
-        ]
-        for h in corner_handles:
+
+        for h in self._corner_handles():
+
             if self.handle_shape == "circle":
                 extra.addEllipse(h)
             else:
                 extra.addRect(h)
-        for rect in side_rects:
+        for rect in self._side_rects():
+
             extra.addRect(rect)
 
-        rot_s = self.rotation_handle_size
-        rot_handle = QRectF(
-            r.center().x() - rot_s / 2,
-            r.top() - self.rotation_offset - rot_s / 2,
-            rot_s,
-            rot_s,
-        )
+        rot_handle = self._rotation_rect()
         if self.rotation_handle_shape == "circle":
             extra.addEllipse(rot_handle)
         else:
@@ -178,29 +194,17 @@ class ResizableMixin:
             painter.setBrush(Qt.NoBrush)
             painter.drawPath(self._shape_path())
 
-            r = self.rect()
-            s = self.handle_size
             painter.setBrush(QBrush(Qt.white))
             painter.setPen(QPen(self.handle_color))
-            corner_handles = [
-                QRectF(r.left() - s / 2, r.top() - s / 2, s, s),
-                QRectF(r.right() - s / 2, r.top() - s / 2, s, s),
-                QRectF(r.right() - s / 2, r.bottom() - s / 2, s, s),
-                QRectF(r.left() - s / 2, r.bottom() - s / 2, s, s),
-            ]
-            for handle in corner_handles:
+
+            for handle in self._corner_handles():
+
                 if self.handle_shape == 'circle':
                     painter.drawEllipse(handle)
                 else:
                     painter.drawRect(handle)
 
-            rot_s = self.rotation_handle_size
-            rot_handle = QRectF(
-                r.center().x() - rot_s / 2,
-                r.top() - self.rotation_offset - rot_s / 2,
-                rot_s,
-                rot_s,
-            )
+            rot_handle = self._rotation_rect()
             painter.setPen(QPen(self.rotation_handle_color))
             painter.setBrush(QBrush(Qt.white))
             if self.rotation_handle_shape == 'circle':
@@ -211,26 +215,11 @@ class ResizableMixin:
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton and self.isSelected():
             r = self.rect()
-            s = self.handle_size
-            corner_handles = [
-                QRectF(r.left() - s / 2, r.top() - s / 2, s, s),  # 0 TL
-                QRectF(r.right() - s / 2, r.top() - s / 2, s, s),  # 1 TR
-                QRectF(r.right() - s / 2, r.bottom() - s / 2, s, s),  # 2 BR
-                QRectF(r.left() - s / 2, r.bottom() - s / 2, s, s),  # 3 BL
-            ]
-            side_rects = [
-                QRectF(r.left(), r.top() - s / 2, r.width(), s),  # 4 T
-                QRectF(r.right() - s / 2, r.top(), s, r.height()),  # 5 R
-                QRectF(r.left(), r.bottom() - s / 2, r.width(), s),  # 6 B
-                QRectF(r.left() - s / 2, r.top(), s, r.height()),  # 7 L
-            ]
-            rot_s = self.rotation_handle_size
-            rot_handle = QRectF(
-                r.center().x() - rot_s / 2,
-                r.top() - self.rotation_offset - rot_s / 2,
-                rot_s,
-                rot_s,
-            )
+
+            corner_handles = self._corner_handles()
+            side_rects = self._side_rects()
+            rot_handle = self._rotation_rect()
+
             for idx, handle in enumerate(corner_handles):
                 if handle.contains(event.pos()):
                     self._resizing = True
@@ -314,7 +303,6 @@ class ResizableMixin:
             origin_x = w / 2
             origin_y = h / 2
 
-
             anchor_local_new = self._get_anchor_point(self._active_handle, w, h)
             dx = cos_a * (anchor_local_new.x() - origin_x) - sin_a * (
                 anchor_local_new.y() - origin_y
@@ -324,7 +312,6 @@ class ResizableMixin:
             )
             x = self._anchor_scene.x() - dx - origin_x
             y = self._anchor_scene.y() - dy - origin_y
-
 
             self.setRect(x, y, w, h)
             event.accept()
@@ -351,6 +338,34 @@ class ResizableMixin:
             event.accept()
             return
         super().mouseReleaseEvent(event)
+
+    # -- Hover -------------------------------------------------------
+    def hoverMoveEvent(self, event):
+        if self.isSelected():
+            pos = event.pos()
+            for idx, rect in enumerate(self._corner_handles()):
+                if rect.contains(pos):
+                    curs = (
+                        Qt.SizeFDiagCursor if idx in (0, 2) else Qt.SizeBDiagCursor
+                    )
+                    self.setCursor(curs)
+                    return
+            for idx, rect in enumerate(self._side_rects(), start=4):
+                if rect.contains(pos):
+                    curs = Qt.SizeVerCursor if idx in (4, 6) else Qt.SizeHorCursor
+                    self.setCursor(curs)
+                    return
+            if self._rotation_rect().contains(pos):
+                self.setCursor(Qt.CrossCursor)
+                return
+            self.setCursor(Qt.SizeAllCursor)
+        else:
+            self.unsetCursor()
+        super().hoverMoveEvent(event)
+
+    def hoverLeaveEvent(self, event):
+        self.unsetCursor()
+        super().hoverLeaveEvent(event)
 
 
 class Rect(ResizableMixin, SnapToGridMixin, QGraphicsRectItem):
@@ -472,31 +487,34 @@ class LineResizableMixin:
         self._start_scene_pos = QPointF()
         self._start_line = None
 
+    def _handle_rects(self) -> list[QRectF]:
+        line = self.line()
+        s = self.handle_size
+        return [
+            QRectF(line.p1().x() - s / 2, line.p1().y() - s / 2, s, s),
+            QRectF(line.p2().x() - s / 2, line.p2().y() - s / 2, s, s),
+        ]
+
+    def shape(self):
+        path = QGraphicsLineItem.shape(self)
+        extra = QPainterPath()
+        for h in self._handle_rects():
+            extra.addRect(h)
+        return path.united(extra)
+
     def paint(self, painter, option, widget=None):
         # Draw the line without the default Qt selection rectangle.
         painter.setPen(self.pen())
         painter.drawLine(self.line())
         if self.isSelected():
-            line = self.line()
-            s = self.handle_size
             painter.setBrush(QBrush(Qt.white))
             painter.setPen(QPen(Qt.black))
-            handles = [
-                QRectF(line.p1().x() - s / 2, line.p1().y() - s / 2, s, s),
-                QRectF(line.p2().x() - s / 2, line.p2().y() - s / 2, s, s),
-            ]
-            for h in handles:
+            for h in self._handle_rects():
                 painter.drawRect(h)
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton and self.isSelected():
-            line = self.line()
-            s = self.handle_size
-            handles = [
-                QRectF(line.p1().x() - s / 2, line.p1().y() - s / 2, s, s),
-                QRectF(line.p2().x() - s / 2, line.p2().y() - s / 2, s, s),
-            ]
-            for idx, h in enumerate(handles):
+            for idx, h in enumerate(self._handle_rects()):
                 if h.contains(event.pos()):
                     self._resizing = True
                     self._active = idx
@@ -527,6 +545,22 @@ class LineResizableMixin:
             event.accept()
             return
         super().mouseReleaseEvent(event)
+
+    def hoverMoveEvent(self, event):
+        if self.isSelected():
+            pos = event.pos()
+            for idx, rect in enumerate(self._handle_rects()):
+                if rect.contains(pos):
+                    self.setCursor(Qt.SizeAllCursor)
+                    return
+            self.setCursor(Qt.SizeAllCursor)
+        else:
+            self.unsetCursor()
+        super().hoverMoveEvent(event)
+
+    def hoverLeaveEvent(self, event):
+        self.unsetCursor()
+        super().hoverLeaveEvent(event)
 
 
 class Line(LineResizableMixin, SnapToGridMixin, QGraphicsLineItem):
