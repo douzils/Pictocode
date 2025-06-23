@@ -314,6 +314,7 @@ class ResizableMixin:
             origin_x = w / 2
             origin_y = h / 2
 
+
             anchor_local_new = self._get_anchor_point(self._active_handle, w, h)
             dx = cos_a * (anchor_local_new.x() - origin_x) - sin_a * (
                 anchor_local_new.y() - origin_y
@@ -323,6 +324,7 @@ class ResizableMixin:
             )
             x = self._anchor_scene.x() - dx - origin_x
             y = self._anchor_scene.y() - dy - origin_y
+
 
             self.setRect(x, y, w, h)
             event.accept()
