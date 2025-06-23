@@ -1693,4 +1693,3 @@ class CanvasWidget(QGraphicsView):
             lines.append(f"{name}: " + (", ".join(children) if children else "(empty)"))
 
         return "\n".join(lines)
-
