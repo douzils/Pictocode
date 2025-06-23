@@ -41,6 +41,8 @@ PROJECTS_DIR = os.path.join(os.path.dirname(
 
 
 class MainWindow(QMainWindow):
+    EDGE_MARGIN = 6
+
     def __init__(self):
         super().__init__()
         logger.debug("MainWindow initialized")
@@ -71,6 +73,10 @@ class MainWindow(QMainWindow):
         _ml.addWidget(self.menu_bar)
         self.setMenuWidget(self._menu_container)
         self._status_timer = None
+        self._resizing = False
+        self._resize_edges = Qt.Edges()
+        self._start_pos = None
+        self._start_geom = None
 
         # Paramètres de l'application
         self.settings = QSettings("pictocode", "pictocode")
@@ -89,7 +95,7 @@ class MainWindow(QMainWindow):
         self.auto_show_inspector = self.settings.value(
             "auto_show_inspector", True, type=bool)
         self.float_docks = self.settings.value(
-            "float_docks", False, type=bool)
+            "float_docks", True, type=bool)
         self._autosave_timer = QTimer(self)
         self._autosave_timer.timeout.connect(self._autosave)
         if self.autosave_enabled:
@@ -1210,6 +1216,73 @@ class MainWindow(QMainWindow):
             self.template_projects.remove(path)
         self.template_projects.insert(0, path)
         self.settings.setValue("template_projects", self.template_projects)
+
+    # --- window resizing -------------------------------------------------
+    def _edges_at_pos(self, pos):
+        rect = self.rect()
+        edges = Qt.Edges()
+        if pos.x() <= self.EDGE_MARGIN:
+            edges |= Qt.LeftEdge
+        if pos.x() >= rect.width() - self.EDGE_MARGIN:
+            edges |= Qt.RightEdge
+        if pos.y() <= self.EDGE_MARGIN:
+            edges |= Qt.TopEdge
+        if pos.y() >= rect.height() - self.EDGE_MARGIN:
+            edges |= Qt.BottomEdge
+        return edges
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            edges = self._edges_at_pos(event.pos())
+            if edges:
+                handle = self.windowHandle()
+                if handle and hasattr(handle, "startSystemResize"):
+                    handle.startSystemResize(edges)
+                    self._resizing = True
+                    return
+                self._resizing = True
+                self._resize_edges = edges
+                self._start_pos = event.globalPos()
+                self._start_geom = self.geometry()
+                return
+        super().mousePressEvent(event)
+
+    def mouseMoveEvent(self, event):
+        if self._resizing and (not hasattr(self.windowHandle(), "startSystemResize")):
+            delta = event.globalPos() - self._start_pos
+            g = self._start_geom
+            left, top, width, height = g.x(), g.y(), g.width(), g.height()
+            if self._resize_edges & Qt.LeftEdge:
+                new_left = left + delta.x()
+                width -= delta.x()
+                left = new_left
+            if self._resize_edges & Qt.RightEdge:
+                width += delta.x()
+            if self._resize_edges & Qt.TopEdge:
+                new_top = top + delta.y()
+                height -= delta.y()
+                top = new_top
+            if self._resize_edges & Qt.BottomEdge:
+                height += delta.y()
+            self.setGeometry(left, top, max(width, self.minimumWidth()), max(height, self.minimumHeight()))
+        else:
+            edges = self._edges_at_pos(event.pos())
+            cursor = Qt.ArrowCursor
+            if edges == (Qt.LeftEdge | Qt.TopEdge) or edges == (Qt.RightEdge | Qt.BottomEdge):
+                cursor = Qt.SizeFDiagCursor
+            elif edges == (Qt.RightEdge | Qt.TopEdge) or edges == (Qt.LeftEdge | Qt.BottomEdge):
+                cursor = Qt.SizeBDiagCursor
+            elif edges & (Qt.LeftEdge | Qt.RightEdge):
+                cursor = Qt.SizeHorCursor
+            elif edges & (Qt.TopEdge | Qt.BottomEdge):
+                cursor = Qt.SizeVerCursor
+            self.setCursor(cursor)
+        super().mouseMoveEvent(event)
+
+    def mouseReleaseEvent(self, event):
+        self._resizing = False
+        self.setCursor(Qt.ArrowCursor)
+        super().mouseReleaseEvent(event)
 
 
 def main(app, argv):
