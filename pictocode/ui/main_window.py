@@ -30,6 +30,7 @@ from PyQt5.QtCore import (
 from .corner_tabs import CornerTabs
 
 from PyQt5.QtGui import QPalette, QColor, QKeySequence, QCursor
+
 from PyQt5.QtWidgets import QApplication
 from ..utils import generate_pycode, get_contrast_color
 from ..canvas import CanvasWidget
@@ -193,6 +194,24 @@ class MainWindow(QMainWindow):
             dock.installEventFilter(self)
             if dock.widget():
                 dock.widget().installEventFilter(self)
+
+        # Corner tabs overlay
+        self.corner_tabs = CornerTabs(self)
+        self.corner_tabs.add_tab(QLabel("Propriétés"), "Propriétés")
+        self.corner_tabs.add_tab(QLabel("Imports"), "Imports")
+        self.corner_tabs.add_tab(QLabel("Objets"), "Objets")
+        self.corner_tabs.add_tab(QLabel("Logs"), "Logs")
+        self.corner_tabs.resize(300, 200)
+        self._corner_current_dock = self.inspector_dock
+        self._update_corner_tabs_pos(self.inspector_dock)
+
+        for dock in (
+            self.inspector_dock,
+            self.imports_dock,
+            self.layout_dock,
+            self.logs_dock,
+        ):
+            dock.installEventFilter(self)
 
         self._apply_float_docks()
 
@@ -1142,6 +1161,7 @@ class MainWindow(QMainWindow):
         elif obj.parent() and isinstance(obj.parent(), QDockWidget):
             dock = obj.parent()
         if dock:
+
             if event.type() == QEvent.Close:
                 view = self.canvas.viewport()
                 old_w = view.width()
@@ -1314,6 +1334,33 @@ class MainWindow(QMainWindow):
             header.selector.setCurrentText(label)
             header.selector.blockSignals(False)
 
+    def _update_corner_tabs_pos(self, dock):
+        if hasattr(self, "corner_tabs"):
+            gpos = dock.mapToGlobal(dock.rect().bottomRight())
+            local = self.mapFromGlobal(gpos)
+            self.corner_tabs.move(
+                local.x() - self.corner_tabs.width(),
+                local.y() - self.corner_tabs.height(),
+            )
+
+    def show_corner_tabs(self, dock=None):
+        """Display the small tab panel for the given dock.
+
+        Parameters
+        ----------
+        dock : QDockWidget, optional
+            The dock from which the panel should appear. If omitted,
+            the inspector dock is used.
+        """
+        if hasattr(self, "corner_tabs"):
+            if dock is None:
+                dock = self.inspector_dock
+
+            self._corner_current_dock = dock
+            self.corner_tabs.show()
+            self._update_corner_tabs_pos(dock)
+            self.corner_tabs.raise_()
+
     # --- Gestion favoris et récents ------------------------------------
     def add_recent_project(self, path: str):
         if path in self.recent_projects:
@@ -1359,6 +1406,14 @@ class MainWindow(QMainWindow):
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
             edges = self._edges_at_pos(event.pos())
+            if (
+                not edges
+                and event.pos().x() >= self.width() - self.CORNER_REGION
+                and event.pos().y() >= self.height() - self.CORNER_REGION
+            ):
+                self._corner_dragging = True
+                self._corner_start = event.pos()
+                return
             if edges:
                 handle = self.windowHandle()
                 if handle and hasattr(handle, "startSystemResize"):
@@ -1373,6 +1428,12 @@ class MainWindow(QMainWindow):
         super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event):
+        if self._corner_dragging:
+            delta = event.pos() - self._corner_start
+            if abs(delta.x()) > 5 or abs(delta.y()) > 5:
+                self.show_corner_tabs()
+                self._corner_dragging = False
+            return
         if self._resizing and (not hasattr(self.windowHandle(), "startSystemResize")):
             delta = event.globalPos() - self._start_pos
             g = self._start_geom
@@ -1405,6 +1466,12 @@ class MainWindow(QMainWindow):
         super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event):
+        if self._corner_dragging:
+            delta = event.pos() - self._corner_start
+            if abs(delta.x()) > 5 or abs(delta.y()) > 5:
+                self.show_corner_tabs()
+            self._corner_dragging = False
+            return
         self._resizing = False
         self.setCursor(Qt.ArrowCursor)
         super().mouseReleaseEvent(event)

@@ -1,3 +1,4 @@
+
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QComboBox
 from PyQt5.QtCore import Qt, pyqtSignal
 
@@ -22,5 +23,6 @@ class CornerTabs(QWidget):
 
     def _emit_change(self, text):
         self.tab_selected.emit(text)
+
 
 
