@@ -143,6 +143,8 @@ l'application.
 ### Gestion des fenetres
 
 Un panneau lateral "Panneaux" permet d'activer ou non diverses fenetres : proprietes, barre d'outils ou encore la liste des images importees.
+Par defaut, ces fenetres sont rattachees a la fenetre principale et ne flottent plus.
+Le plan de travail reste fixe : masquer ou afficher un panneau devoile simplement une plus grande partie de la zone visible sans la deplacer.
 La barre de titre personnalisée prend désormais en charge le déplacement système
 pour profiter des raccourcis de redimensionnement Windows (snap et agrandissement
 au bord de l'écran).

@@ -94,8 +94,9 @@ class MainWindow(QMainWindow):
             self.settings.value("autosave_interval", 5))
         self.auto_show_inspector = self.settings.value(
             "auto_show_inspector", True, type=bool)
+        # By default dock widgets are attached to the main window
         self.float_docks = self.settings.value(
-            "float_docks", True, type=bool)
+            "float_docks", False, type=bool)
         self._autosave_timer = QTimer(self)
         self._autosave_timer.timeout.connect(self._autosave)
         if self.autosave_enabled:
@@ -1148,15 +1149,23 @@ class MainWindow(QMainWindow):
                 dock.setFloating(False)
 
     def _toggle_dock(self, dock: QWidget, visible: bool):
-        """Show or hide a dock without shifting the canvas."""
-        center = self.canvas.mapToScene(self.canvas.viewport().rect().center())
+        """Show or hide a dock while keeping the same view area."""
+        h_val = self.canvas.horizontalScrollBar().value()
+        v_val = self.canvas.verticalScrollBar().value()
         dock.setVisible(visible)
-        QTimer.singleShot(0, lambda c=center: self.canvas.centerOn(c))
+        def restore():
+            self.canvas.horizontalScrollBar().setValue(h_val)
+            self.canvas.verticalScrollBar().setValue(v_val)
+        QTimer.singleShot(0, restore)
 
     def eventFilter(self, obj, event):
         if isinstance(obj, QDockWidget) and event.type() == QEvent.Close:
-            center = self.canvas.mapToScene(self.canvas.viewport().rect().center())
-            QTimer.singleShot(0, lambda c=center: self.canvas.centerOn(c))
+            h_val = self.canvas.horizontalScrollBar().value()
+            v_val = self.canvas.verticalScrollBar().value()
+            def restore():
+                self.canvas.horizontalScrollBar().setValue(h_val)
+                self.canvas.verticalScrollBar().setValue(v_val)
+            QTimer.singleShot(0, restore)
         return super().eventFilter(obj, event)
 
     def _apply_handle_settings(self):
