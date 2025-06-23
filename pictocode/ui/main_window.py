@@ -17,11 +17,21 @@ from PyQt5.QtWidgets import (
     QGraphicsOpacityEffect,
     QToolBar,
 )
-from PyQt5.QtCore import Qt, QSettings, QPropertyAnimation, QTimer, QEvent, QPointF
+from PyQt5.QtCore import (
+    Qt,
+    QSettings,
+    QPropertyAnimation,
+    QTimer,
+    QEvent,
+    QPointF,
+    QPoint,
+)
 
 from .corner_tabs import CornerTabs
 
-from PyQt5.QtGui import QPalette, QColor, QKeySequence
+
+from PyQt5.QtGui import QPalette, QColor, QKeySequence, QCursor
+
 from PyQt5.QtWidgets import QApplication
 from ..utils import generate_pycode, get_contrast_color
 from ..canvas import CanvasWidget
@@ -82,8 +92,9 @@ class MainWindow(QMainWindow):
         self._resize_edges = Qt.Edges()
         self._start_pos = None
         self._start_geom = None
-        self._corner_dragging = False
+        self._corner_dragging_dock = None
         self._corner_start = QPointF()
+        self._corner_current_dock = None
 
         # Paramètres de l'application
         self.settings = QSettings("pictocode", "pictocode")
@@ -175,7 +186,16 @@ class MainWindow(QMainWindow):
         self.corner_tabs.add_tab(QLabel("Objets"), "Objets")
         self.corner_tabs.add_tab(QLabel("Logs"), "Logs")
         self.corner_tabs.resize(300, 200)
-        self._update_corner_tabs_pos()
+        self._corner_current_dock = self.inspector_dock
+        self._update_corner_tabs_pos(self.inspector_dock)
+
+        for dock in (
+            self.inspector_dock,
+            self.imports_dock,
+            self.layout_dock,
+            self.logs_dock,
+        ):
+            dock.installEventFilter(self)
 
         self._apply_float_docks()
 
@@ -1189,29 +1209,63 @@ class MainWindow(QMainWindow):
         QTimer.singleShot(0, restore)
 
     def eventFilter(self, obj, event):
-        if isinstance(obj, QDockWidget) and event.type() == QEvent.Close:
-            view = self.canvas.viewport()
-            old_w = view.width()
-            old_h = view.height()
-            hbar = self.canvas.horizontalScrollBar()
-            vbar = self.canvas.verticalScrollBar()
-            old_hval = hbar.value()
-            old_vval = vbar.value()
-            area = self.dockWidgetArea(obj)
+        if isinstance(obj, QDockWidget):
+            if event.type() == QEvent.Close:
+                view = self.canvas.viewport()
+                old_w = view.width()
+                old_h = view.height()
+                hbar = self.canvas.horizontalScrollBar()
+                vbar = self.canvas.verticalScrollBar()
+                old_hval = hbar.value()
+                old_vval = vbar.value()
+                area = self.dockWidgetArea(obj)
 
-            def restore():
-                dw = view.width() - old_w
-                dh = view.height() - old_h
-                h = old_hval
-                v = old_vval
-                if area == Qt.LeftDockWidgetArea:
-                    h -= dw
-                elif area == Qt.TopDockWidgetArea:
-                    v -= dh
-                hbar.setValue(h)
-                vbar.setValue(v)
+                def restore():
+                    dw = view.width() - old_w
+                    dh = view.height() - old_h
+                    h = old_hval
+                    v = old_vval
+                    if area == Qt.LeftDockWidgetArea:
+                        h -= dw
+                    elif area == Qt.TopDockWidgetArea:
+                        v -= dh
+                    hbar.setValue(h)
+                    vbar.setValue(v)
 
-            QTimer.singleShot(0, restore)
+                QTimer.singleShot(0, restore)
+            elif event.type() in (QEvent.Enter, QEvent.MouseMove):
+                pos = event.pos() if hasattr(event, "pos") else obj.mapFromGlobal(QCursor.pos())
+                if (
+                    pos.x() >= obj.width() - self.CORNER_REGION
+                    and pos.y() >= obj.height() - self.CORNER_REGION
+                ):
+                    obj.setCursor(Qt.OpenHandCursor)
+                elif not self._corner_dragging_dock:
+                    obj.unsetCursor()
+            elif event.type() == QEvent.Leave:
+                if not self._corner_dragging_dock:
+                    obj.unsetCursor()
+            elif event.type() == QEvent.MouseButtonPress and event.button() == Qt.LeftButton:
+                if (
+                    event.pos().x() >= obj.width() - self.CORNER_REGION
+                    and event.pos().y() >= obj.height() - self.CORNER_REGION
+                ):
+                    self._corner_dragging_dock = obj
+                    self._corner_start = event.pos()
+                    return True
+            elif event.type() == QEvent.MouseMove and self._corner_dragging_dock is obj:
+                delta = event.pos() - self._corner_start
+                if abs(delta.x()) > 5 or abs(delta.y()) > 5:
+                    self.show_corner_tabs(obj)
+                    self._corner_dragging_dock = None
+                return True
+            elif event.type() == QEvent.MouseButtonRelease and self._corner_dragging_dock is obj:
+                delta = event.pos() - self._corner_start
+                if abs(delta.x()) > 5 or abs(delta.y()) > 5:
+                    self.show_corner_tabs(obj)
+                self._corner_dragging_dock = None
+                obj.unsetCursor()
+                return True
         return super().eventFilter(obj, event)
 
 
@@ -1265,17 +1319,20 @@ class MainWindow(QMainWindow):
             if act:
                 act.setChecked(self.layout_dock.isVisible())
 
-    def _update_corner_tabs_pos(self):
+    def _update_corner_tabs_pos(self, dock):
         if hasattr(self, "corner_tabs"):
+            gpos = dock.mapToGlobal(dock.rect().bottomRight())
+            local = self.mapFromGlobal(gpos)
             self.corner_tabs.move(
-                self.width() - self.corner_tabs.width(),
-                self.height() - self.corner_tabs.height(),
+                local.x() - self.corner_tabs.width(),
+                local.y() - self.corner_tabs.height(),
             )
 
-    def show_corner_tabs(self):
+    def show_corner_tabs(self, dock):
         if hasattr(self, "corner_tabs"):
+            self._corner_current_dock = dock
             self.corner_tabs.show()
-            self._update_corner_tabs_pos()
+            self._update_corner_tabs_pos(dock)
             self.corner_tabs.raise_()
 
     # --- Gestion favoris et récents ------------------------------------
@@ -1394,7 +1451,11 @@ class MainWindow(QMainWindow):
         super().mouseReleaseEvent(event)
 
     def resizeEvent(self, event):
-        self._update_corner_tabs_pos()
+        if hasattr(self, "corner_tabs") and self.corner_tabs.isVisible():
+            # reposition relative to the last dock if possible
+            dock = self._corner_current_dock or self.inspector_dock
+            self._update_corner_tabs_pos(dock)
+
         super().resizeEvent(event)
 
 
