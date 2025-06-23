@@ -159,12 +159,8 @@ class MainWindow(QMainWindow):
         self.layout_dock = self._create_dock("Objets", Qt.LeftDockWidgetArea)
         self.logs_dock = self._create_dock("Logs", Qt.BottomDockWidgetArea)
 
-        # Corner tabs overlay
-        self.corner_tabs = CornerTabs(self, overlay=True)
-        self.corner_tabs.tab_selected.connect(self._on_corner_tab)
-        self.corner_tabs.resize(200, 40)
-        self._corner_current_dock = self.inspector_dock
-        self._update_corner_tabs_pos(self.inspector_dock)
+        self.corner_tabs = None
+        self._corner_current_dock = None
 
         # Small square shown during corner drag
         self.drag_indicator = QWidget(self)
@@ -310,9 +306,10 @@ class MainWindow(QMainWindow):
         dock.installEventFilter(self)
         if dock.widget():
             dock.widget().installEventFilter(self)
+
+        # also monitor the contained widget for drag events
         if widget:
             widget.installEventFilter(self)
-
         self.docks.append(dock)
         return dock
 
@@ -1096,7 +1093,6 @@ class MainWindow(QMainWindow):
                 background-color: {menu_color.darker(130).name()};
             }}
             QWidget#drag_indicator {{
-
                 background: red;
 
                 border: 1px solid {accent.darker(150).name()};
@@ -1214,7 +1210,7 @@ class MainWindow(QMainWindow):
                         self._split_orientation = Qt.Vertical
                     else:
                         self._split_orientation = Qt.Horizontal
-                    self.show_corner_tabs(dock, create_new=True)
+                    self._split_current_dock(dock, delta)
                     self._hide_drag_indicator()
 
                     self._corner_dragging = False
@@ -1227,7 +1223,8 @@ class MainWindow(QMainWindow):
                         self._split_orientation = Qt.Vertical
                     else:
                         self._split_orientation = Qt.Horizontal
-                    self.show_corner_tabs(dock, create_new=True)
+
+                    self._split_current_dock(dock, delta)
                 self._corner_dragging = False
                 self._corner_dragging_dock = None
                 self._hide_drag_indicator()
@@ -1268,29 +1265,40 @@ class MainWindow(QMainWindow):
         ):
             if name in self.actions:
                 self.actions[name].setEnabled(enabled)
-
-    def _update_corner_tabs_pos(self, dock):
-        if hasattr(self, "corner_tabs"):
-            gpos = dock.mapToGlobal(dock.rect().bottomRight())
-            local = self.mapFromGlobal(gpos)
-            self.corner_tabs.move(
-                local.x() - self.corner_tabs.width(),
-                local.y() - self.corner_tabs.height(),
-            )
-
     def _show_drag_indicator(self, gpos):
         pos = self.mapFromGlobal(gpos)
         self.drag_indicator.move(pos.x() + 5, pos.y() + 5)
         self.drag_indicator.show()
         self.drag_indicator.raise_()
-
-
     def _update_drag_indicator(self, gpos):
         if self.drag_indicator.isVisible():
             pos = self.mapFromGlobal(gpos)
             self.drag_indicator.move(pos.x() + 5, pos.y() + 5)
             self.drag_indicator.raise_()
 
+    def _hide_drag_indicator(self):
+        self.drag_indicator.hide()
+
+
+    def _split_current_dock(self, dock, delta):
+        """Create a new dock based on the drag delta."""
+        label = "Objets"
+        area = self.dockWidgetArea(dock)
+        new_dock = self._create_dock(label, area)
+        try:
+            self.splitDockWidget(dock, new_dock, self._split_orientation)
+        except Exception:
+            pass
+        # resize according to drag distance
+        if self._split_orientation == Qt.Horizontal:
+            w1 = max(50, dock.width() - abs(delta.x()))
+            w2 = max(50, abs(delta.x()))
+            self.resizeDocks([dock, new_dock], [w1, w2], Qt.Horizontal)
+        else:
+            h1 = max(50, dock.height() - abs(delta.y()))
+            h2 = max(50, abs(delta.y()))
+            self.resizeDocks([dock, new_dock], [h1, h2], Qt.Vertical)
+=======
 
     def _hide_drag_indicator(self):
         self.drag_indicator.hide()
@@ -1484,10 +1492,6 @@ class MainWindow(QMainWindow):
         super().mouseReleaseEvent(event)
 
     def resizeEvent(self, event):
-        if hasattr(self, "corner_tabs") and self.corner_tabs.isVisible():
-            # reposition relative to the last dock if possible
-            dock = self._corner_current_dock or self.inspector_dock
-            self._update_corner_tabs_pos(dock)
         super().resizeEvent(event)
 
 
