@@ -132,7 +132,7 @@ class MainWindow(QMainWindow):
 
         # Layout / outliner
         self.layout = LayoutWidget(self)
-        lo_dock = QDockWidget("Plan", self)
+        lo_dock = QDockWidget("Objets", self)
         lo_dock.setWidget(self.layout)
         lo_dock.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
         self.addDockWidget(Qt.LeftDockWidgetArea, lo_dock)
@@ -420,7 +420,7 @@ class MainWindow(QMainWindow):
         viewm.addAction(imp_act)
         self.actions["view_imports"] = imp_act
 
-        layout_act = QAction("Plan", self, checkable=True)
+        layout_act = QAction("Objets", self, checkable=True)
         layout_act.toggled.connect(self.layout_dock.setVisible)
         self.layout_dock.visibilityChanged.connect(layout_act.setChecked)
         viewm.addAction(layout_act)
@@ -909,6 +909,8 @@ class MainWindow(QMainWindow):
         """Display a dialog with debug information about the project."""
         if not hasattr(self, "canvas"):
             return
+        logger.debug("Generating debug report")
+
         text = self.canvas.get_debug_report()
         dlg = DebugDialog(text, self)
         dlg.exec_()

@@ -1632,11 +1632,76 @@ class CanvasWidget(QGraphicsView):
         """Select the item having the given stored name."""
         for it in self.scene.items():
             if getattr(it, "layer_name", None) == name:
+                logger.debug("Selecting item %s", name)
                 self.scene.clearSelection()
                 it.setSelected(True)
                 self.ensureVisible(it.sceneBoundingRect())
                 break
 
+        else:
+            logger.debug("Item %s not found", name)
+
+
+    def get_debug_report(self) -> str:
+        """Return a textual report about the current project state."""
+        lines: list[str] = []
+
+        meta = getattr(self, "current_meta", {})
+        lines.append("== Meta ==")
+        for key, val in meta.items():
+            lines.append(f"{key}: {val}")
+        lines.append("")
+
+        lines.append("== Layers ==")
+        for name, layer in self.layers.items():
+            locked = getattr(layer, "locked", False)
+            count = len(layer.childItems())
+            lines.append(
+                f"{name}: visible={layer.isVisible()} locked={locked} "
+                f"enabled={layer.isEnabled()} items={count}"
+            )
+        lines.append("")
+
+        current = getattr(self.current_layer, "layer_name", "")
+        lines.append(f"Current layer: {current}")
+        lines.append(f"Lock others: {self.lock_others}")
+        lines.append("")
+
+        lines.append("== Selection ==")
+        selected = [
+            getattr(it, "layer_name", type(it).__name__)
+            for it in self.scene.selectedItems()
+        ]
+        lines.append(", ".join(selected) if selected else "(none)")
+        lines.append("")
+
+        lines.append("== History ==")
+        lines.append(f"index: {self._history_index} / {len(self._history)}")
+        for i, snap in enumerate(self._history):
+            count = len(snap.get("shapes", []))
+            name = snap.get("name", "")
+            lines.append(f"  {i}: {name} shapes={count}")
+        lines.append("")
+
+        lines.append(f"Tool: {self.current_tool}")
+        lines.append(
+            f"Snap to grid: {self.snap_to_grid} size={self.grid_size} show={self.show_grid}"
+        )
+        lines.append(f"Document rect: {self._doc_rect}")
+        zoom = self.transform().m11() if self.transform().m11() else 1.0
+        lines.append(f"Zoom: {zoom:.2f}")
+        lines.append(f"Items in scene: {len(self.scene.items())}")
+
+        lines.append("")
+        lines.append("== Items by layer ==")
+        for name, layer in self.layers.items():
+            children = [
+                getattr(it, "layer_name", type(it).__name__)
+                for it in layer.childItems()
+            ]
+            lines.append(f"{name}: " + (", ".join(children) if children else "(empty)"))
+
+        return "\n".join(lines)
 
 
     def get_debug_report(self) -> str:
