@@ -16,7 +16,7 @@ from PyQt5.QtWidgets import (
     QDialog,
     QGraphicsOpacityEffect,
 )
-from PyQt5.QtCore import Qt, QSettings, QPropertyAnimation, QTimer
+from PyQt5.QtCore import Qt, QSettings, QPropertyAnimation, QTimer, QEvent
 from PyQt5.QtGui import QPalette, QColor, QKeySequence
 from PyQt5.QtWidgets import QApplication
 from ..utils import generate_pycode, get_contrast_color
@@ -41,6 +41,8 @@ PROJECTS_DIR = os.path.join(os.path.dirname(
 
 
 class MainWindow(QMainWindow):
+    EDGE_MARGIN = 6
+
     def __init__(self):
         super().__init__()
         logger.debug("MainWindow initialized")
@@ -71,6 +73,10 @@ class MainWindow(QMainWindow):
         _ml.addWidget(self.menu_bar)
         self.setMenuWidget(self._menu_container)
         self._status_timer = None
+        self._resizing = False
+        self._resize_edges = Qt.Edges()
+        self._start_pos = None
+        self._start_geom = None
 
         # Paramètres de l'application
         self.settings = QSettings("pictocode", "pictocode")
@@ -153,6 +159,14 @@ class MainWindow(QMainWindow):
         lg_dock.setFloating(self.float_docks)
         lg_dock.setVisible(False)
         self.logs_dock = lg_dock
+
+        for d in (
+            self.inspector_dock,
+            self.imports_dock,
+            self.layout_dock,
+            self.logs_dock,
+        ):
+            d.installEventFilter(self)
 
         self._apply_float_docks()
 
@@ -411,31 +425,31 @@ class MainWindow(QMainWindow):
         self.view_menu = viewm
 
         tool_act = QAction("Barre d'outils", self, checkable=True)
-        tool_act.toggled.connect(self.toolbar.setVisible)
+        tool_act.toggled.connect(lambda v: self._toggle_dock(self.toolbar, v))
         self.toolbar.visibilityChanged.connect(tool_act.setChecked)
         viewm.addAction(tool_act)
         self.actions["view_toolbar"] = tool_act
 
         insp_act = QAction("Inspecteur", self, checkable=True)
-        insp_act.toggled.connect(self.inspector_dock.setVisible)
+        insp_act.toggled.connect(lambda v: self._toggle_dock(self.inspector_dock, v))
         self.inspector_dock.visibilityChanged.connect(insp_act.setChecked)
         viewm.addAction(insp_act)
         self.actions["view_inspector"] = insp_act
 
         imp_act = QAction("Imports", self, checkable=True)
-        imp_act.toggled.connect(self.imports_dock.setVisible)
+        imp_act.toggled.connect(lambda v: self._toggle_dock(self.imports_dock, v))
         self.imports_dock.visibilityChanged.connect(imp_act.setChecked)
         viewm.addAction(imp_act)
         self.actions["view_imports"] = imp_act
 
         layout_act = QAction("Objets", self, checkable=True)
-        layout_act.toggled.connect(self.layout_dock.setVisible)
+        layout_act.toggled.connect(lambda v: self._toggle_dock(self.layout_dock, v))
         self.layout_dock.visibilityChanged.connect(layout_act.setChecked)
         viewm.addAction(layout_act)
         self.actions["view_layout"] = layout_act
 
         logs_act = QAction("Logs", self, checkable=True)
-        logs_act.toggled.connect(self.logs_dock.setVisible)
+        logs_act.toggled.connect(lambda v: self._toggle_dock(self.logs_dock, v))
         self.logs_dock.visibilityChanged.connect(logs_act.setChecked)
         viewm.addAction(logs_act)
         self.actions["view_logs"] = logs_act
@@ -1133,6 +1147,18 @@ class MainWindow(QMainWindow):
                 dock.setAllowedAreas(areas)
                 dock.setFloating(False)
 
+    def _toggle_dock(self, dock: QWidget, visible: bool):
+        """Show or hide a dock without shifting the canvas."""
+        center = self.canvas.mapToScene(self.canvas.viewport().rect().center())
+        dock.setVisible(visible)
+        QTimer.singleShot(0, lambda c=center: self.canvas.centerOn(c))
+
+    def eventFilter(self, obj, event):
+        if isinstance(obj, QDockWidget) and event.type() == QEvent.Close:
+            center = self.canvas.mapToScene(self.canvas.viewport().rect().center())
+            QTimer.singleShot(0, lambda c=center: self.canvas.centerOn(c))
+        return super().eventFilter(obj, event)
+
     def _apply_handle_settings(self):
         from ..shapes import ResizableMixin
 
@@ -1210,6 +1236,73 @@ class MainWindow(QMainWindow):
             self.template_projects.remove(path)
         self.template_projects.insert(0, path)
         self.settings.setValue("template_projects", self.template_projects)
+
+    # --- window resizing -------------------------------------------------
+    def _edges_at_pos(self, pos):
+        rect = self.rect()
+        edges = Qt.Edges()
+        if pos.x() <= self.EDGE_MARGIN:
+            edges |= Qt.LeftEdge
+        if pos.x() >= rect.width() - self.EDGE_MARGIN:
+            edges |= Qt.RightEdge
+        if pos.y() <= self.EDGE_MARGIN:
+            edges |= Qt.TopEdge
+        if pos.y() >= rect.height() - self.EDGE_MARGIN:
+            edges |= Qt.BottomEdge
+        return edges
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            edges = self._edges_at_pos(event.pos())
+            if edges:
+                handle = self.windowHandle()
+                if handle and hasattr(handle, "startSystemResize"):
+                    handle.startSystemResize(edges)
+                    self._resizing = True
+                    return
+                self._resizing = True
+                self._resize_edges = edges
+                self._start_pos = event.globalPos()
+                self._start_geom = self.geometry()
+                return
+        super().mousePressEvent(event)
+
+    def mouseMoveEvent(self, event):
+        if self._resizing and (not hasattr(self.windowHandle(), "startSystemResize")):
+            delta = event.globalPos() - self._start_pos
+            g = self._start_geom
+            left, top, width, height = g.x(), g.y(), g.width(), g.height()
+            if self._resize_edges & Qt.LeftEdge:
+                new_left = left + delta.x()
+                width -= delta.x()
+                left = new_left
+            if self._resize_edges & Qt.RightEdge:
+                width += delta.x()
+            if self._resize_edges & Qt.TopEdge:
+                new_top = top + delta.y()
+                height -= delta.y()
+                top = new_top
+            if self._resize_edges & Qt.BottomEdge:
+                height += delta.y()
+            self.setGeometry(left, top, max(width, self.minimumWidth()), max(height, self.minimumHeight()))
+        else:
+            edges = self._edges_at_pos(event.pos())
+            cursor = Qt.ArrowCursor
+            if edges == (Qt.LeftEdge | Qt.TopEdge) or edges == (Qt.RightEdge | Qt.BottomEdge):
+                cursor = Qt.SizeFDiagCursor
+            elif edges == (Qt.RightEdge | Qt.TopEdge) or edges == (Qt.LeftEdge | Qt.BottomEdge):
+                cursor = Qt.SizeBDiagCursor
+            elif edges & (Qt.LeftEdge | Qt.RightEdge):
+                cursor = Qt.SizeHorCursor
+            elif edges & (Qt.TopEdge | Qt.BottomEdge):
+                cursor = Qt.SizeVerCursor
+            self.setCursor(cursor)
+        super().mouseMoveEvent(event)
+
+    def mouseReleaseEvent(self, event):
+        self._resizing = False
+        self.setCursor(Qt.ArrowCursor)
+        super().mouseReleaseEvent(event)
 
 
 def main(app, argv):
