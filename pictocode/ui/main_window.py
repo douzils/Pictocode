@@ -1144,28 +1144,56 @@ class MainWindow(QMainWindow):
     def _toggle_dock(self, dock: QWidget, visible: bool):
         """Show or hide a dock without shifting the viewport."""
 
+        view = self.canvas.viewport()
+        old_w = view.width()
+        old_h = view.height()
         hbar = self.canvas.horizontalScrollBar()
         vbar = self.canvas.verticalScrollBar()
-        h = hbar.value()
-        v = vbar.value()
+        old_hval = hbar.value()
+        old_vval = vbar.value()
+        if isinstance(dock, QDockWidget):
+            area = self.dockWidgetArea(dock)
+        elif isinstance(dock, QToolBar):
+            area = self.toolBarArea(dock)
+        else:
+            area = None
         dock.setVisible(visible)
 
         def restore():
+            dw = view.width() - old_w
+            dh = view.height() - old_h
+            h = old_hval
+            v = old_vval
+            if area in (Qt.LeftDockWidgetArea, Qt.LeftToolBarArea):
+                h -= dw
+            elif area in (Qt.TopDockWidgetArea, Qt.TopToolBarArea):
+                v -= dh
             hbar.setValue(h)
             vbar.setValue(v)
-
 
         QTimer.singleShot(0, restore)
 
     def eventFilter(self, obj, event):
         if isinstance(obj, QDockWidget) and event.type() == QEvent.Close:
 
+            view = self.canvas.viewport()
+            old_w = view.width()
+            old_h = view.height()
             hbar = self.canvas.horizontalScrollBar()
             vbar = self.canvas.verticalScrollBar()
-            h = hbar.value()
-            v = vbar.value()
+            old_hval = hbar.value()
+            old_vval = vbar.value()
+            area = self.dockWidgetArea(obj)
 
             def restore():
+                dw = view.width() - old_w
+                dh = view.height() - old_h
+                h = old_hval
+                v = old_vval
+                if area == Qt.LeftDockWidgetArea:
+                    h -= dw
+                elif area == Qt.TopDockWidgetArea:
+                    v -= dh
                 hbar.setValue(h)
                 vbar.setValue(v)
 
