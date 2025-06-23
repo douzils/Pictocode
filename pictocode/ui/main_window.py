@@ -910,6 +910,7 @@ class MainWindow(QMainWindow):
         if not hasattr(self, "canvas"):
             return
         logger.debug("Generating debug report")
+
         text = self.canvas.get_debug_report()
         dlg = DebugDialog(text, self)
         dlg.exec_()
