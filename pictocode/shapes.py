@@ -132,12 +132,15 @@ class ResizableMixin:
         """Extend the shape with resize and rotation handles for hit tests."""
         path = super().shape()
         extra = QPainterPath()
+
         for h in self._corner_handles():
+
             if self.handle_shape == "circle":
                 extra.addEllipse(h)
             else:
                 extra.addRect(h)
         for rect in self._side_rects():
+
             extra.addRect(rect)
 
         rot_handle = self._rotation_rect()
@@ -193,7 +196,9 @@ class ResizableMixin:
 
             painter.setBrush(QBrush(Qt.white))
             painter.setPen(QPen(self.handle_color))
+
             for handle in self._corner_handles():
+
                 if self.handle_shape == 'circle':
                     painter.drawEllipse(handle)
                 else:
@@ -210,9 +215,11 @@ class ResizableMixin:
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton and self.isSelected():
             r = self.rect()
+
             corner_handles = self._corner_handles()
             side_rects = self._side_rects()
             rot_handle = self._rotation_rect()
+
             for idx, handle in enumerate(corner_handles):
                 if handle.contains(event.pos()):
                     self._resizing = True
