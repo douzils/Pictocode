@@ -1,4 +1,6 @@
+
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QComboBox
+
 from PyQt5.QtCore import Qt, pyqtSignal
 
 class CornerTabs(QWidget):
@@ -11,6 +13,7 @@ class CornerTabs(QWidget):
         self.setObjectName("corner_tabs")
         if overlay:
             self.setWindowFlags(Qt.SubWindow | Qt.FramelessWindowHint)
+
         layout = QHBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setAlignment(Qt.AlignLeft)
@@ -18,9 +21,11 @@ class CornerTabs(QWidget):
         self.selector.addItems(["Propriétés", "Imports", "Objets", "Logs"])
         layout.addWidget(self.selector)
         layout.addStretch()
+
         self.selector.currentTextChanged.connect(self._emit_change)
         if overlay:
             self.hide()
+
 
     def add_tab(self, widget, label: str):
         """Compatibility shim for the previous API.
