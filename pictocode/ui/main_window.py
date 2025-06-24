@@ -1307,8 +1307,17 @@ class MainWindow(QMainWindow):
         area = self.dockWidgetArea(dock)
         new_dock = self._create_dock(label, area)
         new_dock.setWindowOpacity(0.85)
+        new_dock.setMinimumSize(1, 1)
         try:
             self.splitDockWidget(dock, new_dock, self._split_orientation)
+            if self._split_orientation == Qt.Horizontal:
+                self.resizeDocks(
+                    [dock, new_dock], [dock.width(), 0], Qt.Horizontal
+                )
+            else:
+                self.resizeDocks(
+                    [dock, new_dock], [dock.height(), 0], Qt.Vertical
+                )
         except Exception:
             pass
         return new_dock
@@ -1318,12 +1327,13 @@ class MainWindow(QMainWindow):
         if not new_dock:
             return
         if self._split_orientation == Qt.Horizontal:
-            w1 = max(50, dock.width() - abs(delta.x()))
-            w2 = max(50, abs(delta.x()))
+            w1 = max(1, dock.width() - abs(delta.x()))
+            w2 = max(1, abs(delta.x()))
             self.resizeDocks([dock, new_dock], [w1, w2], Qt.Horizontal)
         else:
-            h1 = max(50, dock.height() - abs(delta.y()))
-            h2 = max(50, abs(delta.y()))
+            h1 = max(1, dock.height() - abs(delta.y()))
+            h2 = max(1, abs(delta.y()))
+
             self.resizeDocks([dock, new_dock], [h1, h2], Qt.Vertical)
 
 
@@ -1341,12 +1351,12 @@ class MainWindow(QMainWindow):
             pass
         # resize according to drag distance
         if self._split_orientation == Qt.Horizontal:
-            w1 = max(50, dock.width() - abs(delta.x()))
-            w2 = max(50, abs(delta.x()))
+            w1 = max(1, dock.width() - abs(delta.x()))
+            w2 = max(1, abs(delta.x()))
             self.resizeDocks([dock, new_dock], [w1, w2], Qt.Horizontal)
         else:
-            h1 = max(50, dock.height() - abs(delta.y()))
-            h2 = max(50, abs(delta.y()))
+            h1 = max(1, dock.height() - abs(delta.y()))
+            h2 = max(1, abs(delta.y()))
             self.resizeDocks([dock, new_dock], [h1, h2], Qt.Vertical)
 
     def set_dock_category(self, dock, label):
