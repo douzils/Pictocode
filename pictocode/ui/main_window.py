@@ -305,6 +305,7 @@ class MainWindow(QMainWindow):
         handle = CornerHandle(container)
         handle_layout.addWidget(handle)
         handle.installEventFilter(self)
+
         lay.addLayout(handle_layout)
         container.setLayout(lay)
         dock.setWidget(container)
