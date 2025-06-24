@@ -274,6 +274,12 @@ class MainWindow(QMainWindow):
         self._load_shortcuts()
         self._set_project_actions_enabled(False)
 
+        # hide docks while on the home page
+        self.inspector_dock.hide()
+        self.imports_dock.hide()
+        self.layout_dock.hide()
+        self.logs_dock.hide()
+
     def _create_dock(self, label, area):
         dock = QDockWidget(label, self)
 
@@ -541,6 +547,7 @@ class MainWindow(QMainWindow):
         self.inspector_dock.setVisible(False)
         self.imports_dock.setVisible(True)
         self.layout_dock.setVisible(True)
+        self.logs_dock.setVisible(True)
 
         self._set_project_actions_enabled(True)
         # bascule sur le canvas
@@ -615,6 +622,7 @@ class MainWindow(QMainWindow):
         self.inspector_dock.setVisible(False)
         self.imports_dock.setVisible(True)
         self.layout_dock.setVisible(True)
+        self.logs_dock.setVisible(True)
 
         self._set_project_actions_enabled(True)
         self._switch_page(self.canvas)
@@ -750,6 +758,8 @@ class MainWindow(QMainWindow):
         self.toolbar.setVisible(False)
         self.inspector_dock.setVisible(False)
         self.imports_dock.setVisible(False)
+        self.layout_dock.setVisible(False)
+        self.logs_dock.setVisible(False)
         self._set_project_actions_enabled(False)
 
     # --- Edit actions -------------------------------------------------
