@@ -96,7 +96,7 @@ class MainWindow(QMainWindow):
         self._corner_start = QPointF()
         self._corner_current_dock = None
         self._split_orientation = Qt.Horizontal
-        self._split_preview_dock = None
+        self._split_preview = None
 
         # Paramètres de l'application
         self.settings = QSettings("pictocode", "pictocode")
@@ -305,7 +305,6 @@ class MainWindow(QMainWindow):
         handle = CornerHandle(container)
         handle_layout.addWidget(handle)
         handle.installEventFilter(self)
-
         lay.addLayout(handle_layout)
         container.setLayout(lay)
         dock.setWidget(container)
@@ -1118,6 +1117,11 @@ class MainWindow(QMainWindow):
             QWidget#corner_handle {{
                 background: transparent;
             }}
+            QWidget#split_preview {{
+                border: 1px dashed {accent.darker(150).name()};
+                background: transparent;
+            }}
+
             """
         )
         self.inspector_dock.setStyleSheet(
@@ -1226,22 +1230,27 @@ class MainWindow(QMainWindow):
             elif event.type() == QEvent.MouseMove and self._corner_dragging and dock is self._corner_dragging_dock:
                 delta = event.globalPos() - self._corner_start
                 self._update_drag_indicator(event.globalPos())
-                if not self._split_preview_dock:
+
+                if not self._split_preview:
                     if abs(delta.x()) > 5 or abs(delta.y()) > 5:
                         if abs(delta.y()) >= abs(delta.x()):
                             self._split_orientation = Qt.Vertical
                         else:
                             self._split_orientation = Qt.Horizontal
-                        self._split_preview_dock = self._start_split_preview(dock)
-                if self._split_preview_dock:
+
+                        self._split_preview = self._start_split_preview(dock)
+                if self._split_preview:
+
                     self._update_split_preview(dock, delta)
                 return True
             elif event.type() == QEvent.MouseButtonRelease and self._corner_dragging and dock is self._corner_dragging_dock:
                 delta = event.globalPos() - self._corner_start
-                if self._split_preview_dock:
+                if self._split_preview:
                     self._update_split_preview(dock, delta)
-                    self._split_preview_dock.setWindowOpacity(1.0)
-                    self._split_preview_dock = None
+                    self._split_preview.hide()
+                    self._split_preview.deleteLater()
+                    self._split_preview = None
+
                 elif abs(delta.x()) > 5 or abs(delta.y()) > 5:
                     if abs(delta.y()) >= abs(delta.x()):
                         self._split_orientation = Qt.Vertical
@@ -1302,40 +1311,38 @@ class MainWindow(QMainWindow):
         self.drag_indicator.hide()
 
     def _start_split_preview(self, dock):
-        label = dock.windowTitle()
-        header = self.dock_headers.get(dock)
-        if header:
-            label = header.selector.currentText()
-        area = self.dockWidgetArea(dock)
-        new_dock = self._create_dock(label, area)
-        new_dock.setWindowOpacity(0.85)
-        new_dock.setMinimumSize(1, 1)
-        try:
-            self.splitDockWidget(dock, new_dock, self._split_orientation)
-            if self._split_orientation == Qt.Horizontal:
-                self.resizeDocks(
-                    [dock, new_dock], [dock.width(), 0], Qt.Horizontal
-                )
-            else:
-                self.resizeDocks(
-                    [dock, new_dock], [dock.height(), 0], Qt.Vertical
-                )
-        except Exception:
-            pass
-        return new_dock
+
+        """Create a floating widget to preview the future dock."""
+        preview = QWidget(self)
+        preview.setObjectName("split_preview")
+        preview.setWindowFlags(Qt.SubWindow | Qt.FramelessWindowHint)
+        preview.setAttribute(Qt.WA_TransparentForMouseEvents)
+        preview.show()
+
+        br = dock.mapTo(self, dock.rect().bottomRight())
+        if self._split_orientation == Qt.Horizontal:
+            top = dock.mapTo(self, dock.rect().topRight()).y()
+            preview.setGeometry(br.x(), top, 1, dock.height())
+        else:
+            left = dock.mapTo(self, dock.rect().bottomLeft()).x()
+            preview.setGeometry(left, br.y(), dock.width(), 1)
+
+        preview.raise_()
+        return preview
 
     def _update_split_preview(self, dock, delta):
-        new_dock = self._split_preview_dock
-        if not new_dock:
+        preview = self._split_preview
+        if not preview:
             return
         if self._split_orientation == Qt.Horizontal:
-            w1 = max(1, dock.width() - abs(delta.x()))
-            w2 = max(1, abs(delta.x()))
-            self.resizeDocks([dock, new_dock], [w1, w2], Qt.Horizontal)
+            width = max(1, abs(delta.x()))
+            br = dock.mapTo(self, dock.rect().bottomRight())
+            top = dock.mapTo(self, dock.rect().topRight()).y()
+            preview.setGeometry(br.x(), top, width, dock.height())
         else:
-            h1 = max(1, dock.height() - abs(delta.y()))
-            h2 = max(1, abs(delta.y()))
-            self.resizeDocks([dock, new_dock], [h1, h2], Qt.Vertical)
+            height = max(1, abs(delta.y()))
+            bl = dock.mapTo(self, dock.rect().bottomLeft())
+            preview.setGeometry(bl.x(), bl.y(), dock.width(), height)
 
 
     def _split_current_dock(self, dock, delta):
