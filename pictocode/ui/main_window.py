@@ -96,6 +96,7 @@ class MainWindow(QMainWindow):
         self._corner_start = QPointF()
         self._corner_current_dock = None
         self._split_orientation = Qt.Horizontal
+        self._split_preview_dock = None
 
         # Paramètres de l'application
         self.settings = QSettings("pictocode", "pictocode")
@@ -1223,25 +1224,27 @@ class MainWindow(QMainWindow):
             elif event.type() == QEvent.MouseMove and self._corner_dragging and dock is self._corner_dragging_dock:
                 delta = event.globalPos() - self._corner_start
                 self._update_drag_indicator(event.globalPos())
-                if abs(delta.x()) > 5 or abs(delta.y()) > 5:
-                    if abs(delta.y()) >= abs(delta.x()):
-                        self._split_orientation = Qt.Vertical
-                    else:
-                        self._split_orientation = Qt.Horizontal
-                    self._split_current_dock(dock, delta)
-                    self._hide_drag_indicator()
-
-                    self._corner_dragging = False
-                    self._corner_dragging_dock = None
+                if not self._split_preview_dock:
+                    if abs(delta.x()) > 5 or abs(delta.y()) > 5:
+                        if abs(delta.y()) >= abs(delta.x()):
+                            self._split_orientation = Qt.Vertical
+                        else:
+                            self._split_orientation = Qt.Horizontal
+                        self._split_preview_dock = self._start_split_preview(dock)
+                if self._split_preview_dock:
+                    self._update_split_preview(dock, delta)
                 return True
             elif event.type() == QEvent.MouseButtonRelease and self._corner_dragging and dock is self._corner_dragging_dock:
                 delta = event.globalPos() - self._corner_start
-                if abs(delta.x()) > 5 or abs(delta.y()) > 5:
+                if self._split_preview_dock:
+                    self._update_split_preview(dock, delta)
+                    self._split_preview_dock.setWindowOpacity(1.0)
+                    self._split_preview_dock = None
+                elif abs(delta.x()) > 5 or abs(delta.y()) > 5:
                     if abs(delta.y()) >= abs(delta.x()):
                         self._split_orientation = Qt.Vertical
                     else:
                         self._split_orientation = Qt.Horizontal
-
                     self._split_current_dock(dock, delta)
                 self._corner_dragging = False
                 self._corner_dragging_dock = None
@@ -1295,6 +1298,33 @@ class MainWindow(QMainWindow):
 
     def _hide_drag_indicator(self):
         self.drag_indicator.hide()
+
+    def _start_split_preview(self, dock):
+        label = dock.windowTitle()
+        header = self.dock_headers.get(dock)
+        if header:
+            label = header.selector.currentText()
+        area = self.dockWidgetArea(dock)
+        new_dock = self._create_dock(label, area)
+        new_dock.setWindowOpacity(0.85)
+        try:
+            self.splitDockWidget(dock, new_dock, self._split_orientation)
+        except Exception:
+            pass
+        return new_dock
+
+    def _update_split_preview(self, dock, delta):
+        new_dock = self._split_preview_dock
+        if not new_dock:
+            return
+        if self._split_orientation == Qt.Horizontal:
+            w1 = max(50, dock.width() - abs(delta.x()))
+            w2 = max(50, abs(delta.x()))
+            self.resizeDocks([dock, new_dock], [w1, w2], Qt.Horizontal)
+        else:
+            h1 = max(50, dock.height() - abs(delta.y()))
+            h2 = max(50, abs(delta.y()))
+            self.resizeDocks([dock, new_dock], [h1, h2], Qt.Vertical)
 
 
     def _split_current_dock(self, dock, delta):
