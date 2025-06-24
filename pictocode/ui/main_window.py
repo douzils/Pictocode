@@ -1237,6 +1237,7 @@ class MainWindow(QMainWindow):
                             self._split_orientation = Qt.Horizontal
                         self._split_preview = self._start_split_preview(dock)
                 if self._split_preview:
+
                     self._update_split_preview(dock, delta)
                 return True
             elif event.type() == QEvent.MouseButtonRelease and self._corner_dragging and dock is self._corner_dragging_dock:
@@ -1247,6 +1248,7 @@ class MainWindow(QMainWindow):
                     self._split_preview.deleteLater()
                     self._split_preview = None
                     self._split_current_dock(dock, delta)
+
                 elif abs(delta.x()) > 5 or abs(delta.y()) > 5:
                     if abs(delta.y()) >= abs(delta.x()):
                         self._split_orientation = Qt.Vertical
