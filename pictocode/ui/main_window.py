@@ -16,6 +16,7 @@ from PyQt5.QtWidgets import (
     QDialog,
     QGraphicsOpacityEffect,
     QToolBar,
+    QHBoxLayout,
 )
 from PyQt5.QtCore import (
     Qt,
@@ -41,6 +42,7 @@ from .shortcut_settings_dialog import ShortcutSettingsDialog
 from .imports_dock import ImportsWidget
 from .layers_dock import LayersWidget
 from .layout_dock import LayoutWidget
+from .corner_handle import CornerHandle
 
 from .logs_dock import LogsWidget
 from .debug_dialog import DebugDialog
@@ -296,6 +298,12 @@ class MainWindow(QMainWindow):
         lay.setContentsMargins(0, 0, 0, 0)
         widget = self.category_widgets[label]
         lay.addWidget(widget)
+        handle_layout = QHBoxLayout()
+        handle_layout.setContentsMargins(0, 0, 2, 2)
+        handle_layout.addStretch()
+        handle = CornerHandle(container)
+        handle_layout.addWidget(handle)
+        lay.addLayout(handle_layout)
         container.setLayout(lay)
         dock.setWidget(container)
         if self.float_docks:
@@ -1103,6 +1111,9 @@ class MainWindow(QMainWindow):
             QWidget#drag_indicator {{
                 background: red;
                 border: 1px solid {accent.darker(150).name()};
+            }}
+            QWidget#corner_handle {{
+                background: transparent;
             }}
             """
         )
