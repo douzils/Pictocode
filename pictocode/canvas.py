@@ -142,6 +142,10 @@ class CanvasWidget(QGraphicsView):
         self.scene.itemAdded.connect(self._schedule_scene_changed)
         self.scene.itemRemoved.connect(self._schedule_scene_changed)
 
+        # Hide default scroll bars for a cleaner look
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+
         # Timer to throttle layer updates when many changes occur
         self._scene_changed_timer = QTimer(self)
         self._scene_changed_timer.setSingleShot(True)
