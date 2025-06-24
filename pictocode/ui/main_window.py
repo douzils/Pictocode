@@ -1333,6 +1333,7 @@ class MainWindow(QMainWindow):
         else:
             h1 = max(1, dock.height() - abs(delta.y()))
             h2 = max(1, abs(delta.y()))
+
             self.resizeDocks([dock, new_dock], [h1, h2], Qt.Vertical)
 
 
