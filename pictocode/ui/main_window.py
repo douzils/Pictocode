@@ -1316,6 +1316,7 @@ class MainWindow(QMainWindow):
         br = dock.mapTo(self, dock.rect().bottomRight())
         preview.setGeometry(br.x(), br.y(), 1, 1)
         preview.show()
+
         preview.raise_()
         return preview
 
