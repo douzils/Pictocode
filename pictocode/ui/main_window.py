@@ -1121,6 +1121,7 @@ class MainWindow(QMainWindow):
                 border: 1px dashed {accent.darker(150).name()};
                 background: transparent;
             }}
+
             """
         )
         self.inspector_dock.setStyleSheet(
@@ -1229,14 +1230,17 @@ class MainWindow(QMainWindow):
             elif event.type() == QEvent.MouseMove and self._corner_dragging and dock is self._corner_dragging_dock:
                 delta = event.globalPos() - self._corner_start
                 self._update_drag_indicator(event.globalPos())
+
                 if not self._split_preview:
                     if abs(delta.x()) > 5 or abs(delta.y()) > 5:
                         if abs(delta.y()) >= abs(delta.x()):
                             self._split_orientation = Qt.Vertical
                         else:
                             self._split_orientation = Qt.Horizontal
+
                         self._split_preview = self._start_split_preview(dock)
                 if self._split_preview:
+
                     self._update_split_preview(dock, delta)
                 return True
             elif event.type() == QEvent.MouseButtonRelease and self._corner_dragging and dock is self._corner_dragging_dock:
@@ -1246,6 +1250,7 @@ class MainWindow(QMainWindow):
                     self._split_preview.hide()
                     self._split_preview.deleteLater()
                     self._split_preview = None
+
                 elif abs(delta.x()) > 5 or abs(delta.y()) > 5:
                     if abs(delta.y()) >= abs(delta.x()):
                         self._split_orientation = Qt.Vertical
@@ -1306,6 +1311,7 @@ class MainWindow(QMainWindow):
         self.drag_indicator.hide()
 
     def _start_split_preview(self, dock):
+
         """Create a floating widget to preview the future dock."""
         preview = QWidget(self)
         preview.setObjectName("split_preview")
