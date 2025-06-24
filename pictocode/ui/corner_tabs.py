@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QWidget, QHBoxLayout, QComboBox
+from PyQt5.QtWidgets import QWidget, QHBoxLayout, QComboBox, QMenu, QDockWidget
 from PyQt5.QtCore import Qt, pyqtSignal
 
 class CornerTabs(QWidget):
@@ -21,6 +21,18 @@ class CornerTabs(QWidget):
         self.selector.currentTextChanged.connect(self._emit_change)
         if overlay:
             self.hide()
+
+    def contextMenuEvent(self, event):
+        """Show a menu allowing the dock to be closed."""
+        menu = QMenu(self)
+        remove = menu.addAction("Supprimer")
+        chosen = menu.exec_(event.globalPos())
+        if chosen == remove:
+            dock = self.parent()
+            if isinstance(dock, QDockWidget):
+                dock.close()
+        else:
+            super().contextMenuEvent(event)
 
     def add_tab(self, widget, label: str):
         """Compatibility shim for the previous API.
