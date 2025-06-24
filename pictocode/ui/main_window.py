@@ -1237,7 +1237,6 @@ class MainWindow(QMainWindow):
                             self._split_orientation = Qt.Horizontal
                         self._split_preview = self._start_split_preview(dock)
                 if self._split_preview:
-
                     self._update_split_preview(dock, delta)
                 return True
             elif event.type() == QEvent.MouseButtonRelease and self._corner_dragging and dock is self._corner_dragging_dock:
@@ -1248,7 +1247,6 @@ class MainWindow(QMainWindow):
                     self._split_preview.deleteLater()
                     self._split_preview = None
                     self._split_current_dock(dock, delta)
-
                 elif abs(delta.x()) > 5 or abs(delta.y()) > 5:
                     if abs(delta.y()) >= abs(delta.x()):
                         self._split_orientation = Qt.Vertical
@@ -1314,15 +1312,10 @@ class MainWindow(QMainWindow):
         preview.setObjectName("split_preview")
         preview.setWindowFlags(Qt.SubWindow | Qt.FramelessWindowHint)
         preview.setAttribute(Qt.WA_TransparentForMouseEvents)
-        preview.show()
 
         br = dock.mapTo(self, dock.rect().bottomRight())
-        if self._split_orientation == Qt.Horizontal:
-            top = dock.mapTo(self, dock.rect().topRight()).y()
-            preview.setGeometry(br.x(), top, 1, dock.height())
-        else:
-            left = dock.mapTo(self, dock.rect().bottomLeft()).x()
-            preview.setGeometry(left, br.y(), dock.width(), 1)
+        preview.setGeometry(br.x(), br.y(), 1, 1)
+        preview.show()
 
         preview.raise_()
         return preview
@@ -1331,15 +1324,21 @@ class MainWindow(QMainWindow):
         preview = self._split_preview
         if not preview:
             return
-        if self._split_orientation == Qt.Horizontal:
-            width = max(1, abs(delta.x()))
-            br = dock.mapTo(self, dock.rect().bottomRight())
-            top = dock.mapTo(self, dock.rect().topRight()).y()
-            preview.setGeometry(br.x(), top, width, dock.height())
+        br = dock.mapTo(self, dock.rect().bottomRight())
+        x = br.x()
+        y = br.y()
+        w = max(1, abs(delta.x()))
+        h = max(1, abs(delta.y()))
+        if delta.x() < 0:
+            x -= w
+        if delta.y() < 0:
+            y -= h
+        preview.setGeometry(x, y, w, h)
+
+        if abs(delta.y()) >= abs(delta.x()):
+            self._split_orientation = Qt.Vertical
         else:
-            height = max(1, abs(delta.y()))
-            bl = dock.mapTo(self, dock.rect().bottomLeft())
-            preview.setGeometry(bl.x(), bl.y(), dock.width(), height)
+            self._split_orientation = Qt.Horizontal
 
 
     def _split_current_dock(self, dock, delta):
@@ -1351,18 +1350,30 @@ class MainWindow(QMainWindow):
         area = self.dockWidgetArea(dock)
         new_dock = self._create_dock(label, area)
         try:
-            self.splitDockWidget(dock, new_dock, self._split_orientation)
+            if self._split_orientation == Qt.Horizontal:
+                if delta.x() >= 0:
+                    self.splitDockWidget(dock, new_dock, Qt.Horizontal)
+                    w1 = max(1, dock.width() - abs(delta.x()))
+                    w2 = max(1, abs(delta.x()))
+                    self.resizeDocks([dock, new_dock], [w1, w2], Qt.Horizontal)
+                else:
+                    self.splitDockWidget(new_dock, dock, Qt.Horizontal)
+                    w1 = max(1, abs(delta.x()))
+                    w2 = max(1, dock.width() - abs(delta.x()))
+                    self.resizeDocks([new_dock, dock], [w1, w2], Qt.Horizontal)
+            else:
+                if delta.y() >= 0:
+                    self.splitDockWidget(dock, new_dock, Qt.Vertical)
+                    h1 = max(1, dock.height() - abs(delta.y()))
+                    h2 = max(1, abs(delta.y()))
+                    self.resizeDocks([dock, new_dock], [h1, h2], Qt.Vertical)
+                else:
+                    self.splitDockWidget(new_dock, dock, Qt.Vertical)
+                    h1 = max(1, abs(delta.y()))
+                    h2 = max(1, dock.height() - abs(delta.y()))
+                    self.resizeDocks([new_dock, dock], [h1, h2], Qt.Vertical)
         except Exception:
             pass
-        # resize according to drag distance
-        if self._split_orientation == Qt.Horizontal:
-            w1 = max(1, dock.width() - abs(delta.x()))
-            w2 = max(1, abs(delta.x()))
-            self.resizeDocks([dock, new_dock], [w1, w2], Qt.Horizontal)
-        else:
-            h1 = max(1, dock.height() - abs(delta.y()))
-            h2 = max(1, abs(delta.y()))
-            self.resizeDocks([dock, new_dock], [h1, h2], Qt.Vertical)
 
     def set_dock_category(self, dock, label):
         widget = self.category_widgets.get(label)
