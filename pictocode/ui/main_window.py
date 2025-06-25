@@ -26,6 +26,8 @@ from PyQt5.QtCore import (
     QEvent,
     QPointF,
     QPoint,
+    QRect,
+    QSize,
 )
 from .corner_tabs import CornerTabs
 from PyQt5.QtGui import QPalette, QColor, QKeySequence, QCursor
@@ -1306,6 +1308,27 @@ class MainWindow(QMainWindow):
     def _hide_drag_indicator(self):
         self.drag_indicator.hide()
 
+    def show_corner_tabs(self):
+        """Display a floating tab selector near the cursor."""
+        if not self.corner_tabs:
+            self.corner_tabs = CornerTabs(self, overlay=True)
+        pos = self.mapFromGlobal(QCursor.pos())
+        self.corner_tabs.move(pos.x(), pos.y())
+        self.corner_tabs.show()
+        self.corner_tabs.raise_()
+
+    def _animate_new_dock(self, dock, start_pos):
+        """Animate ``dock`` growing from ``start_pos``."""
+        end_rect = dock.geometry()
+        start_rect = QRect(start_pos, QSize(1, 1))
+        dock.setGeometry(start_rect)
+        dock.show()
+        anim = QPropertyAnimation(dock, b"geometry", self)
+        anim.setDuration(150)
+        anim.setStartValue(start_rect)
+        anim.setEndValue(end_rect)
+        anim.start(QPropertyAnimation.DeleteWhenStopped)
+
     def _start_split_preview(self, dock):
         """Create a floating widget to preview the future dock."""
         preview = QWidget(self)
@@ -1349,6 +1372,7 @@ class MainWindow(QMainWindow):
             label = header.selector.currentText()
         area = self.dockWidgetArea(dock)
         new_dock = self._create_dock(label, area)
+        new_dock.hide()
         try:
             if self._split_orientation == Qt.Horizontal:
                 if delta.x() >= 0:
@@ -1374,6 +1398,8 @@ class MainWindow(QMainWindow):
                     self.resizeDocks([new_dock, dock], [h1, h2], Qt.Vertical)
         except Exception:
             pass
+        br = dock.mapTo(self, dock.rect().bottomRight())
+        self._animate_new_dock(new_dock, br)
 
     def set_dock_category(self, dock, label):
         widget = self.category_widgets.get(label)
