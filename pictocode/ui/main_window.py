@@ -97,6 +97,7 @@ class MainWindow(QMainWindow):
         self._corner_current_dock = None
         self._split_orientation = Qt.Horizontal
         self._split_preview = None
+        self._animations = []
 
         # Paramètres de l'application
         self.settings = QSettings("pictocode", "pictocode")
@@ -1306,6 +1307,43 @@ class MainWindow(QMainWindow):
     def _hide_drag_indicator(self):
         self.drag_indicator.hide()
 
+    def show_corner_tabs(self):
+        """Display a floating tab selector near the cursor."""
+        if not self.corner_tabs:
+            self.corner_tabs = CornerTabs(self, overlay=True)
+        pos = self.mapFromGlobal(QCursor.pos())
+        self.corner_tabs.move(pos.x(), pos.y())
+        self.corner_tabs.show()
+        self.corner_tabs.raise_()
+
+    def _animate_new_dock(self, dock, orientation):
+        """Animate ``dock`` growing along ``orientation``."""
+        dock.show()
+        if orientation == Qt.Horizontal:
+            end_value = dock.width()
+            dock.setMaximumWidth(1)
+            anim_prop = b"maximumWidth"
+        else:
+            end_value = dock.height()
+            dock.setMaximumHeight(1)
+            anim_prop = b"maximumHeight"
+        anim = QPropertyAnimation(dock, anim_prop, self)
+        anim.setDuration(150)
+        anim.setStartValue(1)
+        anim.setEndValue(end_value)
+        self._animations.append(anim)
+
+        def _cleanup():
+            if anim in self._animations:
+                self._animations.remove(anim)
+            if orientation == Qt.Horizontal:
+                dock.setMaximumWidth(end_value)
+            else:
+                dock.setMaximumHeight(end_value)
+
+        anim.finished.connect(_cleanup)
+        anim.start()
+
     def _start_split_preview(self, dock):
         """Create a floating widget to preview the future dock."""
         preview = QWidget(self)
@@ -1349,6 +1387,7 @@ class MainWindow(QMainWindow):
             label = header.selector.currentText()
         area = self.dockWidgetArea(dock)
         new_dock = self._create_dock(label, area)
+        new_dock.hide()
         try:
             if self._split_orientation == Qt.Horizontal:
                 if delta.x() >= 0:
@@ -1374,6 +1413,7 @@ class MainWindow(QMainWindow):
                     self.resizeDocks([new_dock, dock], [h1, h2], Qt.Vertical)
         except Exception:
             pass
+        self._animate_new_dock(new_dock, self._split_orientation)
 
     def set_dock_category(self, dock, label):
         widget = self.category_widgets.get(label)
