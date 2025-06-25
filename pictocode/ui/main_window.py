@@ -26,6 +26,8 @@ from PyQt5.QtCore import (
     QEvent,
     QPointF,
     QPoint,
+    QRect,
+    QSize,
 )
 from .corner_tabs import CornerTabs
 from PyQt5.QtGui import QPalette, QColor, QKeySequence, QCursor
@@ -96,8 +98,10 @@ class MainWindow(QMainWindow):
         self._corner_start = QPointF()
         self._corner_current_dock = None
         self._split_orientation = Qt.Horizontal
+
         self._split_preview = None  # legacy, unused
         self._split_start_size = None
+
 
         # Paramètres de l'application
         self.settings = QSettings("pictocode", "pictocode")
@@ -1328,12 +1332,15 @@ class MainWindow(QMainWindow):
         dock._anim = anim
 
         def _cleanup():
+
             if orientation == Qt.Horizontal:
                 dock.setMaximumWidth(end_value)
             else:
                 dock.setMaximumHeight(end_value)
+
             if hasattr(dock, "_anim"):
                 delattr(dock, "_anim")
+
 
         anim.finished.connect(_cleanup)
         anim.start()
