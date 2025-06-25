@@ -99,6 +99,7 @@ class MainWindow(QMainWindow):
         self._corner_current_dock = None
         self._split_orientation = Qt.Horizontal
         self._split_preview = None
+        self._animations = []
 
         # Paramètres de l'application
         self.settings = QSettings("pictocode", "pictocode")
@@ -1327,7 +1328,12 @@ class MainWindow(QMainWindow):
         anim.setDuration(150)
         anim.setStartValue(start_rect)
         anim.setEndValue(end_rect)
-        anim.start(QPropertyAnimation.DeleteWhenStopped)
+        self._animations.append(anim)
+        def _cleanup():
+            if anim in self._animations:
+                self._animations.remove(anim)
+        anim.finished.connect(_cleanup)
+        anim.start()
 
     def _start_split_preview(self, dock):
         """Create a floating widget to preview the future dock."""
