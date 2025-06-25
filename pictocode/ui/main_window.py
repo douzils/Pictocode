@@ -1318,20 +1318,32 @@ class MainWindow(QMainWindow):
         self.corner_tabs.show()
         self.corner_tabs.raise_()
 
-    def _animate_new_dock(self, dock, start_pos):
-        """Animate ``dock`` growing from ``start_pos``."""
-        end_rect = dock.geometry()
-        start_rect = QRect(start_pos, QSize(1, 1))
-        dock.setGeometry(start_rect)
+    def _animate_new_dock(self, dock, orientation):
+        """Animate ``dock`` growing along ``orientation``."""
         dock.show()
-        anim = QPropertyAnimation(dock, b"geometry", self)
+        if orientation == Qt.Horizontal:
+            end_value = dock.width()
+            dock.setMaximumWidth(1)
+            anim_prop = b"maximumWidth"
+        else:
+            end_value = dock.height()
+            dock.setMaximumHeight(1)
+            anim_prop = b"maximumHeight"
+        anim = QPropertyAnimation(dock, anim_prop, self)
         anim.setDuration(150)
-        anim.setStartValue(start_rect)
-        anim.setEndValue(end_rect)
+        anim.setStartValue(1)
+        anim.setEndValue(end_value)
         self._animations.append(anim)
+
         def _cleanup():
             if anim in self._animations:
                 self._animations.remove(anim)
+            if orientation == Qt.Horizontal:
+                dock.setMaximumWidth(end_value)
+            else:
+                dock.setMaximumHeight(end_value)
+
+
         anim.finished.connect(_cleanup)
         anim.start()
 
@@ -1404,8 +1416,8 @@ class MainWindow(QMainWindow):
                     self.resizeDocks([new_dock, dock], [h1, h2], Qt.Vertical)
         except Exception:
             pass
-        br = dock.mapTo(self, dock.rect().bottomRight())
-        self._animate_new_dock(new_dock, br)
+        self._animate_new_dock(new_dock, self._split_orientation)
+
 
     def set_dock_category(self, dock, label):
         widget = self.category_widgets.get(label)
