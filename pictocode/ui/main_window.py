@@ -26,6 +26,8 @@ from PyQt5.QtCore import (
     QEvent,
     QPointF,
     QPoint,
+    QRect,
+    QSize,
 )
 from .corner_tabs import CornerTabs
 from PyQt5.QtGui import QPalette, QColor, QKeySequence, QCursor
@@ -1341,6 +1343,7 @@ class MainWindow(QMainWindow):
             else:
                 dock.setMaximumHeight(end_value)
 
+
         anim.finished.connect(_cleanup)
         anim.start()
 
@@ -1414,6 +1417,7 @@ class MainWindow(QMainWindow):
         except Exception:
             pass
         self._animate_new_dock(new_dock, self._split_orientation)
+
 
     def set_dock_category(self, dock, label):
         widget = self.category_widgets.get(label)
