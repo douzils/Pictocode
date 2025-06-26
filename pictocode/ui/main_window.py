@@ -178,6 +178,41 @@ class MainWindow(QMainWindow):
         self.dock_headers = {}
         self.dock_current_widget = {}
 
+        # état courant
+        self.current_project_path = None
+        self.unsaved_changes = False
+        self._current_anim = None
+
+        # Paramètres de thème et raccourcis
+        self.current_theme = self.settings.value("theme", "Light")
+        self.accent_color = QColor(self.settings.value("accent_color", "#0078d7"))
+        self.font_size = int(self.settings.value("font_size", 10))
+        self.menu_color = QColor(self.settings.value("menu_color", self.accent_color.name()))
+        self.toolbar_color = QColor(self.settings.value("toolbar_color", self.accent_color.name()))
+        self.dock_color = QColor(self.settings.value("dock_color", self.accent_color.name()))
+        self.dock_title_colors = {
+            name: QColor(
+                self.settings.value(
+                    f"dock_title_color_{name}", self.toolbar_color.name()
+                )
+            )
+            for name in ("Propriétés", "Imports", "Objets", "Logs")
+        }
+        self.flag_active_color = QColor(self.settings.value("flag_active_color", "#0078d7"))
+        self.flag_inactive_color = QColor(self.settings.value("flag_inactive_color", "#3a3f44"))
+        self.menu_font_size = int(self.settings.value("menu_font_size", self.font_size))
+        self.toolbar_font_size = int(self.settings.value("toolbar_font_size", self.font_size))
+        self.dock_font_size = int(self.settings.value("dock_font_size", self.font_size))
+        self.show_splash = self.settings.value("show_splash", True, type=bool)
+        self.handle_size = int(self.settings.value("handle_size", 12))
+        self.rotation_offset = int(self.settings.value("rotation_offset", 20))
+        self.handle_color = QColor(self.settings.value("handle_color", "#000000"))
+        self.rotation_handle_color = QColor(
+            self.settings.value("rotation_handle_color", "#ff0000")
+        )
+        # taille par défaut des onglets dépliés
+        self.default_dock_size = int(self.settings.value("default_dock_size", 200))
+
         self.layers = LayersWidget(self)
         self.toolbar.addWidget(self.layers)
 
@@ -244,59 +279,6 @@ class MainWindow(QMainWindow):
             "grid_size": "",
             "export_pdf": "",
         }
-
-        # état courant
-        self.current_project_path = None
-        self.unsaved_changes = False
-        self._current_anim = None
-
-        # Paramètres de thème et raccourcis
-        self.current_theme = self.settings.value("theme", "Light")
-        self.accent_color = QColor(
-            self.settings.value("accent_color", "#0078d7"))
-        self.font_size = int(self.settings.value("font_size", 10))
-        self.menu_color = QColor(
-            self.settings.value("menu_color", self.accent_color.name())
-        )
-        self.toolbar_color = QColor(
-            self.settings.value("toolbar_color", self.accent_color.name())
-        )
-        self.dock_color = QColor(
-            self.settings.value("dock_color", self.accent_color.name())
-        )
-        self.dock_title_colors = {
-            name: QColor(
-                self.settings.value(
-                    f"dock_title_color_{name}", self.toolbar_color.name()
-                )
-            )
-            for name in ("Propriétés", "Imports", "Objets", "Logs")
-        }
-        self.flag_active_color = QColor(
-            self.settings.value("flag_active_color", "#0078d7")
-        )
-        self.flag_inactive_color = QColor(
-            self.settings.value("flag_inactive_color", "#3a3f44")
-        )
-        self.menu_font_size = int(self.settings.value(
-            "menu_font_size", self.font_size))
-        self.toolbar_font_size = int(
-            self.settings.value("toolbar_font_size", self.font_size)
-        )
-        self.dock_font_size = int(self.settings.value(
-            "dock_font_size", self.font_size))
-        self.show_splash = self.settings.value("show_splash", True, type=bool)
-        self.handle_size = int(self.settings.value("handle_size", 12))
-        self.rotation_offset = int(self.settings.value("rotation_offset", 20))
-        self.handle_color = QColor(
-            self.settings.value("handle_color", "#000000"))
-        self.rotation_handle_color = QColor(
-            self.settings.value("rotation_handle_color", "#ff0000")
-        )
-        # taille par défaut des onglets dépliés
-        self.default_dock_size = int(
-            self.settings.value("default_dock_size", 200)
-        )
         self.apply_theme(
             self.current_theme,
             self.accent_color,
