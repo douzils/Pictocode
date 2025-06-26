@@ -1,26 +1,32 @@
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QComboBox, QMenu, QDockWidget
 from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtGui import QColor
 
 class CornerTabs(QWidget):
     """Dropdown widget used as dock header or floating overlay."""
 
     tab_selected = pyqtSignal(str)
 
-    def __init__(self, parent=None, overlay=False):
+    def __init__(self, parent=None, overlay=False, color: QColor | None = None):
         super().__init__(parent)
+        self._color = QColor(color) if color else None
         self.setObjectName("corner_tabs")
         if overlay:
             self.setWindowFlags(Qt.SubWindow | Qt.FramelessWindowHint)
         layout = QHBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
         layout.setAlignment(Qt.AlignLeft)
         self.selector = QComboBox(self)
         self.selector.addItems(["Propriétés", "Imports", "Objets", "Logs"])
         layout.addWidget(self.selector)
         layout.addStretch()
+        self.setFixedHeight(self.selector.sizeHint().height())
         self.selector.currentTextChanged.connect(self._emit_change)
         if overlay:
             self.hide()
+        if self._color:
+            self.set_color(self._color)
 
     def mouseDoubleClickEvent(self, event):
         dock = self.parent()
@@ -51,5 +57,10 @@ class CornerTabs(QWidget):
 
     def _emit_change(self, text):
         self.tab_selected.emit(text)
+
+    def set_color(self, color: QColor):
+        """Apply a background color to the tab bar."""
+        self._color = QColor(color)
+        self.setStyleSheet(f"#corner_tabs {{ background: {self._color.name()}; }}")
 
 
