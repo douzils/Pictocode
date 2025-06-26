@@ -73,6 +73,7 @@ class CornerTabs(QWidget):
         style = (
             f"#corner_tabs {{ background: {self._color.name()}; }}"\
             f"QComboBox#corner_selector {{ border: none; padding: 0 6px;"\
+
             f" background: transparent; color: {text}; }}"\
             "QComboBox#corner_selector::drop-down { border: none; }"
         )
