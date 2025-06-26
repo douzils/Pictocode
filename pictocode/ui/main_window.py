@@ -331,7 +331,7 @@ class MainWindow(QMainWindow):
         handle = CornerHandle(header)
         handle.installEventFilter(self)
         header.layout().addWidget(handle)
-        header.layout().setAlignment(handle, Qt.AlignRight | Qt.AlignBottom)
+        header.layout().setAlignment(handle, Qt.AlignRight | Qt.AlignVCenter)
         if self.float_docks:
             dock.setAllowedAreas(Qt.NoDockWidgetArea)
         else:
