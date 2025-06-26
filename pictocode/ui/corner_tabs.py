@@ -1,6 +1,11 @@
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QComboBox, QMenu, QDockWidget
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QColor
+from ..utils import get_contrast_color
+
+from ..utils import get_contrast_color
+
+from ..utils import get_contrast_color
 
 from ..utils import get_contrast_color
 
