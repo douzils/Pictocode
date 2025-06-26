@@ -20,7 +20,13 @@ class CornerTabs(QWidget):
         layout.setAlignment(Qt.AlignLeft)
         self.selector = QComboBox(self)
         self.selector.setObjectName("corner_selector")
-        self.selector.addItems(["Propriétés", "Imports", "Objets", "Logs"])
+        self.selector.addItems([
+            "Plan de travail",
+            "Propriétés",
+            "Imports",
+            "Objets",
+            "Logs",
+        ])
         layout.addWidget(self.selector)
         layout.addStretch()
         self.selector.currentTextChanged.connect(self._emit_change)

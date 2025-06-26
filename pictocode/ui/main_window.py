@@ -170,6 +170,7 @@ class MainWindow(QMainWindow):
         self.layout = LayoutWidget(self)
         self.logs_widget = LogsWidget(self)
         self.category_widgets = {
+            "Plan de travail": self.canvas,
             "Propriétés": self.inspector,
             "Imports": self.imports,
             "Objets": self.layout,
@@ -197,7 +198,13 @@ class MainWindow(QMainWindow):
                     f"dock_title_color_{name}", self.toolbar_color.name()
                 )
             )
-            for name in ("Propriétés", "Imports", "Objets", "Logs")
+            for name in (
+                "Plan de travail",
+                "Propriétés",
+                "Imports",
+                "Objets",
+                "Logs",
+            )
         }
         self.flag_active_color = QColor(self.settings.value("flag_active_color", "#0078d7"))
         self.flag_inactive_color = QColor(self.settings.value("flag_inactive_color", "#3a3f44"))
@@ -314,9 +321,6 @@ class MainWindow(QMainWindow):
         )
         dock.setTitleBarWidget(header)
         frame = self._dock_frame_width(dock) * 2
-        combo_size = header.selector.sizeHint()
-        dock.setMinimumHeight(combo_size.height() + frame)
-        dock.setMinimumWidth(combo_size.width() + frame)
 
         container = QWidget()
         lay = QVBoxLayout(container)
@@ -1277,19 +1281,13 @@ class MainWindow(QMainWindow):
                         self._collapse_dock(new_dock, self._split_orientation)
                     else:
                         if self._split_orientation == Qt.Horizontal:
-                            new_dock.setMinimumWidth(self._header_min_size(new_dock, Qt.Horizontal))
-                            new_dock.setMaximumWidth(QWIDGETSIZE_MAX)
                             dock_header = self.dock_headers.get(dock)
                             if dock_header:
                                 dock.setMinimumWidth(dock_header.selector.sizeHint().width() + 2 * self._dock_frame_width(dock))
-                            dock.setMaximumWidth(QWIDGETSIZE_MAX)
                         else:
-                            new_dock.setMinimumHeight(self._header_min_size(new_dock, Qt.Vertical))
-                            new_dock.setMaximumHeight(QWIDGETSIZE_MAX)
                             dock_header = self.dock_headers.get(dock)
                             if dock_header:
                                 dock.setMinimumHeight(dock_header.selector.sizeHint().height() + 2 * self._dock_frame_width(dock))
-                            dock.setMaximumHeight(QWIDGETSIZE_MAX)
                 elif self._split_preview:
                     func = getattr(self, "_update_split_preview", None)
                     if func:
