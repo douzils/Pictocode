@@ -1138,6 +1138,9 @@ class MainWindow(QMainWindow):
                 f"QDockWidget {{ background: {dock_color.name()}; border: none; }}"
             )
             dock.setStyleSheet(style)
+            dock.setStyleSheet(
+                f"QDockWidget {{ background: {dock_color.name()}; border: none; }}"
+            )
             widget = dock.widget()
             if widget:
                 widget.setStyleSheet(f"font-size: {dock_font_size}pt;")
