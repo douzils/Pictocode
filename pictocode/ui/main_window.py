@@ -17,6 +17,7 @@ from PyQt5.QtWidgets import (
     QGraphicsOpacityEffect,
     QToolBar,
     QHBoxLayout,
+    QWIDGETSIZE_MAX,
 )
 from PyQt5.QtCore import (
     Qt,
@@ -98,10 +99,8 @@ class MainWindow(QMainWindow):
         self._corner_start = QPointF()
         self._corner_current_dock = None
         self._split_orientation = Qt.Horizontal
-
         self._split_preview = None  # legacy, unused
         self._split_start_size = None
-
 
         # Paramètres de l'application
         self.settings = QSettings("pictocode", "pictocode")
@@ -1332,15 +1331,12 @@ class MainWindow(QMainWindow):
         dock._anim = anim
 
         def _cleanup():
-
             if orientation == Qt.Horizontal:
                 dock.setMaximumWidth(end_value)
             else:
                 dock.setMaximumHeight(end_value)
-
             if hasattr(dock, "_anim"):
                 delattr(dock, "_anim")
-
 
         anim.finished.connect(_cleanup)
         anim.start()
@@ -1353,6 +1349,11 @@ class MainWindow(QMainWindow):
             label = header.selector.currentText()
         area = self.dockWidgetArea(dock)
         new_dock = self._create_dock(label, area)
+        new_dock.hide()
+        if self._split_orientation == Qt.Horizontal:
+            new_dock.setMaximumWidth(1)
+        else:
+            new_dock.setMaximumHeight(1)
         self._split_start_size = (dock.width(), dock.height())
         try:
             if self._split_orientation == Qt.Horizontal:
@@ -1371,6 +1372,11 @@ class MainWindow(QMainWindow):
                     self.resizeDocks([new_dock, dock], [1, dock.height() - 1], Qt.Vertical)
         except Exception:
             pass
+        new_dock.show()
+        if self._split_orientation == Qt.Horizontal:
+            new_dock.setMaximumWidth(QWIDGETSIZE_MAX)
+        else:
+            new_dock.setMaximumHeight(QWIDGETSIZE_MAX)
         self._corner_current_dock = new_dock
 
     def _update_live_split(self, dock, delta):
