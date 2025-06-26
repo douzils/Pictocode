@@ -1319,12 +1319,39 @@ class MainWindow(QMainWindow):
     def _hide_drag_indicator(self):
         self.drag_indicator.hide()
 
-    def _start_split_preview(self, dock):
-        """Create a floating widget to preview the future dock."""
-        preview = QWidget(self)
-        preview.setObjectName("split_preview")
-        preview.setWindowFlags(Qt.SubWindow | Qt.FramelessWindowHint)
-        preview.setAttribute(Qt.WA_TransparentForMouseEvents)
+    def show_corner_tabs(self):
+        """Display a floating tab selector near the cursor."""
+        if not self.corner_tabs:
+            self.corner_tabs = CornerTabs(self, overlay=True)
+        pos = self.mapFromGlobal(QCursor.pos())
+        self.corner_tabs.move(pos.x(), pos.y())
+        self.corner_tabs.show()
+        self.corner_tabs.raise_()
+
+    def _animate_new_dock(self, dock, orientation):
+        """Animate ``dock`` growing along ``orientation``."""
+        dock.show()
+        if orientation == Qt.Horizontal:
+            end_value = dock.width()
+            dock.setMaximumWidth(1)
+            anim_prop = b"maximumWidth"
+        else:
+            end_value = dock.height()
+            dock.setMaximumHeight(1)
+            anim_prop = b"maximumHeight"
+        anim = QPropertyAnimation(dock, anim_prop, self)
+        anim.setDuration(150)
+        anim.setStartValue(1)
+        anim.setEndValue(end_value)
+        dock._anim = anim
+
+        def _cleanup():
+            if orientation == Qt.Horizontal:
+                dock.setMaximumWidth(end_value)
+            else:
+                dock.setMaximumHeight(end_value)
+            if hasattr(dock, "_anim"):
+                delattr(dock, "_anim")
 
         br = dock.mapTo(self, dock.rect().bottomRight())
         preview.setGeometry(br.x(), br.y(), 1, 1)
@@ -1332,25 +1359,221 @@ class MainWindow(QMainWindow):
         preview.raise_()
         return preview
 
-    def _update_split_preview(self, dock, delta):
-        preview = self._split_preview
-        if not preview:
+    def _update_live_split(self, dock, delta):
+        """Resize docks while the user drags."""
+        new = self._corner_current_dock
+        if not new or self._split_start_size is None:
             return
-        br = dock.mapTo(self, dock.rect().bottomRight())
-        x = br.x()
-        y = br.y()
-        w = max(1, abs(delta.x()))
-        h = max(1, abs(delta.y()))
-        if delta.x() < 0:
-            x -= w
-        if delta.y() < 0:
-            y -= h
-        preview.setGeometry(x, y, w, h)
-
-        if abs(delta.y()) >= abs(delta.x()):
-            self._split_orientation = Qt.Vertical
+        if self._split_orientation == Qt.Horizontal:
+            w2 = max(1, abs(delta.x()))
+            w1 = max(1, self._split_start_size[0] - w2)
+            if delta.x() >= 0:
+                self.resizeDocks([dock, new], [w1, w2], Qt.Horizontal)
+            else:
+                self.resizeDocks([new, dock], [w2, w1], Qt.Horizontal)
         else:
-            self._split_orientation = Qt.Horizontal
+            h2 = max(1, abs(delta.y()))
+            h1 = max(1, self._split_start_size[1] - h2)
+            if delta.y() >= 0:
+                self.resizeDocks([dock, new], [h1, h2], Qt.Vertical)
+            else:
+                self.resizeDocks([new, dock], [h2, h1], Qt.Vertical)
+
+    def _collapse_dock(self, dock, orientation):
+        dock._collapsed = True
+        dock._collapse_orientation = orientation
+        if dock.widget():
+            dock.widget().hide()
+        header = self.dock_headers.get(dock)
+        if orientation == Qt.Horizontal:
+            w = header.sizeHint().width()
+            dock.setMinimumWidth(w)
+            dock.setMaximumWidth(w)
+        else:
+            h = header.sizeHint().height()
+            dock.setMinimumHeight(h)
+            dock.setMaximumHeight(h)
+
+    def _expand_dock(self, dock):
+        orientation = getattr(dock, "_collapse_orientation", Qt.Horizontal)
+        if orientation == Qt.Horizontal:
+            dock.setMinimumWidth(self.default_dock_size)
+            dock.setMaximumWidth(QWIDGETSIZE_MAX)
+        else:
+            dock.setMinimumHeight(self.default_dock_size)
+            dock.setMaximumHeight(QWIDGETSIZE_MAX)
+        if dock.widget():
+            dock.widget().show()
+        dock._collapsed = False
+
+    def _toggle_dock(self, dock):
+        if getattr(dock, "_collapsed", False):
+            self._expand_dock(dock)
+        else:
+            orientation = getattr(dock, "_collapse_orientation", self._split_orientation)
+            self._collapse_dock(dock, orientation)
+
+    def show_corner_tabs(self):
+        """Display a floating tab selector near the cursor."""
+        if not self.corner_tabs:
+            self.corner_tabs = CornerTabs(self, overlay=True)
+        pos = self.mapFromGlobal(QCursor.pos())
+        self.corner_tabs.move(pos.x(), pos.y())
+        self.corner_tabs.show()
+        self.corner_tabs.raise_()
+
+    def _animate_new_dock(self, dock, orientation, delta):
+        """Animate ``dock`` growing from the drag start."""
+        dock.show()
+        end_geom = dock.geometry()
+        if orientation == Qt.Horizontal:
+            if delta.x() >= 0:
+                start = QRect(end_geom.left(), end_geom.top(), 1, end_geom.height())
+            else:
+                start = QRect(end_geom.right() - 1, end_geom.top(), 1, end_geom.height())
+        else:
+            if delta.y() >= 0:
+                start = QRect(end_geom.left(), end_geom.top(), end_geom.width(), 1)
+            else:
+                start = QRect(end_geom.left(), end_geom.bottom() - 1, end_geom.width(), 1)
+        dock.setGeometry(start)
+        anim = QPropertyAnimation(dock, b"geometry", self)
+        anim.setDuration(150)
+        anim.setStartValue(start)
+        anim.setEndValue(end_geom)
+        if not hasattr(self, "_animations"):
+            self._animations = []
+        self._animations.append(anim)
+
+        def cleanup():
+            if anim in self._animations:
+                self._animations.remove(anim)
+
+        anim.finished.connect(cleanup)
+        anim.start()
+
+
+    def _collapse_dock(self, dock, orientation):
+        dock._collapsed = True
+        dock._collapse_orientation = orientation
+        if dock.widget():
+            dock.widget().hide()
+        header = self.dock_headers.get(dock)
+        if orientation == Qt.Horizontal:
+            w = header.sizeHint().width()
+            dock.setMinimumWidth(w)
+            dock.setMaximumWidth(w)
+        else:
+            h = header.sizeHint().height()
+            dock.setMinimumHeight(h)
+            dock.setMaximumHeight(h)
+
+    def _expand_dock(self, dock):
+        orientation = getattr(dock, "_collapse_orientation", Qt.Horizontal)
+        if orientation == Qt.Horizontal:
+            dock.setMinimumWidth(self.default_dock_size)
+            dock.setMaximumWidth(QWIDGETSIZE_MAX)
+        else:
+            dock.setMinimumHeight(self.default_dock_size)
+            dock.setMaximumHeight(QWIDGETSIZE_MAX)
+        if dock.widget():
+            dock.widget().show()
+        dock._collapsed = False
+
+    def _toggle_dock(self, dock):
+        if getattr(dock, "_collapsed", False):
+            self._expand_dock(dock)
+        else:
+            orientation = getattr(dock, "_collapse_orientation", self._split_orientation)
+            self._collapse_dock(dock, orientation)
+
+    def show_corner_tabs(self):
+        """Display a floating tab selector near the cursor."""
+        if not self.corner_tabs:
+            self.corner_tabs = CornerTabs(self, overlay=True)
+        pos = self.mapFromGlobal(QCursor.pos())
+        self.corner_tabs.move(pos.x(), pos.y())
+        self.corner_tabs.show()
+        self.corner_tabs.raise_()
+
+    def _animate_new_dock(self, dock, orientation, delta):
+        """Animate ``dock`` growing from the drag start."""
+        dock.show()
+        end_geom = dock.geometry()
+        if orientation == Qt.Horizontal:
+            if delta.x() >= 0:
+                start = QRect(end_geom.left(), end_geom.top(), 1, end_geom.height())
+            else:
+                start = QRect(end_geom.right() - 1, end_geom.top(), 1, end_geom.height())
+        else:
+            if delta.y() >= 0:
+                start = QRect(end_geom.left(), end_geom.top(), end_geom.width(), 1)
+            else:
+                start = QRect(end_geom.left(), end_geom.bottom() - 1, end_geom.width(), 1)
+        dock.setGeometry(start)
+        anim = QPropertyAnimation(dock, b"geometry", self)
+        anim.setDuration(150)
+        anim.setStartValue(start)
+        anim.setEndValue(end_geom)
+        if not hasattr(self, "_animations"):
+            self._animations = []
+        self._animations.append(anim)
+
+        def cleanup():
+            if anim in self._animations:
+                self._animations.remove(anim)
+
+        anim.finished.connect(cleanup)
+        anim.start()
+
+    def _begin_live_split(self, dock, delta):
+        """Create the new dock when the user starts dragging."""
+        label = dock.windowTitle()
+        header = self.dock_headers.get(dock)
+        if header:
+            label = header.selector.currentText()
+        area = self.dockWidgetArea(dock)
+        new_dock = self._create_dock(label, area)
+        self._split_start_size = (dock.width(), dock.height())
+        try:
+            if self._split_orientation == Qt.Horizontal:
+                if delta.x() >= 0:
+                    self.splitDockWidget(dock, new_dock, Qt.Horizontal)
+                    self.resizeDocks([dock, new_dock], [dock.width() - 1, 1], Qt.Horizontal)
+                else:
+                    self.splitDockWidget(new_dock, dock, Qt.Horizontal)
+                    self.resizeDocks([new_dock, dock], [1, dock.width() - 1], Qt.Horizontal)
+            else:
+                if delta.y() >= 0:
+                    self.splitDockWidget(dock, new_dock, Qt.Vertical)
+                    self.resizeDocks([dock, new_dock], [dock.height() - 1, 1], Qt.Vertical)
+                else:
+                    self.splitDockWidget(new_dock, dock, Qt.Vertical)
+                    self.resizeDocks([new_dock, dock], [1, dock.height() - 1], Qt.Vertical)
+        except Exception:
+            pass
+        self._corner_current_dock = new_dock
+
+    def _update_live_split(self, dock, delta):
+        """Resize docks while the user drags."""
+        new = self._corner_current_dock
+        if not new or self._split_start_size is None:
+            return
+        if self._split_orientation == Qt.Horizontal:
+            w2 = max(1, abs(delta.x()))
+            w1 = max(1, self._split_start_size[0] - w2)
+            if delta.x() >= 0:
+                self.resizeDocks([dock, new], [w1, w2], Qt.Horizontal)
+            else:
+                self.resizeDocks([new, dock], [w2, w1], Qt.Horizontal)
+        else:
+            h2 = max(1, abs(delta.y()))
+            h1 = max(1, self._split_start_size[1] - h2)
+            if delta.y() >= 0:
+                self.resizeDocks([dock, new], [h1, h2], Qt.Vertical)
+            else:
+                self.resizeDocks([new, dock], [h2, h1], Qt.Vertical)
+
 
     def _collapse_dock(self, dock, orientation):
         dock._collapsed = True
