@@ -27,6 +27,8 @@ from PyQt5.QtCore import (
     QEvent,
     QPointF,
     QPoint,
+    QRect,
+    QSize,
 )
 from .corner_tabs import CornerTabs
 from PyQt5.QtGui import QPalette, QColor, QKeySequence, QCursor
