@@ -15,11 +15,13 @@ class CornerTabs(QWidget):
             self.setWindowFlags(Qt.SubWindow | Qt.FramelessWindowHint)
         layout = QHBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
         layout.setAlignment(Qt.AlignLeft)
         self.selector = QComboBox(self)
         self.selector.addItems(["Propriétés", "Imports", "Objets", "Logs"])
         layout.addWidget(self.selector)
         layout.addStretch()
+        self.setFixedHeight(self.selector.sizeHint().height())
         self.selector.currentTextChanged.connect(self._emit_change)
         if overlay:
             self.hide()

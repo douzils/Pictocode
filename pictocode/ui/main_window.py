@@ -1132,20 +1132,24 @@ class MainWindow(QMainWindow):
             }}
             """
         )
-        self.inspector_dock.setStyleSheet(
-            f"QDockWidget {{ background: {dock_color.name()}; }}"
-        )
-
-        self.inspector.setStyleSheet(
-            f"font-size: {dock_font_size}pt;"
-        )
-        for dock in (self.imports_dock,):
+        self.inspector.setStyleSheet(f"font-size: {dock_font_size}pt;")
+        for dock in self.docks:
             dock.setStyleSheet(
+<<<<<<< codex/améliorer-la-gestion-des-onglets-et-menus
+                f"QDockWidget {{ background: {dock_color.name()}; border: none; }}"
+            )
+            widget = dock.widget()
+            if widget:
+                widget.setStyleSheet(f"font-size: {dock_font_size}pt;")
+                if hasattr(widget, "apply_theme"):
+                    widget.apply_theme()
+=======
                 f"QDockWidget {{ background: {dock_color.name()}; }}")
         for widget in (self.imports,):
             widget.setStyleSheet(f"font-size: {dock_font_size}pt;")
             if hasattr(widget, "apply_theme"):
                 widget.apply_theme()
+>>>>>>> main
         for dock, header in self.dock_headers.items():
             col = self.dock_title_colors.get(dock.windowTitle(), toolbar_color)
             header.set_color(col)
