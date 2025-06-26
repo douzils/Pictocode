@@ -1130,17 +1130,19 @@ class MainWindow(QMainWindow):
             QWidget#corner_handle {{
                 background: transparent;
             }}
+            QDockWidget::title {{
+                padding: 0px;
+                margin: 0px;
+            }}
             """
         )
         self.inspector.setStyleSheet(f"font-size: {dock_font_size}pt;")
         for dock in self.docks:
             style = (
                 f"QDockWidget {{ background: {dock_color.name()}; border: none; }}"
+                "QDockWidget::title { padding: 0px; margin: 0px; }"
             )
             dock.setStyleSheet(style)
-            dock.setStyleSheet(
-                f"QDockWidget {{ background: {dock_color.name()}; border: none; }}"
-            )
             widget = dock.widget()
             if widget:
                 widget.setStyleSheet(f"font-size: {dock_font_size}pt;")
@@ -2782,20 +2784,19 @@ class MainWindow(QMainWindow):
         if prev and prev is not dock:
             cont = prev.widget()
             lay = cont.layout()
-            if lay.count() > 1:
-                old = lay.itemAt(1).widget()
+            if lay.count():
+                old = lay.itemAt(0).widget()
                 if old is widget:
                     old.setParent(None)
-                lay.insertWidget(1, QWidget())
             self.dock_current_widget[prev] = None
         # insert into new dock
         cont = dock.widget()
         lay = cont.layout()
-        if lay.count() > 1:
-            old = lay.itemAt(1).widget()
+        if lay.count():
+            old = lay.itemAt(0).widget()
             if old:
                 old.setParent(None)
-        lay.insertWidget(1, widget)
+        lay.insertWidget(0, widget)
         self.widget_docks[widget] = dock
         self.dock_current_widget[dock] = widget
         dock.setWindowTitle(label)
