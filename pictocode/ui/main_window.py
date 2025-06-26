@@ -330,10 +330,9 @@ class MainWindow(QMainWindow):
         lay.addWidget(widget)
         container.setLayout(lay)
 
-        handle = CornerHandle(header)
+        handle = CornerHandle()
         handle.installEventFilter(self)
-        header.layout().addWidget(handle)
-        header.layout().setAlignment(handle, Qt.AlignRight | Qt.AlignBottom)
+        header.set_handle(handle)
         dock.setWidget(container)
 
         handle = CornerHandle(header)

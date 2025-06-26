@@ -5,6 +5,8 @@ from ..utils import get_contrast_color
 
 from ..utils import get_contrast_color
 
+from ..utils import get_contrast_color
+
 class CornerTabs(QWidget):
     """Dropdown widget used as dock header or floating overlay."""
 
@@ -32,6 +34,7 @@ class CornerTabs(QWidget):
         layout.addWidget(self.selector)
         layout.addStretch()
         self.selector.currentTextChanged.connect(self._emit_change)
+        self._handle = None
         if self._color:
             self.set_color(self._color)
         else:
@@ -86,5 +89,25 @@ class CornerTabs(QWidget):
         )
         self.setStyleSheet(style)
         self.setFixedHeight(self.selector.sizeHint().height())
+
+    # ------------------------------------------------------------------
+    # Resize handle support
+    def set_handle(self, handle: QWidget):
+        """Attach ``handle`` and keep it aligned to the bottom-right."""
+        self._handle = handle
+        handle.setParent(self)
+        handle.raise_()
+        self._position_handle()
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._position_handle()
+
+    def _position_handle(self):
+        if self._handle:
+            self._handle.move(
+                self.width() - self._handle.width(),
+                self.height() - self._handle.height(),
+            )
 
 
