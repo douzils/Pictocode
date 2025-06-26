@@ -332,6 +332,10 @@ class MainWindow(QMainWindow):
         lay.addWidget(widget)
         container.setLayout(lay)
 
+        combo_size = header.selector.sizeHint()
+        dock.setMinimumHeight(combo_size.height() + frame)
+        dock.setMinimumWidth(combo_size.width() + frame)
+
         handle = CornerHandle()
         handle.installEventFilter(self)
         header.set_handle(handle)
