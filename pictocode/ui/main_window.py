@@ -2782,20 +2782,19 @@ class MainWindow(QMainWindow):
         if prev and prev is not dock:
             cont = prev.widget()
             lay = cont.layout()
-            if lay.count() > 1:
-                old = lay.itemAt(1).widget()
+            if lay.count():
+                old = lay.itemAt(0).widget()
                 if old is widget:
                     old.setParent(None)
-                lay.insertWidget(1, QWidget())
             self.dock_current_widget[prev] = None
         # insert into new dock
         cont = dock.widget()
         lay = cont.layout()
-        if lay.count() > 1:
-            old = lay.itemAt(1).widget()
+        if lay.count():
+            old = lay.itemAt(0).widget()
             if old:
                 old.setParent(None)
-        lay.insertWidget(1, widget)
+        lay.insertWidget(0, widget)
         self.widget_docks[widget] = dock
         self.dock_current_widget[dock] = widget
         dock.setWindowTitle(label)

@@ -1,6 +1,7 @@
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QComboBox, QMenu, QDockWidget
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QColor
+from ..utils import get_contrast_color
 
 class CornerTabs(QWidget):
     """Dropdown widget used as dock header or floating overlay."""
@@ -18,6 +19,7 @@ class CornerTabs(QWidget):
         layout.setSpacing(0)
         layout.setAlignment(Qt.AlignLeft)
         self.selector = QComboBox(self)
+        self.selector.setObjectName("corner_selector")
         self.selector.addItems(["Propriétés", "Imports", "Objets", "Logs"])
         layout.addWidget(self.selector)
         layout.addStretch()
@@ -27,6 +29,12 @@ class CornerTabs(QWidget):
             self.hide()
         if self._color:
             self.set_color(self._color)
+        else:
+            base_style = (
+                "QComboBox#corner_selector { border: none; padding: 2px 6px; }"
+                "QComboBox#corner_selector::drop-down { border: none; }"
+            )
+            self.setStyleSheet(base_style)
 
     def mouseDoubleClickEvent(self, event):
         dock = self.parent()
@@ -61,6 +69,13 @@ class CornerTabs(QWidget):
     def set_color(self, color: QColor):
         """Apply a background color to the tab bar."""
         self._color = QColor(color)
-        self.setStyleSheet(f"#corner_tabs {{ background: {self._color.name()}; }}")
+        text = get_contrast_color(self._color)
+        style = (
+            f"#corner_tabs {{ background: {self._color.name()}; }}"\
+            f"QComboBox#corner_selector {{ border: none; padding: 2px 6px;"\
+            f" background: transparent; color: {text}; }}"\
+            "QComboBox#corner_selector::drop-down { border: none; }"
+        )
+        self.setStyleSheet(style)
 
 
