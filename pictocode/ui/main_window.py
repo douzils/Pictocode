@@ -98,7 +98,8 @@ class MainWindow(QMainWindow):
         self._corner_dragging_dock = None
         self._corner_start = QPointF()
         self._split_orientation = Qt.Horizontal
-        self._split_preview = None
+        self._split_preview = None  # legacy, unused
+        self._split_start_size = None
 
         # Paramètres de l'application
         self.settings = QSettings("pictocode", "pictocode")
@@ -1229,25 +1230,23 @@ class MainWindow(QMainWindow):
                     return True
             elif event.type() == QEvent.MouseMove and self._corner_dragging and dock is self._corner_dragging_dock:
                 delta = event.globalPos() - self._corner_start
-                self._update_drag_indicator(event.globalPos())
-                if not self._split_preview:
+                if self._corner_current_dock is None:
+                    self._update_drag_indicator(event.globalPos())
                     if abs(delta.x()) > 5 or abs(delta.y()) > 5:
                         if abs(delta.y()) >= abs(delta.x()):
                             self._split_orientation = Qt.Vertical
                         else:
                             self._split_orientation = Qt.Horizontal
-                        self._split_preview = self._start_split_preview(dock)
-                if self._split_preview:
-                    self._update_split_preview(dock, delta)
+                        self._begin_live_split(dock, delta)
+                        self._hide_drag_indicator()
+                else:
+                    self._update_live_split(dock, delta)
                 return True
             elif event.type() == QEvent.MouseButtonRelease and self._corner_dragging and dock is self._corner_dragging_dock:
                 delta = event.globalPos() - self._corner_start
-                if self._split_preview:
-                    self._update_split_preview(dock, delta)
-                    self._split_preview.hide()
-                    self._split_preview.deleteLater()
-                    self._split_preview = None
-                    self._split_current_dock(dock, delta)
+                if self._corner_current_dock is not None:
+                    self._update_live_split(dock, delta)
+                    self._corner_current_dock = None
                 elif abs(delta.x()) > 5 or abs(delta.y()) > 5:
                     if abs(delta.y()) >= abs(delta.x()):
                         self._split_orientation = Qt.Vertical
@@ -1307,12 +1306,39 @@ class MainWindow(QMainWindow):
     def _hide_drag_indicator(self):
         self.drag_indicator.hide()
 
-    def _start_split_preview(self, dock):
-        """Create a floating widget to preview the future dock."""
-        preview = QWidget(self)
-        preview.setObjectName("split_preview")
-        preview.setWindowFlags(Qt.SubWindow | Qt.FramelessWindowHint)
-        preview.setAttribute(Qt.WA_TransparentForMouseEvents)
+    def show_corner_tabs(self):
+        """Display a floating tab selector near the cursor."""
+        if not self.corner_tabs:
+            self.corner_tabs = CornerTabs(self, overlay=True)
+        pos = self.mapFromGlobal(QCursor.pos())
+        self.corner_tabs.move(pos.x(), pos.y())
+        self.corner_tabs.show()
+        self.corner_tabs.raise_()
+
+    def _animate_new_dock(self, dock, orientation):
+        """Animate ``dock`` growing along ``orientation``."""
+        dock.show()
+        if orientation == Qt.Horizontal:
+            end_value = dock.width()
+            dock.setMaximumWidth(1)
+            anim_prop = b"maximumWidth"
+        else:
+            end_value = dock.height()
+            dock.setMaximumHeight(1)
+            anim_prop = b"maximumHeight"
+        anim = QPropertyAnimation(dock, anim_prop, self)
+        anim.setDuration(150)
+        anim.setStartValue(1)
+        anim.setEndValue(end_value)
+        dock._anim = anim
+
+        def _cleanup():
+            if orientation == Qt.Horizontal:
+                dock.setMaximumWidth(end_value)
+            else:
+                dock.setMaximumHeight(end_value)
+            if hasattr(dock, "_anim"):
+                delattr(dock, "_anim")
 
         br = dock.mapTo(self, dock.rect().bottomRight())
         preview.setGeometry(br.x(), br.y(), 1, 1)
@@ -1320,25 +1346,25 @@ class MainWindow(QMainWindow):
         preview.raise_()
         return preview
 
-    def _update_split_preview(self, dock, delta):
-        preview = self._split_preview
-        if not preview:
+    def _update_live_split(self, dock, delta):
+        """Resize docks while the user drags."""
+        new = self._corner_current_dock
+        if not new or self._split_start_size is None:
             return
-        br = dock.mapTo(self, dock.rect().bottomRight())
-        x = br.x()
-        y = br.y()
-        w = max(1, abs(delta.x()))
-        h = max(1, abs(delta.y()))
-        if delta.x() < 0:
-            x -= w
-        if delta.y() < 0:
-            y -= h
-        preview.setGeometry(x, y, w, h)
-
-        if abs(delta.y()) >= abs(delta.x()):
-            self._split_orientation = Qt.Vertical
+        if self._split_orientation == Qt.Horizontal:
+            w2 = max(1, abs(delta.x()))
+            w1 = max(1, self._split_start_size[0] - w2)
+            if delta.x() >= 0:
+                self.resizeDocks([dock, new], [w1, w2], Qt.Horizontal)
+            else:
+                self.resizeDocks([new, dock], [w2, w1], Qt.Horizontal)
         else:
-            self._split_orientation = Qt.Horizontal
+            h2 = max(1, abs(delta.y()))
+            h1 = max(1, self._split_start_size[1] - h2)
+            if delta.y() >= 0:
+                self.resizeDocks([dock, new], [h1, h2], Qt.Vertical)
+            else:
+                self.resizeDocks([new, dock], [h2, h1], Qt.Vertical)
 
     def _collapse_dock(self, dock, orientation):
         dock._collapsed = True
