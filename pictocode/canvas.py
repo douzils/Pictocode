@@ -665,10 +665,7 @@ class CanvasWidget(QGraphicsView):
 
     def mouseMoveEvent(self, event):
         scene_pos = self.mapToScene(event.pos())
-        logger.debug(
-            f"Mouse move to {scene_pos.x():.1f},{scene_pos.y():.1f} "
-            f"buttons={int(event.buttons())} tool={self.current_tool}"
-        )
+        # omit verbose mouse move logs to reduce noise
 
         if self.current_tool == "pan":
             super().mouseMoveEvent(event)
