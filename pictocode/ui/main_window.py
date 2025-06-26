@@ -61,6 +61,7 @@ class MainWindow(QMainWindow):
     # ensure drag related attributes exist before __init__ runs
     _corner_current_dock = None
     _split_current_dock = None  # backward compatibility with older versions
+    _split_start_size = 0
     def __init__(self):
         super().__init__()
         logger.debug("MainWindow initialized")
@@ -105,7 +106,7 @@ class MainWindow(QMainWindow):
         self._split_current_dock = None
         self._split_orientation = Qt.Horizontal
         self._split_preview = None
-        self._split_start_size = None
+        self._split_start_size = 0
 
         # Paramètres de l'application
         self.settings = QSettings("pictocode", "pictocode")
@@ -1243,23 +1244,34 @@ class MainWindow(QMainWindow):
                             self._split_orientation = Qt.Vertical
                         else:
                             self._split_orientation = Qt.Horizontal
-                        self._begin_live_split(dock, delta)
-                        self._hide_drag_indicator()
-                else:
+                        self._split_preview = self._start_split_preview(dock)
+                if self._corner_current_dock:
                     self._update_live_split(dock, delta)
+                elif self._split_preview:
+                    if max(abs(delta.x()), abs(delta.y())) > 20:
+                        self._begin_live_split(dock, delta)
+                    else:
+                        self._update_split_preview(dock, delta)
                 return True
             elif event.type() == QEvent.MouseButtonRelease and self._corner_dragging and dock is self._corner_dragging_dock:
                 delta = event.globalPos() - self._corner_start
-                if getattr(self, "_corner_current_dock", None) is not None:
+                if self._corner_current_dock:
                     self._update_live_split(dock, delta)
-                    if self._split_orientation == Qt.Horizontal:
-                        size = abs(delta.x())
-                    else:
-                        size = abs(delta.y())
-                    if size < self.MIN_DOCK_SIZE:
-                        self._collapse_dock(self._corner_current_dock, self._split_orientation)
+                    if self._split_preview:
+                        self._split_preview.hide()
+                        self._split_preview.deleteLater()
+                        self._split_preview = None
+                    new_dock = self._corner_current_dock
                     self._corner_current_dock = None
-                    self._split_start_size = None
+                    size = new_dock.width() if self._split_orientation == Qt.Horizontal else new_dock.height()
+                    if size < self.MIN_DOCK_SIZE:
+                        self._collapse_dock(new_dock, self._split_orientation)
+                elif self._split_preview:
+                    self._update_split_preview(dock, delta)
+                    self._split_preview.hide()
+                    self._split_preview.deleteLater()
+                    self._split_preview = None
+                    self._split_current_dock(dock, delta)
                 elif abs(delta.x()) > 5 or abs(delta.y()) > 5:
                     if abs(delta.y()) >= abs(delta.x()):
                         self._split_orientation = Qt.Vertical
@@ -1319,39 +1331,12 @@ class MainWindow(QMainWindow):
     def _hide_drag_indicator(self):
         self.drag_indicator.hide()
 
-    def show_corner_tabs(self):
-        """Display a floating tab selector near the cursor."""
-        if not self.corner_tabs:
-            self.corner_tabs = CornerTabs(self, overlay=True)
-        pos = self.mapFromGlobal(QCursor.pos())
-        self.corner_tabs.move(pos.x(), pos.y())
-        self.corner_tabs.show()
-        self.corner_tabs.raise_()
-
-    def _animate_new_dock(self, dock, orientation):
-        """Animate ``dock`` growing along ``orientation``."""
-        dock.show()
-        if orientation == Qt.Horizontal:
-            end_value = dock.width()
-            dock.setMaximumWidth(1)
-            anim_prop = b"maximumWidth"
-        else:
-            end_value = dock.height()
-            dock.setMaximumHeight(1)
-            anim_prop = b"maximumHeight"
-        anim = QPropertyAnimation(dock, anim_prop, self)
-        anim.setDuration(150)
-        anim.setStartValue(1)
-        anim.setEndValue(end_value)
-        dock._anim = anim
-
-        def _cleanup():
-            if orientation == Qt.Horizontal:
-                dock.setMaximumWidth(end_value)
-            else:
-                dock.setMaximumHeight(end_value)
-            if hasattr(dock, "_anim"):
-                delattr(dock, "_anim")
+    def _start_split_preview(self, dock):
+        """Create a floating widget to preview the future dock."""
+        preview = QWidget(self)
+        preview.setObjectName("split_preview")
+        preview.setWindowFlags(Qt.SubWindow | Qt.FramelessWindowHint)
+        preview.setAttribute(Qt.WA_TransparentForMouseEvents)
 
         tl = dock.mapTo(self, dock.rect().topLeft())
         preview.setGeometry(tl.x(), tl.y(), dock.width(), dock.height())
@@ -1375,7 +1360,6 @@ class MainWindow(QMainWindow):
         new = self._corner_current_dock
         if not new or self._split_start_size is None:
             return
-
         if abs(delta.y()) >= abs(delta.x()):
             self._split_orientation = Qt.Vertical
         else:
@@ -1733,6 +1717,153 @@ class MainWindow(QMainWindow):
         anim.start()
 
 
+        header = self.dock_headers.get(dock)
+        if self._split_orientation == Qt.Horizontal:
+            min_size = header.sizeHint().width()
+            total = dock.width()
+            size = max(min_size, min(abs(delta.x()), total - min_size))
+            if delta.x() >= 0:
+                preview.old_area.setGeometry(0, 0, total - size, dock.height())
+                preview.new_area.setGeometry(total - size, 0, size, dock.height())
+            else:
+                preview.new_area.setGeometry(0, 0, size, dock.height())
+                preview.old_area.setGeometry(size, 0, total - size, dock.height())
+        else:
+            min_size = header.sizeHint().height()
+            total = dock.height()
+            size = max(min_size, min(abs(delta.y()), total - min_size))
+            if delta.y() >= 0:
+                preview.old_area.setGeometry(0, 0, dock.width(), total - size)
+                preview.new_area.setGeometry(0, total - size, dock.width(), size)
+            else:
+                preview.new_area.setGeometry(0, 0, dock.width(), size)
+                preview.old_area.setGeometry(0, size, dock.width(), total - size)
+
+    def _collapse_dock(self, dock, orientation):
+        dock._collapsed = True
+        dock._collapse_orientation = orientation
+        if dock.widget():
+            dock.widget().hide()
+        header = self.dock_headers.get(dock)
+        if orientation == Qt.Horizontal:
+            w = header.sizeHint().width()
+            dock.setMinimumWidth(w)
+            dock.setMaximumWidth(w)
+        else:
+            h = header.sizeHint().height()
+            dock.setMinimumHeight(h)
+            dock.setMaximumHeight(h)
+
+    def _expand_dock(self, dock):
+        orientation = getattr(dock, "_collapse_orientation", Qt.Horizontal)
+        if orientation == Qt.Horizontal:
+            dock.setMinimumWidth(self.default_dock_size)
+            dock.setMaximumWidth(QWIDGETSIZE_MAX)
+        else:
+            dock.setMinimumHeight(self.default_dock_size)
+            dock.setMaximumHeight(QWIDGETSIZE_MAX)
+        if dock.widget():
+            dock.widget().show()
+        dock._collapsed = False
+
+    def _toggle_dock(self, dock):
+        if getattr(dock, "_collapsed", False):
+            self._expand_dock(dock)
+        else:
+            orientation = getattr(dock, "_collapse_orientation", self._split_orientation)
+            self._collapse_dock(dock, orientation)
+
+    def show_corner_tabs(self):
+        """Display a floating tab selector near the cursor."""
+        if not self.corner_tabs:
+            self.corner_tabs = CornerTabs(self, overlay=True)
+        pos = self.mapFromGlobal(QCursor.pos())
+        self.corner_tabs.move(pos.x(), pos.y())
+        self.corner_tabs.show()
+        self.corner_tabs.raise_()
+
+    def _animate_new_dock(self, dock, orientation, delta):
+        """Animate ``dock`` growing from the drag start."""
+        end_geom = dock.geometry()
+        if orientation == Qt.Horizontal:
+            if delta.x() >= 0:
+                start = QRect(end_geom.left(), end_geom.top(), 1, end_geom.height())
+            else:
+                start = QRect(end_geom.right() - 1, end_geom.top(), 1, end_geom.height())
+        else:
+            if delta.y() >= 0:
+                start = QRect(end_geom.left(), end_geom.top(), end_geom.width(), 1)
+            else:
+                start = QRect(end_geom.left(), end_geom.bottom() - 1, end_geom.width(), 1)
+        dock.setGeometry(start)
+        dock.show()
+        anim = QPropertyAnimation(dock, b"geometry", self)
+        anim.setDuration(150)
+        anim.setStartValue(start)
+        anim.setEndValue(end_geom)
+        if not hasattr(self, "_animations"):
+            self._animations = []
+        self._animations.append(anim)
+
+        def cleanup():
+            if anim in self._animations:
+                self._animations.remove(anim)
+
+        anim.finished.connect(cleanup)
+        anim.start()
+
+    def _begin_live_split(self, dock, delta):
+        """Create a new dock at minimal size for live resizing."""
+        label = dock.windowTitle()
+        header = self.dock_headers.get(dock)
+        if header:
+            label = header.selector.currentText()
+        area = self.dockWidgetArea(dock)
+        new_dock = self._create_dock(label, area)
+        new_dock.hide()
+        if self._split_orientation == Qt.Horizontal:
+            if delta.x() >= 0:
+                self.splitDockWidget(dock, new_dock, Qt.Horizontal)
+            else:
+                self.splitDockWidget(new_dock, dock, Qt.Horizontal)
+            self.resizeDocks([dock, new_dock], [dock.width(), 1], Qt.Horizontal)
+        else:
+            if delta.y() >= 0:
+                self.splitDockWidget(dock, new_dock, Qt.Vertical)
+            else:
+                self.splitDockWidget(new_dock, dock, Qt.Vertical)
+            self.resizeDocks([dock, new_dock], [dock.height(), 1], Qt.Vertical)
+        new_dock.show()
+        self._corner_current_dock = new_dock
+        self._split_start_size = dock.width() if self._split_orientation == Qt.Horizontal else dock.height()
+
+    def _update_live_split(self, dock, delta):
+        """Resize the newly created dock while dragging."""
+        new_dock = self._corner_current_dock
+        if not new_dock:
+            return
+        header = self.dock_headers.get(dock)
+        if self._split_orientation == Qt.Horizontal:
+            min_size = header.sizeHint().width()
+            total = self._split_start_size
+            size = max(min_size, min(abs(delta.x()), total - min_size))
+            if delta.x() >= 0:
+                self.resizeDocks([dock, new_dock], [total - size, size], Qt.Horizontal)
+            else:
+                self.resizeDocks([new_dock, dock], [size, total - size], Qt.Horizontal)
+        else:
+            min_size = header.sizeHint().height()
+            total = self._split_start_size
+            size = max(min_size, min(abs(delta.y()), total - min_size))
+            if delta.y() >= 0:
+                self.resizeDocks([dock, new_dock], [total - size, size], Qt.Vertical)
+            else:
+                self.resizeDocks([new_dock, dock], [size, total - size], Qt.Vertical)
+        preview = self._split_preview
+        if preview:
+            self._update_split_preview(dock, delta)
+
+
 
     def _split_current_dock(self, dock, delta):
         """Create a new dock based on the drag delta."""
@@ -1744,7 +1875,6 @@ class MainWindow(QMainWindow):
         new_dock = self._create_dock(label, area)
         new_dock.hide()
         header = self.dock_headers.get(dock)
-
         try:
             if self._split_orientation == Qt.Horizontal:
                 min_size = header.sizeHint().width()
