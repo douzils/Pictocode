@@ -1428,7 +1428,11 @@ class MainWindow(QMainWindow):
         if getattr(dock, "_collapsed", False):
             self._expand_dock(dock)
         else:
-            orientation = getattr(dock, "_collapse_orientation", self._split_orientation)
+            area = self.dockWidgetArea(dock)
+            if area in (Qt.LeftDockWidgetArea, Qt.RightDockWidgetArea):
+                orientation = Qt.Horizontal
+            else:
+                orientation = Qt.Vertical
             self._collapse_dock(dock, orientation)
 
     def show_corner_tabs(self):
@@ -1552,7 +1556,11 @@ class MainWindow(QMainWindow):
         if getattr(dock, "_collapsed", False):
             self._expand_dock(dock)
         else:
-            orientation = getattr(dock, "_collapse_orientation", self._split_orientation)
+            area = self.dockWidgetArea(dock)
+            if area in (Qt.LeftDockWidgetArea, Qt.RightDockWidgetArea):
+                orientation = Qt.Horizontal
+            else:
+                orientation = Qt.Vertical
             self._collapse_dock(dock, orientation)
 
     def show_corner_tabs(self):
@@ -1698,7 +1706,11 @@ class MainWindow(QMainWindow):
         if getattr(dock, "_collapsed", False):
             self._expand_dock(dock)
         else:
-            orientation = getattr(dock, "_collapse_orientation", self._split_orientation)
+            area = self.dockWidgetArea(dock)
+            if area in (Qt.LeftDockWidgetArea, Qt.RightDockWidgetArea):
+                orientation = Qt.Horizontal
+            else:
+                orientation = Qt.Vertical
             self._collapse_dock(dock, orientation)
 
     def show_corner_tabs(self):
@@ -1793,7 +1805,11 @@ class MainWindow(QMainWindow):
         if getattr(dock, "_collapsed", False):
             self._expand_dock(dock)
         else:
-            orientation = getattr(dock, "_collapse_orientation", self._split_orientation)
+            area = self.dockWidgetArea(dock)
+            if area in (Qt.LeftDockWidgetArea, Qt.RightDockWidgetArea):
+                orientation = Qt.Horizontal
+            else:
+                orientation = Qt.Vertical
             self._collapse_dock(dock, orientation)
 
     def show_corner_tabs(self):
@@ -1939,7 +1955,11 @@ class MainWindow(QMainWindow):
         if getattr(dock, "_collapsed", False):
             self._expand_dock(dock)
         else:
-            orientation = getattr(dock, "_collapse_orientation", self._split_orientation)
+            area = self.dockWidgetArea(dock)
+            if area in (Qt.LeftDockWidgetArea, Qt.RightDockWidgetArea):
+                orientation = Qt.Horizontal
+            else:
+                orientation = Qt.Vertical
             self._collapse_dock(dock, orientation)
 
     def show_corner_tabs(self):
@@ -2087,7 +2107,11 @@ class MainWindow(QMainWindow):
         if getattr(dock, "_collapsed", False):
             self._expand_dock(dock)
         else:
-            orientation = getattr(dock, "_collapse_orientation", self._split_orientation)
+            area = self.dockWidgetArea(dock)
+            if area in (Qt.LeftDockWidgetArea, Qt.RightDockWidgetArea):
+                orientation = Qt.Horizontal
+            else:
+                orientation = Qt.Vertical
             self._collapse_dock(dock, orientation)
 
     def show_corner_tabs(self):
@@ -2240,7 +2264,11 @@ class MainWindow(QMainWindow):
         if getattr(dock, "_collapsed", False):
             self._expand_dock(dock)
         else:
-            orientation = getattr(dock, "_collapse_orientation", self._split_orientation)
+            area = self.dockWidgetArea(dock)
+            if area in (Qt.LeftDockWidgetArea, Qt.RightDockWidgetArea):
+                orientation = Qt.Horizontal
+            else:
+                orientation = Qt.Vertical
             self._collapse_dock(dock, orientation)
 
     def show_corner_tabs(self):
@@ -2397,7 +2425,11 @@ class MainWindow(QMainWindow):
         if getattr(dock, "_collapsed", False):
             self._expand_dock(dock)
         else:
-            orientation = getattr(dock, "_collapse_orientation", self._split_orientation)
+            area = self.dockWidgetArea(dock)
+            if area in (Qt.LeftDockWidgetArea, Qt.RightDockWidgetArea):
+                orientation = Qt.Horizontal
+            else:
+                orientation = Qt.Vertical
             self._collapse_dock(dock, orientation)
 
     def show_corner_tabs(self):
@@ -2571,7 +2603,11 @@ class MainWindow(QMainWindow):
         if getattr(dock, "_collapsed", False):
             self._expand_dock(dock)
         else:
-            orientation = getattr(dock, "_collapse_orientation", self._split_orientation)
+            area = self.dockWidgetArea(dock)
+            if area in (Qt.LeftDockWidgetArea, Qt.RightDockWidgetArea):
+                orientation = Qt.Horizontal
+            else:
+                orientation = Qt.Vertical
             self._collapse_dock(dock, orientation)
 
     def show_corner_tabs(self):
