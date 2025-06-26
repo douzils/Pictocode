@@ -61,6 +61,7 @@ class MainWindow(QMainWindow):
     # minimum dock dimension when collapsed/expanded
     MIN_DOCK_SIZE = 1
 
+<<<<<<< codex/ajouter-taille-minimale-pour-onglet
     def _dock_frame_width(self, dock):
         return dock.style().pixelMetric(QStyle.PM_DockWidgetFrameWidth, None, dock)
 
@@ -69,6 +70,12 @@ class MainWindow(QMainWindow):
         """Return dock header size including frame."""
         header = self.dock_headers.get(dock)
         frame = self._dock_frame_width(dock) * 2
+=======
+    def _header_min_size(self, dock, orientation):
+        """Return dock header size including frame."""
+        header = self.dock_headers.get(dock)
+        frame = dock.frameWidth() * 2
+>>>>>>> main
         if orientation == Qt.Horizontal:
             base = header.sizeHint().width() if header else self.MIN_DOCK_SIZE
         else:
@@ -323,7 +330,11 @@ class MainWindow(QMainWindow):
         )
         dock.setTitleBarWidget(header)
         header_size = header.sizeHint()
+<<<<<<< codex/ajouter-taille-minimale-pour-onglet
         frame = self._dock_frame_width(dock) * 2
+=======
+        frame = dock.frameWidth() * 2
+>>>>>>> main
         dock.setMinimumHeight(header_size.height() + frame)
         dock.setMinimumWidth(header_size.width() + frame)
 
@@ -1288,9 +1299,15 @@ class MainWindow(QMainWindow):
                     min_size = self.MIN_DOCK_SIZE
                     if header:
                         if self._split_orientation == Qt.Horizontal:
+<<<<<<< codex/ajouter-taille-minimale-pour-onglet
                             min_size = header.sizeHint().width() + 2 * self._dock_frame_width(new_dock)
                         else:
                             min_size = header.sizeHint().height() + 2 * self._dock_frame_width(new_dock)
+=======
+                            min_size = header.sizeHint().width() + 2 * new_dock.frameWidth()
+                        else:
+                            min_size = header.sizeHint().height() + 2 * new_dock.frameWidth()
+>>>>>>> main
                     if size <= min_size:
                         self._collapse_dock(new_dock, self._split_orientation)
                     else:
@@ -1299,14 +1316,22 @@ class MainWindow(QMainWindow):
                             new_dock.setMaximumWidth(QWIDGETSIZE_MAX)
                             dock_header = self.dock_headers.get(dock)
                             if dock_header:
+<<<<<<< codex/ajouter-taille-minimale-pour-onglet
                                 dock.setMinimumWidth(dock_header.sizeHint().width() + 2 * self._dock_frame_width(dock))
+=======
+                                dock.setMinimumWidth(dock_header.sizeHint().width() + 2 * dock.frameWidth())
+>>>>>>> main
                             dock.setMaximumWidth(QWIDGETSIZE_MAX)
                         else:
                             new_dock.setMinimumHeight(self._header_min_size(new_dock, Qt.Vertical))
                             new_dock.setMaximumHeight(QWIDGETSIZE_MAX)
                             dock_header = self.dock_headers.get(dock)
                             if dock_header:
+<<<<<<< codex/ajouter-taille-minimale-pour-onglet
                                 dock.setMinimumHeight(dock_header.sizeHint().height() + 2 * self._dock_frame_width(dock))
+=======
+                                dock.setMinimumHeight(dock_header.sizeHint().height() + 2 * dock.frameWidth())
+>>>>>>> main
                             dock.setMaximumHeight(QWIDGETSIZE_MAX)
                 elif self._split_preview:
                     func = getattr(self, "_update_split_preview", None)
@@ -1665,7 +1690,11 @@ class MainWindow(QMainWindow):
 
         header = self.dock_headers.get(dock)
         if self._split_orientation == Qt.Horizontal:
+<<<<<<< codex/ajouter-taille-minimale-pour-onglet
             min_size = header.sizeHint().width() + 2 * self._dock_frame_width(dock)
+=======
+            min_size = header.sizeHint().width() + 2 * dock.frameWidth()
+>>>>>>> main
             total = dock.width()
             size = max(min_size, min(abs(delta.x()), total - min_size))
             if delta.x() >= 0:
@@ -1675,7 +1704,11 @@ class MainWindow(QMainWindow):
                 preview.new_area.setGeometry(0, 0, size, dock.height())
                 preview.old_area.setGeometry(size, 0, total - size, dock.height())
         else:
+<<<<<<< codex/ajouter-taille-minimale-pour-onglet
             min_size = header.sizeHint().height() + 2 * self._dock_frame_width(dock)
+=======
+            min_size = header.sizeHint().height() + 2 * dock.frameWidth()
+>>>>>>> main
             total = dock.height()
             size = max(min_size, min(abs(delta.y()), total - min_size))
             if delta.y() >= 0:
@@ -1760,7 +1793,11 @@ class MainWindow(QMainWindow):
 
         header = self.dock_headers.get(dock)
         if self._split_orientation == Qt.Horizontal:
+<<<<<<< codex/ajouter-taille-minimale-pour-onglet
             min_size = header.sizeHint().width() + 2 * self._dock_frame_width(dock)
+=======
+            min_size = header.sizeHint().width() + 2 * dock.frameWidth()
+>>>>>>> main
             total = dock.width()
             size = max(min_size, min(abs(delta.x()), total - min_size))
             if delta.x() >= 0:
@@ -1770,7 +1807,11 @@ class MainWindow(QMainWindow):
                 preview.new_area.setGeometry(0, 0, size, dock.height())
                 preview.old_area.setGeometry(size, 0, total - size, dock.height())
         else:
+<<<<<<< codex/ajouter-taille-minimale-pour-onglet
             min_size = header.sizeHint().height() + 2 * self._dock_frame_width(dock)
+=======
+            min_size = header.sizeHint().height() + 2 * dock.frameWidth()
+>>>>>>> main
             total = dock.height()
             size = max(min_size, min(abs(delta.y()), total - min_size))
             if delta.y() >= 0:
@@ -1884,7 +1925,11 @@ class MainWindow(QMainWindow):
             return
         header = self.dock_headers.get(dock)
         if self._split_orientation == Qt.Horizontal:
+<<<<<<< codex/ajouter-taille-minimale-pour-onglet
             min_size = header.sizeHint().width() + 2 * self._dock_frame_width(dock)
+=======
+            min_size = header.sizeHint().width() + 2 * dock.frameWidth()
+>>>>>>> main
             total = self._split_start_size
             size = max(min_size, min(abs(delta.x()), total - min_size))
             if delta.x() >= 0:
@@ -1892,7 +1937,11 @@ class MainWindow(QMainWindow):
             else:
                 self.resizeDocks([new_dock, dock], [size, total - size], Qt.Horizontal)
         else:
+<<<<<<< codex/ajouter-taille-minimale-pour-onglet
             min_size = header.sizeHint().height() + 2 * self._dock_frame_width(dock)
+=======
+            min_size = header.sizeHint().height() + 2 * dock.frameWidth()
+>>>>>>> main
             total = self._split_start_size
             size = max(min_size, min(abs(delta.y()), total - min_size))
             if delta.y() >= 0:
@@ -1906,7 +1955,11 @@ class MainWindow(QMainWindow):
 
         header = self.dock_headers.get(dock)
         if self._split_orientation == Qt.Horizontal:
+<<<<<<< codex/ajouter-taille-minimale-pour-onglet
             min_size = header.sizeHint().width() + 2 * self._dock_frame_width(dock)
+=======
+            min_size = header.sizeHint().width() + 2 * dock.frameWidth()
+>>>>>>> main
             total = dock.width()
             size = max(min_size, min(abs(delta.x()), total - min_size))
             if delta.x() >= 0:
@@ -1916,7 +1969,11 @@ class MainWindow(QMainWindow):
                 preview.new_area.setGeometry(0, 0, size, dock.height())
                 preview.old_area.setGeometry(size, 0, total - size, dock.height())
         else:
+<<<<<<< codex/ajouter-taille-minimale-pour-onglet
             min_size = header.sizeHint().height() + 2 * self._dock_frame_width(dock)
+=======
+            min_size = header.sizeHint().height() + 2 * dock.frameWidth()
+>>>>>>> main
             total = dock.height()
             size = max(min_size, min(abs(delta.y()), total - min_size))
             if delta.y() >= 0:
@@ -2030,7 +2087,11 @@ class MainWindow(QMainWindow):
             return
         header = self.dock_headers.get(dock)
         if self._split_orientation == Qt.Horizontal:
+<<<<<<< codex/ajouter-taille-minimale-pour-onglet
             min_size = header.sizeHint().width() + 2 * self._dock_frame_width(dock)
+=======
+            min_size = header.sizeHint().width() + 2 * dock.frameWidth()
+>>>>>>> main
             total = self._split_start_size
             size = max(min_size, min(abs(delta.x()), total - min_size))
             if delta.x() >= 0:
@@ -2038,7 +2099,11 @@ class MainWindow(QMainWindow):
             else:
                 self.resizeDocks([new_dock, dock], [size, total - size], Qt.Horizontal)
         else:
+<<<<<<< codex/ajouter-taille-minimale-pour-onglet
             min_size = header.sizeHint().height() + 2 * self._dock_frame_width(dock)
+=======
+            min_size = header.sizeHint().height() + 2 * dock.frameWidth()
+>>>>>>> main
             total = self._split_start_size
             size = max(min_size, min(abs(delta.y()), total - min_size))
             if delta.y() >= 0:
@@ -2054,7 +2119,11 @@ class MainWindow(QMainWindow):
 
         header = self.dock_headers.get(dock)
         if self._split_orientation == Qt.Horizontal:
+<<<<<<< codex/ajouter-taille-minimale-pour-onglet
             min_size = header.sizeHint().width() + 2 * self._dock_frame_width(dock)
+=======
+            min_size = header.sizeHint().width() + 2 * dock.frameWidth()
+>>>>>>> main
             total = dock.width()
             size = max(min_size, min(abs(delta.x()), total - min_size))
             if delta.x() >= 0:
@@ -2064,7 +2133,11 @@ class MainWindow(QMainWindow):
                 preview.new_area.setGeometry(0, 0, size, dock.height())
                 preview.old_area.setGeometry(size, 0, total - size, dock.height())
         else:
+<<<<<<< codex/ajouter-taille-minimale-pour-onglet
             min_size = header.sizeHint().height() + 2 * self._dock_frame_width(dock)
+=======
+            min_size = header.sizeHint().height() + 2 * dock.frameWidth()
+>>>>>>> main
             total = dock.height()
             size = max(min_size, min(abs(delta.y()), total - min_size))
             if delta.y() >= 0:
@@ -2183,7 +2256,11 @@ class MainWindow(QMainWindow):
         # size constraints are based on the original dock header
         header = self.dock_headers.get(dock)
         if self._split_orientation == Qt.Horizontal:
+<<<<<<< codex/ajouter-taille-minimale-pour-onglet
             min_size = header.sizeHint().width() + 2 * self._dock_frame_width(dock)
+=======
+            min_size = header.sizeHint().width() + 2 * dock.frameWidth()
+>>>>>>> main
             total = self._split_start_size
             size = max(min_size, min(abs(delta.x()), total - min_size))
             if delta.x() >= 0:
@@ -2191,7 +2268,11 @@ class MainWindow(QMainWindow):
             else:
                 self.resizeDocks([new_dock, dock], [size, total - size], Qt.Horizontal)
         else:
+<<<<<<< codex/ajouter-taille-minimale-pour-onglet
             min_size = header.sizeHint().height() + 2 * self._dock_frame_width(dock)
+=======
+            min_size = header.sizeHint().height() + 2 * dock.frameWidth()
+>>>>>>> main
             total = self._split_start_size
             size = max(min_size, min(abs(delta.y()), total - min_size))
             if delta.y() >= 0:
@@ -2207,7 +2288,11 @@ class MainWindow(QMainWindow):
 
         header = self.dock_headers.get(dock)
         if self._split_orientation == Qt.Horizontal:
+<<<<<<< codex/ajouter-taille-minimale-pour-onglet
             min_size = header.sizeHint().width() + 2 * self._dock_frame_width(dock)
+=======
+            min_size = header.sizeHint().width() + 2 * dock.frameWidth()
+>>>>>>> main
             total = dock.width()
             size = max(min_size, min(abs(delta.x()), total - min_size))
             if delta.x() >= 0:
@@ -2217,7 +2302,11 @@ class MainWindow(QMainWindow):
                 preview.new_area.setGeometry(0, 0, size, dock.height())
                 preview.old_area.setGeometry(size, 0, total - size, dock.height())
         else:
+<<<<<<< codex/ajouter-taille-minimale-pour-onglet
             min_size = header.sizeHint().height() + 2 * self._dock_frame_width(dock)
+=======
+            min_size = header.sizeHint().height() + 2 * dock.frameWidth()
+>>>>>>> main
             total = dock.height()
             size = max(min_size, min(abs(delta.y()), total - min_size))
             if delta.y() >= 0:
@@ -2338,7 +2427,11 @@ class MainWindow(QMainWindow):
         # size constraints are based on the original dock header
         header = self.dock_headers.get(dock)
         if self._split_orientation == Qt.Horizontal:
+<<<<<<< codex/ajouter-taille-minimale-pour-onglet
             min_size = header.sizeHint().width() + 2 * self._dock_frame_width(dock)
+=======
+            min_size = header.sizeHint().width() + 2 * dock.frameWidth()
+>>>>>>> main
             total = self._split_start_size
             size = max(min_size, min(abs(delta.x()), total - min_size))
             if delta.x() >= 0:
@@ -2346,7 +2439,11 @@ class MainWindow(QMainWindow):
             else:
                 self.resizeDocks([new_dock, dock], [size, total - size], Qt.Horizontal)
         else:
+<<<<<<< codex/ajouter-taille-minimale-pour-onglet
             min_size = header.sizeHint().height() + 2 * self._dock_frame_width(dock)
+=======
+            min_size = header.sizeHint().height() + 2 * dock.frameWidth()
+>>>>>>> main
             total = self._split_start_size
             size = max(min_size, min(abs(delta.y()), total - min_size))
             if delta.y() >= 0:
@@ -2362,7 +2459,11 @@ class MainWindow(QMainWindow):
 
         header = self.dock_headers.get(dock)
         if self._split_orientation == Qt.Horizontal:
+<<<<<<< codex/ajouter-taille-minimale-pour-onglet
             header_size = header.sizeHint().width() + 2 * self._dock_frame_width(dock)
+=======
+            header_size = header.sizeHint().width() + 2 * dock.frameWidth()
+>>>>>>> main
             min_size = 1
             total = dock.width()
             size = max(min_size, min(abs(delta.x()), total - header_size))
@@ -2373,7 +2474,11 @@ class MainWindow(QMainWindow):
                 preview.new_area.setGeometry(0, 0, size, dock.height())
                 preview.old_area.setGeometry(size, 0, total - size, dock.height())
         else:
+<<<<<<< codex/ajouter-taille-minimale-pour-onglet
             header_size = header.sizeHint().height() + 2 * self._dock_frame_width(dock)
+=======
+            header_size = header.sizeHint().height() + 2 * dock.frameWidth()
+>>>>>>> main
             min_size = 1
             total = dock.height()
             size = max(min_size, min(abs(delta.y()), total - header_size))
@@ -2469,9 +2574,15 @@ class MainWindow(QMainWindow):
         header_size = 0
         if header:
             if self._split_orientation == Qt.Horizontal:
+<<<<<<< codex/ajouter-taille-minimale-pour-onglet
                 header_size = header.sizeHint().width() + 2 * self._dock_frame_width(dock)
             else:
                 header_size = header.sizeHint().height() + 2 * self._dock_frame_width(dock)
+=======
+                header_size = header.sizeHint().width() + 2 * dock.frameWidth()
+            else:
+                header_size = header.sizeHint().height() + 2 * dock.frameWidth()
+>>>>>>> main
         new_dock = self._create_dock(label, area)
         new_dock.hide()
         if self._split_orientation == Qt.Horizontal:
@@ -2508,7 +2619,11 @@ class MainWindow(QMainWindow):
         # size constraints are based on the original dock header
         header = self.dock_headers.get(dock)
         if self._split_orientation == Qt.Horizontal:
+<<<<<<< codex/ajouter-taille-minimale-pour-onglet
             header_size = header.sizeHint().width() + 2 * self._dock_frame_width(dock)
+=======
+            header_size = header.sizeHint().width() + 2 * dock.frameWidth()
+>>>>>>> main
             min_size = 1
             total = self._split_start_size
             max_size = total - header_size
@@ -2518,7 +2633,11 @@ class MainWindow(QMainWindow):
             else:
                 self.resizeDocks([new_dock, dock], [size, total - size], Qt.Horizontal)
         else:
+<<<<<<< codex/ajouter-taille-minimale-pour-onglet
             header_size = header.sizeHint().height() + 2 * self._dock_frame_width(dock)
+=======
+            header_size = header.sizeHint().height() + 2 * dock.frameWidth()
+>>>>>>> main
             min_size = 1
             total = self._split_start_size
             max_size = total - header_size
@@ -2536,7 +2655,11 @@ class MainWindow(QMainWindow):
 
         header = self.dock_headers.get(dock)
         if self._split_orientation == Qt.Horizontal:
+<<<<<<< codex/ajouter-taille-minimale-pour-onglet
             header_size = header.sizeHint().width() + 2 * self._dock_frame_width(dock)
+=======
+            header_size = header.sizeHint().width() + 2 * dock.frameWidth()
+>>>>>>> main
             min_size = header_size
             total = dock.width()
             size = max(min_size, min(abs(delta.x()), total - header_size))
@@ -2547,7 +2670,11 @@ class MainWindow(QMainWindow):
                 preview.new_area.setGeometry(0, 0, size, dock.height())
                 preview.old_area.setGeometry(size, 0, total - size, dock.height())
         else:
+<<<<<<< codex/ajouter-taille-minimale-pour-onglet
             header_size = header.sizeHint().height() + 2 * self._dock_frame_width(dock)
+=======
+            header_size = header.sizeHint().height() + 2 * dock.frameWidth()
+>>>>>>> main
             min_size = header_size
             total = dock.height()
             size = max(min_size, min(abs(delta.y()), total - header_size))
@@ -2643,9 +2770,15 @@ class MainWindow(QMainWindow):
         header_size = 0
         if header:
             if self._split_orientation == Qt.Horizontal:
+<<<<<<< codex/ajouter-taille-minimale-pour-onglet
                 header_size = header.sizeHint().width() + 2 * self._dock_frame_width(dock)
             else:
                 header_size = header.sizeHint().height() + 2 * self._dock_frame_width(dock)
+=======
+                header_size = header.sizeHint().width() + 2 * dock.frameWidth()
+            else:
+                header_size = header.sizeHint().height() + 2 * dock.frameWidth()
+>>>>>>> main
         new_dock = self._create_dock(label, area)
         new_dock.hide()
         if self._split_orientation == Qt.Horizontal:
@@ -2682,7 +2815,11 @@ class MainWindow(QMainWindow):
         # size constraints are based on the original dock header
         header = self.dock_headers.get(dock)
         if self._split_orientation == Qt.Horizontal:
+<<<<<<< codex/ajouter-taille-minimale-pour-onglet
             header_size = header.sizeHint().width() + 2 * self._dock_frame_width(dock)
+=======
+            header_size = header.sizeHint().width() + 2 * dock.frameWidth()
+>>>>>>> main
             min_size = header_size
             total = self._split_start_size
             max_size = total - header_size
@@ -2692,7 +2829,11 @@ class MainWindow(QMainWindow):
             else:
                 self.resizeDocks([new_dock, dock], [size, total - size], Qt.Horizontal)
         else:
+<<<<<<< codex/ajouter-taille-minimale-pour-onglet
             header_size = header.sizeHint().height() + 2 * self._dock_frame_width(dock)
+=======
+            header_size = header.sizeHint().height() + 2 * dock.frameWidth()
+>>>>>>> main
             min_size = header_size
             total = self._split_start_size
             max_size = total - header_size
@@ -2721,7 +2862,11 @@ class MainWindow(QMainWindow):
         header = self.dock_headers.get(dock)
         try:
             if self._split_orientation == Qt.Horizontal:
+<<<<<<< codex/ajouter-taille-minimale-pour-onglet
                 min_size = header.sizeHint().width() + 2 * self._dock_frame_width(dock)
+=======
+                min_size = header.sizeHint().width() + 2 * dock.frameWidth()
+>>>>>>> main
                 size = max(min_size, min(abs(delta.x()), dock.width() - min_size))
                 if delta.x() >= 0:
                     self.splitDockWidget(dock, new_dock, Qt.Horizontal)
@@ -2730,7 +2875,11 @@ class MainWindow(QMainWindow):
                     self.splitDockWidget(new_dock, dock, Qt.Horizontal)
                     self.resizeDocks([new_dock, dock], [size, dock.width() - size], Qt.Horizontal)
             else:
+<<<<<<< codex/ajouter-taille-minimale-pour-onglet
                 min_size = header.sizeHint().height() + 2 * self._dock_frame_width(dock)
+=======
+                min_size = header.sizeHint().height() + 2 * dock.frameWidth()
+>>>>>>> main
                 size = max(min_size, min(abs(delta.y()), dock.height() - min_size))
                 if delta.y() >= 0:
                     self.splitDockWidget(dock, new_dock, Qt.Vertical)
@@ -2745,9 +2894,15 @@ class MainWindow(QMainWindow):
         min_size = self.MIN_DOCK_SIZE
         if header_new:
             if self._split_orientation == Qt.Horizontal:
+<<<<<<< codex/ajouter-taille-minimale-pour-onglet
                 min_size = header_new.sizeHint().width() + 2 * self._dock_frame_width(new_dock)
             else:
                 min_size = header_new.sizeHint().height() + 2 * self._dock_frame_width(new_dock)
+=======
+                min_size = header_new.sizeHint().width() + 2 * new_dock.frameWidth()
+            else:
+                min_size = header_new.sizeHint().height() + 2 * new_dock.frameWidth()
+>>>>>>> main
         if size <= min_size:
             self._collapse_dock(new_dock, self._split_orientation)
 
