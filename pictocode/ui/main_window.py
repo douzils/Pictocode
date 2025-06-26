@@ -1401,35 +1401,20 @@ class MainWindow(QMainWindow):
     def _collapse_dock(self, dock, orientation):
         dock._collapsed = True
         dock._collapse_orientation = orientation
-        if orientation == Qt.Horizontal:
-            dock._restore_size = dock.width()
-        else:
-            dock._restore_size = dock.height()
+        dock._restore_size = dock.height()
         if dock.widget():
             dock.widget().hide()
-        size = self._header_min_size(dock, orientation)
-        if orientation == Qt.Horizontal:
-            dock.setMinimumWidth(size)
-            dock.setMaximumWidth(size)
-            dock.resize(size, dock.height())
-        else:
-            dock.setMinimumHeight(size)
-            dock.setMaximumHeight(size)
-            dock.resize(dock.width(), size)
+        size = self._header_min_size(dock, Qt.Vertical)
+        dock.setMinimumHeight(size)
+        dock.setMaximumHeight(size)
+        dock.resize(dock.width(), size)
 
     def _expand_dock(self, dock):
-        orientation = getattr(dock, "_collapse_orientation", Qt.Horizontal)
-        min_size = self._header_min_size(dock, orientation)
-        if orientation == Qt.Horizontal:
-            dock.setMinimumWidth(min_size)
-            dock.setMaximumWidth(QWIDGETSIZE_MAX)
-            restore = max(min_size, getattr(dock, "_restore_size", self.default_dock_size))
-            dock.resize(restore, dock.height())
-        else:
-            dock.setMinimumHeight(min_size)
-            dock.setMaximumHeight(QWIDGETSIZE_MAX)
-            restore = max(min_size, getattr(dock, "_restore_size", self.default_dock_size))
-            dock.resize(dock.width(), restore)
+        min_size = self._header_min_size(dock, Qt.Vertical)
+        dock.setMinimumHeight(min_size)
+        dock.setMaximumHeight(QWIDGETSIZE_MAX)
+        restore = max(min_size, getattr(dock, "_restore_size", self.default_dock_size))
+        dock.resize(dock.width(), restore)
         if dock.widget():
             dock.widget().show()
         dock._collapsed = False
@@ -1438,12 +1423,7 @@ class MainWindow(QMainWindow):
         if getattr(dock, "_collapsed", False):
             self._expand_dock(dock)
         else:
-            area = self.dockWidgetArea(dock)
-            if area in (Qt.LeftDockWidgetArea, Qt.RightDockWidgetArea):
-                orientation = Qt.Horizontal
-            else:
-                orientation = Qt.Vertical
-            self._collapse_dock(dock, orientation)
+            self._collapse_dock(dock, Qt.Vertical)
 
     def show_corner_tabs(self):
         """Display a floating tab selector near the cursor."""
