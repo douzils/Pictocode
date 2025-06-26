@@ -1130,17 +1130,19 @@ class MainWindow(QMainWindow):
             QWidget#corner_handle {{
                 background: transparent;
             }}
+            QDockWidget::title {{
+                padding: 0px;
+                margin: 0px;
+            }}
             """
         )
         self.inspector.setStyleSheet(f"font-size: {dock_font_size}pt;")
         for dock in self.docks:
             style = (
                 f"QDockWidget {{ background: {dock_color.name()}; border: none; }}"
+                "QDockWidget::title { padding: 0px; margin: 0px; }"
             )
             dock.setStyleSheet(style)
-            dock.setStyleSheet(
-                f"QDockWidget {{ background: {dock_color.name()}; border: none; }}"
-            )
             widget = dock.widget()
             if widget:
                 widget.setStyleSheet(f"font-size: {dock_font_size}pt;")

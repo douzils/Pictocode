@@ -23,18 +23,18 @@ class CornerTabs(QWidget):
         self.selector.addItems(["Propriétés", "Imports", "Objets", "Logs"])
         layout.addWidget(self.selector)
         layout.addStretch()
-        self.setFixedHeight(self.selector.sizeHint().height())
         self.selector.currentTextChanged.connect(self._emit_change)
-        if overlay:
-            self.hide()
         if self._color:
             self.set_color(self._color)
         else:
             base_style = (
-                "QComboBox#corner_selector { border: none; padding: 2px 6px; }"
+                "QComboBox#corner_selector { border: none; padding: 0 6px; }"
                 "QComboBox#corner_selector::drop-down { border: none; }"
             )
             self.setStyleSheet(base_style)
+        self.setFixedHeight(self.selector.sizeHint().height())
+        if overlay:
+            self.hide()
 
     def mouseDoubleClickEvent(self, event):
         dock = self.parent()
@@ -72,10 +72,14 @@ class CornerTabs(QWidget):
         text = get_contrast_color(self._color)
         style = (
             f"#corner_tabs {{ background: {self._color.name()}; }}"\
-            f"QComboBox#corner_selector {{ border: none; padding: 2px 6px;"\
+
+            f"QComboBox#corner_selector {{ border: none; padding: 0 6px;"\
+
             f" background: transparent; color: {text}; }}"\
             "QComboBox#corner_selector::drop-down { border: none; }"
         )
         self.setStyleSheet(style)
+        self.setFixedHeight(self.selector.sizeHint().height())
+
 
 
