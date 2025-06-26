@@ -22,6 +22,12 @@ class CornerTabs(QWidget):
         if overlay:
             self.hide()
 
+    def mouseDoubleClickEvent(self, event):
+        dock = self.parent()
+        if isinstance(dock, QDockWidget) and hasattr(dock.parent(), "_toggle_dock"):
+            dock.parent()._toggle_dock(dock)
+        super().mouseDoubleClickEvent(event)
+
     def contextMenuEvent(self, event):
         """Show a menu allowing the dock to be closed."""
         menu = QMenu(self)
