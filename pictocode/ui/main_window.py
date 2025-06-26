@@ -69,10 +69,13 @@ class MainWindow(QMainWindow):
         """Return dock header size including frame."""
         header = self.dock_headers.get(dock)
         frame = self._dock_frame_width(dock) * 2
-        if orientation == Qt.Horizontal:
-            base = header.sizeHint().width() if header else self.MIN_DOCK_SIZE
+        if header:
+            if orientation == Qt.Horizontal:
+                base = header.selector.sizeHint().width()
+            else:
+                base = header.selector.sizeHint().height()
         else:
-            base = header.sizeHint().height() if header else self.MIN_DOCK_SIZE
+            base = self.MIN_DOCK_SIZE
         return base + frame
     # ensure drag related attributes exist before __init__ runs
     _corner_current_dock = None
@@ -178,6 +181,41 @@ class MainWindow(QMainWindow):
         self.dock_headers = {}
         self.dock_current_widget = {}
 
+        # état courant
+        self.current_project_path = None
+        self.unsaved_changes = False
+        self._current_anim = None
+
+        # Paramètres de thème et raccourcis
+        self.current_theme = self.settings.value("theme", "Light")
+        self.accent_color = QColor(self.settings.value("accent_color", "#0078d7"))
+        self.font_size = int(self.settings.value("font_size", 10))
+        self.menu_color = QColor(self.settings.value("menu_color", self.accent_color.name()))
+        self.toolbar_color = QColor(self.settings.value("toolbar_color", self.accent_color.name()))
+        self.dock_color = QColor(self.settings.value("dock_color", self.accent_color.name()))
+        self.dock_title_colors = {
+            name: QColor(
+                self.settings.value(
+                    f"dock_title_color_{name}", self.toolbar_color.name()
+                )
+            )
+            for name in ("Propriétés", "Imports", "Objets", "Logs")
+        }
+        self.flag_active_color = QColor(self.settings.value("flag_active_color", "#0078d7"))
+        self.flag_inactive_color = QColor(self.settings.value("flag_inactive_color", "#3a3f44"))
+        self.menu_font_size = int(self.settings.value("menu_font_size", self.font_size))
+        self.toolbar_font_size = int(self.settings.value("toolbar_font_size", self.font_size))
+        self.dock_font_size = int(self.settings.value("dock_font_size", self.font_size))
+        self.show_splash = self.settings.value("show_splash", True, type=bool)
+        self.handle_size = int(self.settings.value("handle_size", 12))
+        self.rotation_offset = int(self.settings.value("rotation_offset", 20))
+        self.handle_color = QColor(self.settings.value("handle_color", "#000000"))
+        self.rotation_handle_color = QColor(
+            self.settings.value("rotation_handle_color", "#ff0000")
+        )
+        # taille par défaut des onglets dépliés
+        self.default_dock_size = int(self.settings.value("default_dock_size", 200))
+
         self.layers = LayersWidget(self)
         self.toolbar.addWidget(self.layers)
 
@@ -244,51 +282,6 @@ class MainWindow(QMainWindow):
             "grid_size": "",
             "export_pdf": "",
         }
-
-        # état courant
-        self.current_project_path = None
-        self.unsaved_changes = False
-        self._current_anim = None
-
-        # Paramètres de thème et raccourcis
-        self.current_theme = self.settings.value("theme", "Light")
-        self.accent_color = QColor(
-            self.settings.value("accent_color", "#0078d7"))
-        self.font_size = int(self.settings.value("font_size", 10))
-        self.menu_color = QColor(
-            self.settings.value("menu_color", self.accent_color.name())
-        )
-        self.toolbar_color = QColor(
-            self.settings.value("toolbar_color", self.accent_color.name())
-        )
-        self.dock_color = QColor(
-            self.settings.value("dock_color", self.accent_color.name())
-        )
-        self.flag_active_color = QColor(
-            self.settings.value("flag_active_color", "#0078d7")
-        )
-        self.flag_inactive_color = QColor(
-            self.settings.value("flag_inactive_color", "#3a3f44")
-        )
-        self.menu_font_size = int(self.settings.value(
-            "menu_font_size", self.font_size))
-        self.toolbar_font_size = int(
-            self.settings.value("toolbar_font_size", self.font_size)
-        )
-        self.dock_font_size = int(self.settings.value(
-            "dock_font_size", self.font_size))
-        self.show_splash = self.settings.value("show_splash", True, type=bool)
-        self.handle_size = int(self.settings.value("handle_size", 12))
-        self.rotation_offset = int(self.settings.value("rotation_offset", 20))
-        self.handle_color = QColor(
-            self.settings.value("handle_color", "#000000"))
-        self.rotation_handle_color = QColor(
-            self.settings.value("rotation_handle_color", "#ff0000")
-        )
-        # taille par défaut des onglets dépliés
-        self.default_dock_size = int(
-            self.settings.value("default_dock_size", 200)
-        )
         self.apply_theme(
             self.current_theme,
             self.accent_color,
@@ -316,16 +309,16 @@ class MainWindow(QMainWindow):
         dock = QDockWidget(label, self)
 
         # header placed in the title bar
-        header = CornerTabs(dock)
+        header = CornerTabs(dock, color=self.dock_title_colors.get(label))
         header.selector.setCurrentText(label)
         header.tab_selected.connect(
             lambda text, d=dock: self.set_dock_category(d, text)
         )
         dock.setTitleBarWidget(header)
-        header_size = header.sizeHint()
         frame = self._dock_frame_width(dock) * 2
-        dock.setMinimumHeight(header_size.height() + frame)
-        dock.setMinimumWidth(header_size.width() + frame)
+        combo_size = header.selector.sizeHint()
+        dock.setMinimumHeight(combo_size.height() + frame)
+        dock.setMinimumWidth(combo_size.width() + frame)
 
         container = QWidget()
         lay = QVBoxLayout(container)
@@ -516,15 +509,10 @@ class MainWindow(QMainWindow):
 
         prefm = AnimatedMenu("Préférences", self)
         mb.addMenu(prefm)
-        app_act = QAction("Apparence…", self)
-        app_act.triggered.connect(self.open_app_settings)
-        prefm.addAction(app_act)
-        self.actions["appearance"] = app_act
-
-        short_act = QAction("Raccourcis…", self)
-        short_act.triggered.connect(self.open_shortcut_settings)
-        prefm.addAction(short_act)
-        self.actions["shortcuts"] = short_act
+        prefs_act = QAction("Paramètres…", self)
+        prefs_act.triggered.connect(self.open_settings_dialog)
+        prefm.addAction(prefs_act)
+        self.actions["preferences"] = prefs_act
 
     # ─── Gestion de l'état modifié ─────────────────────────────
     def set_dirty(self, value: bool = True):
@@ -897,10 +885,16 @@ class MainWindow(QMainWindow):
             event.ignore()
 
     # ------------------------------------------------------------------
-    def open_app_settings(self):
-        from .app_settings_dialog import AppSettingsDialog
 
-        dlg = AppSettingsDialog(
+    def open_settings_dialog(self):
+        """Display the unified settings dialog."""
+        current_shortcuts = {
+            name: act.shortcut().toString()
+            for name, act in self.actions.items()
+        }
+        from .settings_dialog import SettingsDialog
+        dlg = SettingsDialog(
+            current_shortcuts,
             self.current_theme,
             self.accent_color,
             self.font_size,
@@ -911,14 +905,11 @@ class MainWindow(QMainWindow):
             self.toolbar_font_size,
             self.dock_font_size,
             self.show_splash,
-            self.handle_size,
-            self.rotation_offset,
-            self.handle_color,
-            self.rotation_handle_color,
             self.autosave_enabled,
             self.autosave_interval,
             self.auto_show_inspector,
             self.float_docks,
+            self.dock_title_colors,
             self,
         )
         if dlg.exec_() == QDialog.Accepted:
@@ -931,22 +922,22 @@ class MainWindow(QMainWindow):
             menu_fs = dlg.get_menu_font_size()
             toolbar_fs = dlg.get_toolbar_font_size()
             dock_fs = dlg.get_dock_font_size()
-            self.handle_size = dlg.get_handle_size()
-            self.rotation_offset = dlg.get_rotation_offset()
-            self.handle_color = dlg.get_handle_color()
-            self.rotation_handle_color = dlg.get_rotation_handle_color()
             self.show_splash = dlg.get_show_splash()
             self.autosave_enabled = dlg.get_autosave_enabled()
             self.autosave_interval = dlg.get_autosave_interval()
             self.auto_show_inspector = dlg.get_auto_show_inspector()
             self.float_docks = dlg.get_float_docks()
-
+            self.dock_title_colors = dlg.get_dock_title_colors()
+            shorts = dlg.get_shortcuts()
+            for name, seq in shorts.items():
+                action = self.actions.get(name)
+                if action is not None:
+                    action.setShortcut(QKeySequence(seq))
+                    self.settings.setValue(f"shortcut_{name}", seq)
             if self.auto_show_inspector:
                 items = self.canvas.scene.selectedItems()
                 self.inspector_dock.setVisible(bool(items))
             self._apply_float_docks()
-
-
             self.apply_theme(
                 theme,
                 accent,
@@ -960,39 +951,28 @@ class MainWindow(QMainWindow):
                 self.flag_active_color,
                 self.flag_inactive_color,
             )
-            self._apply_handle_settings()
             self.settings.setValue("show_splash", self.show_splash)
-            self.settings.setValue("handle_size", self.handle_size)
-            self.settings.setValue("rotation_offset", self.rotation_offset)
-            self.settings.setValue("handle_color", self.handle_color.name())
-            self.settings.setValue(
-                "rotation_handle_color", self.rotation_handle_color.name()
-            )
             self.settings.setValue("autosave_enabled", self.autosave_enabled)
             self.settings.setValue("autosave_interval", self.autosave_interval)
             self.settings.setValue(
                 "auto_show_inspector", self.auto_show_inspector
             )
             self.settings.setValue("float_docks", self.float_docks)
+            for name, col in self.dock_title_colors.items():
+                self.settings.setValue(
+                    f"dock_title_color_{name}", col.name()
+                )
             if self.autosave_enabled:
                 self._autosave_timer.start(self.autosave_interval * 60000)
             else:
                 self._autosave_timer.stop()
 
-    def open_shortcut_settings(self):
-        current = {
-            name: act.shortcut().toString()
-            for name, act in self.actions.items()
-        }
-        dlg = ShortcutSettingsDialog(current, self)
-        if dlg.exec_() == QDialog.Accepted:
-            values = dlg.get_shortcuts()
-            for name, seq in values.items():
-                action = self.actions.get(name)
-                if action is not None:
-                    action.setShortcut(QKeySequence(seq))
-                    self.settings.setValue(f"shortcut_{name}", seq)
+    # backward compatibility
+    def open_app_settings(self):
+        self.open_settings_dialog()
 
+    def open_shortcut_settings(self):
+        self.open_settings_dialog()
     def show_debug_dialog(self):
         """Display a dialog with debug information about the project."""
         if not hasattr(self, "canvas"):
@@ -1166,6 +1146,9 @@ class MainWindow(QMainWindow):
             widget.setStyleSheet(f"font-size: {dock_font_size}pt;")
             if hasattr(widget, "apply_theme"):
                 widget.apply_theme()
+        for dock, header in self.dock_headers.items():
+            col = self.dock_title_colors.get(dock.windowTitle(), toolbar_color)
+            header.set_color(col)
 
         self.current_theme = theme
         self.accent_color = accent
@@ -1288,9 +1271,9 @@ class MainWindow(QMainWindow):
                     min_size = self.MIN_DOCK_SIZE
                     if header:
                         if self._split_orientation == Qt.Horizontal:
-                            min_size = header.sizeHint().width() + 2 * self._dock_frame_width(new_dock)
+                            min_size = header.selector.sizeHint().width() + 2 * self._dock_frame_width(new_dock)
                         else:
-                            min_size = header.sizeHint().height() + 2 * self._dock_frame_width(new_dock)
+                            min_size = header.selector.sizeHint().height() + 2 * self._dock_frame_width(new_dock)
                     if size <= min_size:
                         self._collapse_dock(new_dock, self._split_orientation)
                     else:
@@ -1299,14 +1282,14 @@ class MainWindow(QMainWindow):
                             new_dock.setMaximumWidth(QWIDGETSIZE_MAX)
                             dock_header = self.dock_headers.get(dock)
                             if dock_header:
-                                dock.setMinimumWidth(dock_header.sizeHint().width() + 2 * self._dock_frame_width(dock))
+                                dock.setMinimumWidth(dock_header.selector.sizeHint().width() + 2 * self._dock_frame_width(dock))
                             dock.setMaximumWidth(QWIDGETSIZE_MAX)
                         else:
                             new_dock.setMinimumHeight(self._header_min_size(new_dock, Qt.Vertical))
                             new_dock.setMaximumHeight(QWIDGETSIZE_MAX)
                             dock_header = self.dock_headers.get(dock)
                             if dock_header:
-                                dock.setMinimumHeight(dock_header.sizeHint().height() + 2 * self._dock_frame_width(dock))
+                                dock.setMinimumHeight(dock_header.selector.sizeHint().height() + 2 * self._dock_frame_width(dock))
                             dock.setMaximumHeight(QWIDGETSIZE_MAX)
                 elif self._split_preview:
                     func = getattr(self, "_update_split_preview", None)
@@ -1665,7 +1648,7 @@ class MainWindow(QMainWindow):
 
         header = self.dock_headers.get(dock)
         if self._split_orientation == Qt.Horizontal:
-            min_size = header.sizeHint().width() + 2 * self._dock_frame_width(dock)
+            min_size = header.selector.sizeHint().width() + 2 * self._dock_frame_width(dock)
             total = dock.width()
             size = max(min_size, min(abs(delta.x()), total - min_size))
             if delta.x() >= 0:
@@ -1675,7 +1658,7 @@ class MainWindow(QMainWindow):
                 preview.new_area.setGeometry(0, 0, size, dock.height())
                 preview.old_area.setGeometry(size, 0, total - size, dock.height())
         else:
-            min_size = header.sizeHint().height() + 2 * self._dock_frame_width(dock)
+            min_size = header.selector.sizeHint().height() + 2 * self._dock_frame_width(dock)
             total = dock.height()
             size = max(min_size, min(abs(delta.y()), total - min_size))
             if delta.y() >= 0:
@@ -1760,7 +1743,7 @@ class MainWindow(QMainWindow):
 
         header = self.dock_headers.get(dock)
         if self._split_orientation == Qt.Horizontal:
-            min_size = header.sizeHint().width() + 2 * self._dock_frame_width(dock)
+            min_size = header.selector.sizeHint().width() + 2 * self._dock_frame_width(dock)
             total = dock.width()
             size = max(min_size, min(abs(delta.x()), total - min_size))
             if delta.x() >= 0:
@@ -1770,7 +1753,7 @@ class MainWindow(QMainWindow):
                 preview.new_area.setGeometry(0, 0, size, dock.height())
                 preview.old_area.setGeometry(size, 0, total - size, dock.height())
         else:
-            min_size = header.sizeHint().height() + 2 * self._dock_frame_width(dock)
+            min_size = header.selector.sizeHint().height() + 2 * self._dock_frame_width(dock)
             total = dock.height()
             size = max(min_size, min(abs(delta.y()), total - min_size))
             if delta.y() >= 0:
@@ -1884,7 +1867,7 @@ class MainWindow(QMainWindow):
             return
         header = self.dock_headers.get(dock)
         if self._split_orientation == Qt.Horizontal:
-            min_size = header.sizeHint().width() + 2 * self._dock_frame_width(dock)
+            min_size = header.selector.sizeHint().width() + 2 * self._dock_frame_width(dock)
             total = self._split_start_size
             size = max(min_size, min(abs(delta.x()), total - min_size))
             if delta.x() >= 0:
@@ -1892,7 +1875,7 @@ class MainWindow(QMainWindow):
             else:
                 self.resizeDocks([new_dock, dock], [size, total - size], Qt.Horizontal)
         else:
-            min_size = header.sizeHint().height() + 2 * self._dock_frame_width(dock)
+            min_size = header.selector.sizeHint().height() + 2 * self._dock_frame_width(dock)
             total = self._split_start_size
             size = max(min_size, min(abs(delta.y()), total - min_size))
             if delta.y() >= 0:
@@ -1906,7 +1889,7 @@ class MainWindow(QMainWindow):
 
         header = self.dock_headers.get(dock)
         if self._split_orientation == Qt.Horizontal:
-            min_size = header.sizeHint().width() + 2 * self._dock_frame_width(dock)
+            min_size = header.selector.sizeHint().width() + 2 * self._dock_frame_width(dock)
             total = dock.width()
             size = max(min_size, min(abs(delta.x()), total - min_size))
             if delta.x() >= 0:
@@ -1916,7 +1899,7 @@ class MainWindow(QMainWindow):
                 preview.new_area.setGeometry(0, 0, size, dock.height())
                 preview.old_area.setGeometry(size, 0, total - size, dock.height())
         else:
-            min_size = header.sizeHint().height() + 2 * self._dock_frame_width(dock)
+            min_size = header.selector.sizeHint().height() + 2 * self._dock_frame_width(dock)
             total = dock.height()
             size = max(min_size, min(abs(delta.y()), total - min_size))
             if delta.y() >= 0:
@@ -2030,7 +2013,7 @@ class MainWindow(QMainWindow):
             return
         header = self.dock_headers.get(dock)
         if self._split_orientation == Qt.Horizontal:
-            min_size = header.sizeHint().width() + 2 * self._dock_frame_width(dock)
+            min_size = header.selector.sizeHint().width() + 2 * self._dock_frame_width(dock)
             total = self._split_start_size
             size = max(min_size, min(abs(delta.x()), total - min_size))
             if delta.x() >= 0:
@@ -2038,7 +2021,7 @@ class MainWindow(QMainWindow):
             else:
                 self.resizeDocks([new_dock, dock], [size, total - size], Qt.Horizontal)
         else:
-            min_size = header.sizeHint().height() + 2 * self._dock_frame_width(dock)
+            min_size = header.selector.sizeHint().height() + 2 * self._dock_frame_width(dock)
             total = self._split_start_size
             size = max(min_size, min(abs(delta.y()), total - min_size))
             if delta.y() >= 0:
@@ -2054,7 +2037,7 @@ class MainWindow(QMainWindow):
 
         header = self.dock_headers.get(dock)
         if self._split_orientation == Qt.Horizontal:
-            min_size = header.sizeHint().width() + 2 * self._dock_frame_width(dock)
+            min_size = header.selector.sizeHint().width() + 2 * self._dock_frame_width(dock)
             total = dock.width()
             size = max(min_size, min(abs(delta.x()), total - min_size))
             if delta.x() >= 0:
@@ -2064,7 +2047,7 @@ class MainWindow(QMainWindow):
                 preview.new_area.setGeometry(0, 0, size, dock.height())
                 preview.old_area.setGeometry(size, 0, total - size, dock.height())
         else:
-            min_size = header.sizeHint().height() + 2 * self._dock_frame_width(dock)
+            min_size = header.selector.sizeHint().height() + 2 * self._dock_frame_width(dock)
             total = dock.height()
             size = max(min_size, min(abs(delta.y()), total - min_size))
             if delta.y() >= 0:
@@ -2183,7 +2166,7 @@ class MainWindow(QMainWindow):
         # size constraints are based on the original dock header
         header = self.dock_headers.get(dock)
         if self._split_orientation == Qt.Horizontal:
-            min_size = header.sizeHint().width() + 2 * self._dock_frame_width(dock)
+            min_size = header.selector.sizeHint().width() + 2 * self._dock_frame_width(dock)
             total = self._split_start_size
             size = max(min_size, min(abs(delta.x()), total - min_size))
             if delta.x() >= 0:
@@ -2191,7 +2174,7 @@ class MainWindow(QMainWindow):
             else:
                 self.resizeDocks([new_dock, dock], [size, total - size], Qt.Horizontal)
         else:
-            min_size = header.sizeHint().height() + 2 * self._dock_frame_width(dock)
+            min_size = header.selector.sizeHint().height() + 2 * self._dock_frame_width(dock)
             total = self._split_start_size
             size = max(min_size, min(abs(delta.y()), total - min_size))
             if delta.y() >= 0:
@@ -2207,7 +2190,7 @@ class MainWindow(QMainWindow):
 
         header = self.dock_headers.get(dock)
         if self._split_orientation == Qt.Horizontal:
-            min_size = header.sizeHint().width() + 2 * self._dock_frame_width(dock)
+            min_size = header.selector.sizeHint().width() + 2 * self._dock_frame_width(dock)
             total = dock.width()
             size = max(min_size, min(abs(delta.x()), total - min_size))
             if delta.x() >= 0:
@@ -2217,7 +2200,7 @@ class MainWindow(QMainWindow):
                 preview.new_area.setGeometry(0, 0, size, dock.height())
                 preview.old_area.setGeometry(size, 0, total - size, dock.height())
         else:
-            min_size = header.sizeHint().height() + 2 * self._dock_frame_width(dock)
+            min_size = header.selector.sizeHint().height() + 2 * self._dock_frame_width(dock)
             total = dock.height()
             size = max(min_size, min(abs(delta.y()), total - min_size))
             if delta.y() >= 0:
@@ -2338,7 +2321,7 @@ class MainWindow(QMainWindow):
         # size constraints are based on the original dock header
         header = self.dock_headers.get(dock)
         if self._split_orientation == Qt.Horizontal:
-            min_size = header.sizeHint().width() + 2 * self._dock_frame_width(dock)
+            min_size = header.selector.sizeHint().width() + 2 * self._dock_frame_width(dock)
             total = self._split_start_size
             size = max(min_size, min(abs(delta.x()), total - min_size))
             if delta.x() >= 0:
@@ -2346,7 +2329,7 @@ class MainWindow(QMainWindow):
             else:
                 self.resizeDocks([new_dock, dock], [size, total - size], Qt.Horizontal)
         else:
-            min_size = header.sizeHint().height() + 2 * self._dock_frame_width(dock)
+            min_size = header.selector.sizeHint().height() + 2 * self._dock_frame_width(dock)
             total = self._split_start_size
             size = max(min_size, min(abs(delta.y()), total - min_size))
             if delta.y() >= 0:
@@ -2362,7 +2345,7 @@ class MainWindow(QMainWindow):
 
         header = self.dock_headers.get(dock)
         if self._split_orientation == Qt.Horizontal:
-            header_size = header.sizeHint().width() + 2 * self._dock_frame_width(dock)
+            header_size = header.selector.sizeHint().width() + 2 * self._dock_frame_width(dock)
             min_size = 1
             total = dock.width()
             size = max(min_size, min(abs(delta.x()), total - header_size))
@@ -2373,7 +2356,7 @@ class MainWindow(QMainWindow):
                 preview.new_area.setGeometry(0, 0, size, dock.height())
                 preview.old_area.setGeometry(size, 0, total - size, dock.height())
         else:
-            header_size = header.sizeHint().height() + 2 * self._dock_frame_width(dock)
+            header_size = header.selector.sizeHint().height() + 2 * self._dock_frame_width(dock)
             min_size = 1
             total = dock.height()
             size = max(min_size, min(abs(delta.y()), total - header_size))
@@ -2469,9 +2452,9 @@ class MainWindow(QMainWindow):
         header_size = 0
         if header:
             if self._split_orientation == Qt.Horizontal:
-                header_size = header.sizeHint().width() + 2 * self._dock_frame_width(dock)
+                header_size = header.selector.sizeHint().width() + 2 * self._dock_frame_width(dock)
             else:
-                header_size = header.sizeHint().height() + 2 * self._dock_frame_width(dock)
+                header_size = header.selector.sizeHint().height() + 2 * self._dock_frame_width(dock)
         new_dock = self._create_dock(label, area)
         new_dock.hide()
         if self._split_orientation == Qt.Horizontal:
@@ -2508,7 +2491,7 @@ class MainWindow(QMainWindow):
         # size constraints are based on the original dock header
         header = self.dock_headers.get(dock)
         if self._split_orientation == Qt.Horizontal:
-            header_size = header.sizeHint().width() + 2 * self._dock_frame_width(dock)
+            header_size = header.selector.sizeHint().width() + 2 * self._dock_frame_width(dock)
             min_size = 1
             total = self._split_start_size
             max_size = total - header_size
@@ -2518,7 +2501,7 @@ class MainWindow(QMainWindow):
             else:
                 self.resizeDocks([new_dock, dock], [size, total - size], Qt.Horizontal)
         else:
-            header_size = header.sizeHint().height() + 2 * self._dock_frame_width(dock)
+            header_size = header.selector.sizeHint().height() + 2 * self._dock_frame_width(dock)
             min_size = 1
             total = self._split_start_size
             max_size = total - header_size
@@ -2536,7 +2519,7 @@ class MainWindow(QMainWindow):
 
         header = self.dock_headers.get(dock)
         if self._split_orientation == Qt.Horizontal:
-            header_size = header.sizeHint().width() + 2 * self._dock_frame_width(dock)
+            header_size = header.selector.sizeHint().width() + 2 * self._dock_frame_width(dock)
             min_size = header_size
             total = dock.width()
             size = max(min_size, min(abs(delta.x()), total - header_size))
@@ -2547,7 +2530,7 @@ class MainWindow(QMainWindow):
                 preview.new_area.setGeometry(0, 0, size, dock.height())
                 preview.old_area.setGeometry(size, 0, total - size, dock.height())
         else:
-            header_size = header.sizeHint().height() + 2 * self._dock_frame_width(dock)
+            header_size = header.selector.sizeHint().height() + 2 * self._dock_frame_width(dock)
             min_size = header_size
             total = dock.height()
             size = max(min_size, min(abs(delta.y()), total - header_size))
@@ -2643,9 +2626,9 @@ class MainWindow(QMainWindow):
         header_size = 0
         if header:
             if self._split_orientation == Qt.Horizontal:
-                header_size = header.sizeHint().width() + 2 * self._dock_frame_width(dock)
+                header_size = header.selector.sizeHint().width() + 2 * self._dock_frame_width(dock)
             else:
-                header_size = header.sizeHint().height() + 2 * self._dock_frame_width(dock)
+                header_size = header.selector.sizeHint().height() + 2 * self._dock_frame_width(dock)
         new_dock = self._create_dock(label, area)
         new_dock.hide()
         if self._split_orientation == Qt.Horizontal:
@@ -2682,7 +2665,7 @@ class MainWindow(QMainWindow):
         # size constraints are based on the original dock header
         header = self.dock_headers.get(dock)
         if self._split_orientation == Qt.Horizontal:
-            header_size = header.sizeHint().width() + 2 * self._dock_frame_width(dock)
+            header_size = header.selector.sizeHint().width() + 2 * self._dock_frame_width(dock)
             min_size = header_size
             total = self._split_start_size
             max_size = total - header_size
@@ -2692,7 +2675,7 @@ class MainWindow(QMainWindow):
             else:
                 self.resizeDocks([new_dock, dock], [size, total - size], Qt.Horizontal)
         else:
-            header_size = header.sizeHint().height() + 2 * self._dock_frame_width(dock)
+            header_size = header.selector.sizeHint().height() + 2 * self._dock_frame_width(dock)
             min_size = header_size
             total = self._split_start_size
             max_size = total - header_size
@@ -2721,7 +2704,7 @@ class MainWindow(QMainWindow):
         header = self.dock_headers.get(dock)
         try:
             if self._split_orientation == Qt.Horizontal:
-                min_size = header.sizeHint().width() + 2 * self._dock_frame_width(dock)
+                min_size = header.selector.sizeHint().width() + 2 * self._dock_frame_width(dock)
                 size = max(min_size, min(abs(delta.x()), dock.width() - min_size))
                 if delta.x() >= 0:
                     self.splitDockWidget(dock, new_dock, Qt.Horizontal)
@@ -2730,7 +2713,7 @@ class MainWindow(QMainWindow):
                     self.splitDockWidget(new_dock, dock, Qt.Horizontal)
                     self.resizeDocks([new_dock, dock], [size, dock.width() - size], Qt.Horizontal)
             else:
-                min_size = header.sizeHint().height() + 2 * self._dock_frame_width(dock)
+                min_size = header.selector.sizeHint().height() + 2 * self._dock_frame_width(dock)
                 size = max(min_size, min(abs(delta.y()), dock.height() - min_size))
                 if delta.y() >= 0:
                     self.splitDockWidget(dock, new_dock, Qt.Vertical)
