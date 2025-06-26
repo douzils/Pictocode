@@ -68,13 +68,12 @@ class MainWindow(QMainWindow):
         """Return dock header size including frame."""
         header = self.dock_headers.get(dock)
         frame = self._dock_frame_width(dock) * 2
-        if header:
-            if orientation == Qt.Horizontal:
-                base = header.selector.sizeHint().width()
-            else:
-                base = header.selector.sizeHint().height()
+        if not header:
+            return self.MIN_DOCK_SIZE + frame
+        if orientation == Qt.Horizontal:
+            base = header.selector.sizeHint().width()
         else:
-            base = self.MIN_DOCK_SIZE
+            base = header.height()
         return base + frame
     # ensure drag related attributes exist before __init__ runs
     _corner_current_dock = None
@@ -331,7 +330,7 @@ class MainWindow(QMainWindow):
         handle = CornerHandle(header)
         handle.installEventFilter(self)
         header.layout().addWidget(handle)
-        header.layout().setAlignment(handle, Qt.AlignRight | Qt.AlignVCenter)
+        header.layout().setAlignment(handle, Qt.AlignRight | Qt.AlignBottom)
         if self.float_docks:
             dock.setAllowedAreas(Qt.NoDockWidgetArea)
         else:
