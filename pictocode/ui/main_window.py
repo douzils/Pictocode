@@ -1232,6 +1232,21 @@ class MainWindow(QMainWindow):
                     vbar.setValue(v)
 
                 QTimer.singleShot(0, restore)
+            elif event.type() == QEvent.Resize and obj is dock:
+                area = self.dockWidgetArea(dock)
+                if area in (Qt.LeftDockWidgetArea, Qt.RightDockWidgetArea):
+                    orient = Qt.Horizontal
+                    size = dock.width()
+                else:
+                    orient = Qt.Vertical
+                    size = dock.height()
+                header_size = self._header_min_size(dock, orient)
+                content = dock.widget()
+                if content and not getattr(dock, "_collapsed", False):
+                    if size <= header_size:
+                        content.hide()
+                    else:
+                        content.show()
             elif event.type() == QEvent.MouseButtonPress and event.button() == Qt.LeftButton:
                 if obj is dock:
                     pos = event.pos()
@@ -1382,7 +1397,6 @@ class MainWindow(QMainWindow):
         preview.show()
         preview.raise_()
         return preview
-
 
     def _collapse_dock(self, dock, orientation):
         dock._collapsed = True
