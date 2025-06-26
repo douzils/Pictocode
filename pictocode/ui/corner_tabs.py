@@ -11,6 +11,8 @@ from ..utils import get_contrast_color
 
 from ..utils import get_contrast_color
 
+from ..utils import get_contrast_color
+
 class CornerTabs(QWidget):
     """Dropdown widget used as dock header or floating overlay."""
 

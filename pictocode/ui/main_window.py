@@ -71,7 +71,7 @@ class MainWindow(QMainWindow):
         if not header:
             return self.MIN_DOCK_SIZE + frame
         if orientation == Qt.Horizontal:
-            base = header.selector.sizeHint().width()
+            base = header.width()
         else:
             base = header.height()
         return base + frame
@@ -323,10 +323,12 @@ class MainWindow(QMainWindow):
         frame = self._dock_frame_width(dock) * 2
 
         container = QWidget()
+        container.setMinimumSize(0, 0)
         lay = QVBoxLayout(container)
         lay.setContentsMargins(0, 0, 0, 0)
         lay.setSpacing(0)
         widget = self.category_widgets[label]
+        widget.setMinimumSize(0, 0)
         lay.addWidget(widget)
         container.setLayout(lay)
 
