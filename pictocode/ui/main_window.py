@@ -16,7 +16,6 @@ from PyQt5.QtWidgets import (
     QDialog,
     QGraphicsOpacityEffect,
     QToolBar,
-    QHBoxLayout,
     QWIDGETSIZE_MAX,
     QStyle,
 )
@@ -335,6 +334,11 @@ class MainWindow(QMainWindow):
         handle.installEventFilter(self)
         header.set_handle(handle)
         dock.setWidget(container)
+
+        handle = CornerHandle(header)
+        handle.installEventFilter(self)
+        header.layout().addWidget(handle)
+        header.layout().setAlignment(handle, Qt.AlignRight | Qt.AlignBottom)
         if self.float_docks:
             dock.setAllowedAreas(Qt.NoDockWidgetArea)
         else:
@@ -1131,6 +1135,10 @@ class MainWindow(QMainWindow):
             QWidget#corner_handle {{
                 background: transparent;
             }}
+            QDockWidget::title {{
+                padding: 0px;
+                margin: 0px;
+            }}
             """
         )
         self.inspector.setStyleSheet(f"font-size: {dock_font_size}pt;")
@@ -1292,19 +1300,13 @@ class MainWindow(QMainWindow):
                         self._collapse_dock(new_dock, self._split_orientation)
                     else:
                         if self._split_orientation == Qt.Horizontal:
-                            new_dock.setMinimumWidth(self._header_min_size(new_dock, Qt.Horizontal))
-                            new_dock.setMaximumWidth(QWIDGETSIZE_MAX)
                             dock_header = self.dock_headers.get(dock)
                             if dock_header:
                                 dock.setMinimumWidth(dock_header.selector.sizeHint().width() + 2 * self._dock_frame_width(dock))
-                            dock.setMaximumWidth(QWIDGETSIZE_MAX)
                         else:
-                            new_dock.setMinimumHeight(self._header_min_size(new_dock, Qt.Vertical))
-                            new_dock.setMaximumHeight(QWIDGETSIZE_MAX)
                             dock_header = self.dock_headers.get(dock)
                             if dock_header:
                                 dock.setMinimumHeight(dock_header.selector.sizeHint().height() + 2 * self._dock_frame_width(dock))
-                            dock.setMaximumHeight(QWIDGETSIZE_MAX)
                 elif self._split_preview:
                     func = getattr(self, "_update_split_preview", None)
                     if func:
@@ -1615,20 +1617,19 @@ class MainWindow(QMainWindow):
         if prev and prev is not dock:
             cont = prev.widget()
             lay = cont.layout()
-            if lay.count() > 1:
-                old = lay.itemAt(1).widget()
+            if lay.count():
+                old = lay.itemAt(0).widget()
                 if old is widget:
                     old.setParent(None)
-                lay.insertWidget(1, QWidget())
             self.dock_current_widget[prev] = None
         # insert into new dock
         cont = dock.widget()
         lay = cont.layout()
-        if lay.count() > 1:
-            old = lay.itemAt(1).widget()
+        if lay.count():
+            old = lay.itemAt(0).widget()
             if old:
                 old.setParent(None)
-        lay.insertWidget(1, widget)
+        lay.insertWidget(0, widget)
         self.widget_docks[widget] = dock
         self.dock_current_widget[dock] = widget
         dock.setWindowTitle(label)
