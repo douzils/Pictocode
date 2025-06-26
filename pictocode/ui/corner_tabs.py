@@ -3,6 +3,8 @@ from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QColor
 from ..utils import get_contrast_color
 
+from ..utils import get_contrast_color
+
 class CornerTabs(QWidget):
     """Dropdown widget used as dock header or floating overlay."""
 
@@ -77,9 +79,9 @@ class CornerTabs(QWidget):
         self._color = QColor(color)
         text = get_contrast_color(self._color)
         style = (
-            f"#corner_tabs {{ background: {self._color.name()}; }}"\
-            f"QComboBox#corner_selector {{ border: none; padding: 0 6px;"\
-            f" background: transparent; color: {text}; }}"\
+            f"#corner_tabs {{ background: {self._color.name()}; }}"
+            f"QComboBox#corner_selector {{ border: none; padding: 0 6px;"
+            f" background: transparent; color: {text}; }}"
             "QComboBox#corner_selector::drop-down { border: none; }"
         )
         self.setStyleSheet(style)

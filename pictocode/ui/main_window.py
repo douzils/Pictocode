@@ -329,6 +329,11 @@ class MainWindow(QMainWindow):
         widget = self.category_widgets[label]
         lay.addWidget(widget)
         container.setLayout(lay)
+
+        handle = CornerHandle(header)
+        handle.installEventFilter(self)
+        header.layout().addWidget(handle)
+        header.layout().setAlignment(handle, Qt.AlignRight | Qt.AlignBottom)
         dock.setWidget(container)
 
         handle = CornerHandle(header)
@@ -1398,20 +1403,35 @@ class MainWindow(QMainWindow):
     def _collapse_dock(self, dock, orientation):
         dock._collapsed = True
         dock._collapse_orientation = orientation
-        dock._restore_size = dock.height()
+        if orientation == Qt.Horizontal:
+            dock._restore_size = dock.width()
+        else:
+            dock._restore_size = dock.height()
         if dock.widget():
             dock.widget().hide()
-        size = self._header_min_size(dock, Qt.Vertical)
-        dock.setMinimumHeight(size)
-        dock.setMaximumHeight(size)
-        dock.resize(dock.width(), size)
+        size = self._header_min_size(dock, orientation)
+        if orientation == Qt.Horizontal:
+            dock.setMinimumWidth(size)
+            dock.setMaximumWidth(size)
+            dock.resize(size, dock.height())
+        else:
+            dock.setMinimumHeight(size)
+            dock.setMaximumHeight(size)
+            dock.resize(dock.width(), size)
 
     def _expand_dock(self, dock):
-        min_size = self._header_min_size(dock, Qt.Vertical)
-        dock.setMinimumHeight(min_size)
-        dock.setMaximumHeight(QWIDGETSIZE_MAX)
-        restore = max(min_size, getattr(dock, "_restore_size", self.default_dock_size))
-        dock.resize(dock.width(), restore)
+        orientation = getattr(dock, "_collapse_orientation", Qt.Horizontal)
+        min_size = self._header_min_size(dock, orientation)
+        if orientation == Qt.Horizontal:
+            dock.setMinimumWidth(min_size)
+            dock.setMaximumWidth(QWIDGETSIZE_MAX)
+            restore = max(min_size, getattr(dock, "_restore_size", self.default_dock_size))
+            dock.resize(restore, dock.height())
+        else:
+            dock.setMinimumHeight(min_size)
+            dock.setMaximumHeight(QWIDGETSIZE_MAX)
+            restore = max(min_size, getattr(dock, "_restore_size", self.default_dock_size))
+            dock.resize(dock.width(), restore)
         if dock.widget():
             dock.widget().show()
         dock._collapsed = False
