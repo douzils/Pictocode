@@ -8,6 +8,7 @@ class LogsWidget(QWidget):
         super().__init__(parent)
         self.text_edit = QPlainTextEdit(self)
         self.text_edit.setReadOnly(True)
+        self.text_edit.setMinimumSize(0, 0)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self.text_edit)
