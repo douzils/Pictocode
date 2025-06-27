@@ -1248,6 +1248,9 @@ class MainWindow(QMainWindow):
                         content.hide()
                     else:
                         content.show()
+                header = self.dock_headers.get(dock)
+                if header:
+                    header._position_handle()
             elif event.type() == QEvent.MouseButtonPress and event.button() == Qt.LeftButton:
                 if obj is dock:
                     pos = event.pos()
