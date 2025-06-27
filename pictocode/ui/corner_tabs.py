@@ -5,8 +5,9 @@ from PyQt5.QtWidgets import (
     QMenu,
     QDockWidget,
     QStyle,
+    QSizePolicy,
 )
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtCore import Qt, pyqtSignal, QSize
 from PyQt5.QtGui import QColor
 from ..utils import get_contrast_color
 
@@ -27,6 +28,9 @@ class CornerTabs(QWidget):
         layout.setAlignment(Qt.AlignLeft)
         self.selector = QComboBox(self)
         self.selector.setObjectName("corner_selector")
+        # allow docks to collapse fully by letting the selector shrink
+        self.selector.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Fixed)
+        self.selector.setMinimumWidth(0)
         self.selector.addItems([
             "Plan de travail",
             "Propriétés",
@@ -80,6 +84,26 @@ class CornerTabs(QWidget):
     def _emit_change(self, text):
         self.tab_selected.emit(text)
 
+    # allow the header to shrink when its dock is collapsed
+    def sizeHint(self):
+        hint = super().sizeHint()
+        dock = self.parent()
+        if isinstance(dock, QDockWidget) and getattr(dock, "_collapsed", False):
+            return hint.expandedTo(QSize(0, hint.height()))
+        return hint
+
+    def minimumSizeHint(self):
+        hint = super().minimumSizeHint()
+        dock = self.parent()
+        if isinstance(dock, QDockWidget) and getattr(dock, "_collapsed", False):
+            return hint.expandedTo(QSize(0, hint.height()))
+        return hint
+
+    def set_collapsed(self, collapsed: bool):
+        """Hide or show the selector so the dock can fully collapse."""
+        self.selector.setVisible(not collapsed)
+        self.updateGeometry()
+
     def set_color(self, color: QColor):
         """Apply a background color to the tab bar."""
         self._color = QColor(color)
@@ -123,16 +147,6 @@ class CornerTabs(QWidget):
             y = (self.height() - self._handle.height()) // 2
         self._handle.move(x, y)
         self._handle.raise_()
-
-    def show_handle(self, visible: bool = True):
-        if self._handle:
-            dock = self.parent()
-            frame = dock.style().pixelMetric(QStyle.PM_DockWidgetFrameWidth, None, dock)
-            self._handle.move(
-                dock.width() - self._handle.width() - frame,
-                self.height() + frame,
-            )
-            self._handle.raise_()
 
     def show_handle(self, visible: bool = True):
         if self._handle:
