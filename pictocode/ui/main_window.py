@@ -1239,19 +1239,25 @@ class MainWindow(QMainWindow):
                 # collapse down to just the header regardless of placement
                 size = dock.height()
                 header_size = self._header_min_size(dock, Qt.Vertical)
-                content = dock.widget()
-                if content and not getattr(dock, "_collapsed", False):
-                    if size <= header_size:
-                        content.hide()
-                    else:
-                        content.show()
                 header = self.dock_headers.get(dock)
-                if header:
-                    if size <= header_size:
-                        header.show_handle(False)
-                    else:
-                        header.show_handle(True)
-                    header._position_handle()
+
+                if size <= header_size and not getattr(dock, "_collapsed", False):
+                    self._collapse_dock(dock, Qt.Vertical)
+                elif size > header_size and getattr(dock, "_collapsed", False):
+                    self._expand_dock(dock)
+                else:
+                    content = dock.widget()
+                    if content and not getattr(dock, "_collapsed", False):
+                        if size <= header_size:
+                            content.hide()
+                        else:
+                            content.show()
+                    if header:
+                        if size <= header_size:
+                            header.show_handle(False)
+                        else:
+                            header.show_handle(True)
+                        header._position_handle()
             elif event.type() == QEvent.MouseButtonPress and event.button() == Qt.LeftButton:
                 if obj is dock:
                     pos = event.pos()
