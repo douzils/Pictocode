@@ -97,7 +97,11 @@ class CornerTabs(QWidget):
     def set_handle(self, handle: QWidget):
         """Attach ``handle`` and keep it aligned to the bottom-right."""
         self._handle = handle
-        handle.setParent(self)
+        dock = self.parent()
+        if isinstance(dock, QDockWidget):
+            handle.setParent(dock)
+        else:
+            handle.setParent(self)
         handle.raise_()
         handle.show()
         self._position_handle()
@@ -107,6 +111,20 @@ class CornerTabs(QWidget):
         self._position_handle()
 
     def _position_handle(self):
+        if not self._handle:
+            return
+        dock = self.parent()
+        if isinstance(dock, QDockWidget):
+            frame = dock.style().pixelMetric(QStyle.PM_DockWidgetFrameWidth, None, dock)
+            x = self.width() - self._handle.width()
+            y = frame + (self.height() - self._handle.height()) // 2
+        else:
+            x = self.width() - self._handle.width()
+            y = (self.height() - self._handle.height()) // 2
+        self._handle.move(x, y)
+        self._handle.raise_()
+
+    def show_handle(self, visible: bool = True):
         if self._handle:
             self._handle.move(
                 self.width() - self._handle.width(),
