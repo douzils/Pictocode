@@ -117,11 +117,11 @@ class CornerTabs(QWidget):
         dock = self.parent()
         if isinstance(dock, QDockWidget):
             frame = dock.style().pixelMetric(QStyle.PM_DockWidgetFrameWidth, None, dock)
-            x = dock.width() - self._handle.width() - frame
-            y = self.height() + frame
+            x = self.width() - self._handle.width()
+            y = frame + (self.height() - self._handle.height()) // 2
         else:
             x = self.width() - self._handle.width()
-            y = self.height()
+            y = (self.height() - self._handle.height()) // 2
         self._handle.move(x, y)
         self._handle.raise_()
 
@@ -130,6 +130,5 @@ class CornerTabs(QWidget):
             self._handle.setVisible(visible)
             if visible:
                 self._handle.raise_()
-
 
 

@@ -333,8 +333,8 @@ class MainWindow(QMainWindow):
         container.setLayout(lay)
 
         combo_size = header.selector.sizeHint()
-        dock.setMinimumHeight(combo_size.height() + frame)
-        dock.setMinimumWidth(combo_size.width() + frame)
+        dock.setMinimumHeight(self.MIN_DOCK_SIZE)
+        dock.setMinimumWidth(self.MIN_DOCK_SIZE)
 
         handle = CornerHandle(dock)
         handle.installEventFilter(self)
@@ -1437,12 +1437,12 @@ class MainWindow(QMainWindow):
         orientation = getattr(dock, "_collapse_orientation", Qt.Horizontal)
         min_size = self._header_min_size(dock, orientation)
         if orientation == Qt.Horizontal:
-            dock.setMinimumWidth(min_size)
+            dock.setMinimumWidth(self.MIN_DOCK_SIZE)
             dock.setMaximumWidth(QWIDGETSIZE_MAX)
             restore = max(min_size, getattr(dock, "_restore_size", self.default_dock_size))
             dock.resize(restore, dock.height())
         else:
-            dock.setMinimumHeight(min_size)
+            dock.setMinimumHeight(self.MIN_DOCK_SIZE)
             dock.setMaximumHeight(QWIDGETSIZE_MAX)
             restore = max(min_size, getattr(dock, "_restore_size", self.default_dock_size))
             dock.resize(dock.width(), restore)
