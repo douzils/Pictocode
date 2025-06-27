@@ -1425,6 +1425,7 @@ class MainWindow(QMainWindow):
         header = self.dock_headers.get(dock)
         if header:
             header.show_handle(False)
+            header.set_collapsed(True)
             header._position_handle()
 
     def _expand_dock(self, dock):
@@ -1446,6 +1447,7 @@ class MainWindow(QMainWindow):
         header = self.dock_headers.get(dock)
         if header:
             header.show_handle(True)
+            header.set_collapsed(False)
             header._position_handle()
 
     def _toggle_dock(self, dock):

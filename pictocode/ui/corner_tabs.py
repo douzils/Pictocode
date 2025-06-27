@@ -30,6 +30,7 @@ class CornerTabs(QWidget):
         self.selector.setObjectName("corner_selector")
         # allow docks to collapse fully by letting the selector shrink
         self.selector.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Fixed)
+        self.selector.setMinimumWidth(0)
         self.selector.addItems([
             "Plan de travail",
             "Propriétés",
@@ -98,6 +99,10 @@ class CornerTabs(QWidget):
             return hint.expandedTo(QSize(0, hint.height()))
         return hint
 
+    def set_collapsed(self, collapsed: bool):
+        """Hide or show the selector so the dock can fully collapse."""
+        self.selector.setVisible(not collapsed)
+        self.updateGeometry()
     def set_color(self, color: QColor):
         """Apply a background color to the tab bar."""
         self._color = QColor(color)
