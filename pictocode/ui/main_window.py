@@ -336,15 +336,10 @@ class MainWindow(QMainWindow):
         dock.setMinimumHeight(combo_size.height() + frame)
         dock.setMinimumWidth(combo_size.width() + frame)
 
-        handle = CornerHandle()
+        handle = CornerHandle(header)
         handle.installEventFilter(self)
         header.set_handle(handle)
         dock.setWidget(container)
-
-        handle = CornerHandle(header)
-        handle.installEventFilter(self)
-        header.layout().addWidget(handle)
-        header.layout().setAlignment(handle, Qt.AlignRight | Qt.AlignBottom)
         if self.float_docks:
             dock.setAllowedAreas(Qt.NoDockWidgetArea)
         else:
@@ -1259,7 +1254,12 @@ class MainWindow(QMainWindow):
                 else:
                     pos = obj.mapTo(dock, event.pos())
                 r = dock.rect()
-                corner = r.adjusted(r.width() - self.CORNER_REGION, r.height() - self.CORNER_REGION, 0, 0)
+                corner = QRect(
+                    r.width() - self.CORNER_REGION,
+                    0,
+                    self.CORNER_REGION,
+                    self.CORNER_REGION,
+                )
                 if corner.contains(pos):
                     self._corner_dragging = True
                     self._corner_dragging_dock = dock

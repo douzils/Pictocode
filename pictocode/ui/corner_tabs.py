@@ -3,18 +3,6 @@ from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QColor
 from ..utils import get_contrast_color
 
-from ..utils import get_contrast_color
-
-from ..utils import get_contrast_color
-
-from ..utils import get_contrast_color
-
-from ..utils import get_contrast_color
-
-from ..utils import get_contrast_color
-
-from ..utils import get_contrast_color
-
 class CornerTabs(QWidget):
     """Dropdown widget used as dock header or floating overlay."""
 
@@ -101,7 +89,7 @@ class CornerTabs(QWidget):
     # ------------------------------------------------------------------
     # Resize handle support
     def set_handle(self, handle: QWidget):
-        """Attach ``handle`` and keep it aligned to the bottom-right."""
+        """Attach ``handle`` and keep it aligned to the top-right."""
         self._handle = handle
         handle.setParent(self)
         handle.raise_()
@@ -115,7 +103,7 @@ class CornerTabs(QWidget):
         if self._handle:
             self._handle.move(
                 self.width() - self._handle.width(),
-                self.height() - self._handle.height(),
+                0,
             )
 
 
