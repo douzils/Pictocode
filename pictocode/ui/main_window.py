@@ -71,9 +71,9 @@ class MainWindow(QMainWindow):
         if not header:
             return self.MIN_DOCK_SIZE + frame
         if orientation == Qt.Horizontal:
-            base = header.width()
+            base = header.selector.sizeHint().width()
         else:
-            base = header.height()
+            base = header.selector.sizeHint().height()
         return base + frame
     # ensure drag related attributes exist before __init__ runs
     _corner_current_dock = None
@@ -1250,6 +1250,10 @@ class MainWindow(QMainWindow):
                         content.show()
                 header = self.dock_headers.get(dock)
                 if header:
+                    if size <= header_size:
+                        header.show_handle(False)
+                    else:
+                        header.show_handle(True)
                     header._position_handle()
             elif event.type() == QEvent.MouseButtonPress and event.button() == Qt.LeftButton:
                 if obj is dock:
