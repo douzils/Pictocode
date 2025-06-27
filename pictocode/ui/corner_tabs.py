@@ -1,4 +1,11 @@
-from PyQt5.QtWidgets import QWidget, QHBoxLayout, QComboBox, QMenu, QDockWidget
+from PyQt5.QtWidgets import (
+    QWidget,
+    QHBoxLayout,
+    QComboBox,
+    QMenu,
+    QDockWidget,
+    QStyle,
+)
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QColor
 from ..utils import get_contrast_color
@@ -89,10 +96,15 @@ class CornerTabs(QWidget):
     # ------------------------------------------------------------------
     # Resize handle support
     def set_handle(self, handle: QWidget):
-        """Attach ``handle`` and keep it aligned to the top-right."""
+        """Attach ``handle`` and keep it aligned just below the title bar."""
         self._handle = handle
-        handle.setParent(self)
+        dock = self.parent()
+        if isinstance(dock, QDockWidget):
+            handle.setParent(dock)
+        else:
+            handle.setParent(self)
         handle.raise_()
+        handle.show()
         self._position_handle()
 
     def resizeEvent(self, event):
@@ -100,10 +112,23 @@ class CornerTabs(QWidget):
         self._position_handle()
 
     def _position_handle(self):
+        if not self._handle:
+            return
+        dock = self.parent()
+        if isinstance(dock, QDockWidget):
+            frame = dock.style().pixelMetric(QStyle.PM_DockWidgetFrameWidth, None, dock)
+            x = dock.width() - self._handle.width() - frame
+            y = self.height() + frame
+        else:
+            x = self.width() - self._handle.width()
+            y = self.height()
+        self._handle.move(x, y)
+        self._handle.raise_()
+
+    def show_handle(self, visible: bool = True):
         if self._handle:
-            self._handle.move(
-                self.width() - self._handle.width(),
-                0,
-            )
+            self._handle.setVisible(visible)
+            if visible:
+                self._handle.raise_()
 
 
