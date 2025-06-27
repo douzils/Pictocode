@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QWidget, QHBoxLayout, QComboBox, QMenu, QDockWidget
+from PyQt5.QtWidgets import QWidget, QHBoxLayout, QComboBox, QMenu, QDockWidget, QStyle
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QColor
 from ..utils import get_contrast_color
@@ -89,9 +89,13 @@ class CornerTabs(QWidget):
     # ------------------------------------------------------------------
     # Resize handle support
     def set_handle(self, handle: QWidget):
-        """Attach ``handle`` and keep it aligned to the top-right."""
+        """Attach ``handle`` and keep it aligned just below the title bar."""
         self._handle = handle
-        handle.setParent(self)
+        dock = self.parent()
+        if isinstance(dock, QDockWidget):
+            handle.setParent(dock)
+        else:
+            handle.setParent(self)
         handle.raise_()
         self._position_handle()
 
@@ -102,10 +106,11 @@ class CornerTabs(QWidget):
     def _position_handle(self):
         if self._handle:
             dock = self.parent()
-            if dock is not None:
+            if isinstance(dock, QDockWidget):
+                frame = dock.style().pixelMetric(QStyle.PM_DockWidgetFrameWidth, None, dock)
                 self._handle.move(
-                    dock.width() - self._handle.width(),
-                    self.height(),
+                    dock.width() - self._handle.width() - frame,
+                    self.height() + frame,
                 )
 
 

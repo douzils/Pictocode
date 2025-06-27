@@ -336,7 +336,7 @@ class MainWindow(QMainWindow):
         dock.setMinimumHeight(combo_size.height() + frame)
         dock.setMinimumWidth(combo_size.width() + frame)
 
-        handle = CornerHandle(header)
+        handle = CornerHandle(dock)
         handle.installEventFilter(self)
         header.set_handle(handle)
         dock.setWidget(container)
@@ -1258,9 +1258,10 @@ class MainWindow(QMainWindow):
                     pos = obj.mapTo(dock, event.pos())
                 r = dock.rect()
                 header = self.dock_headers.get(dock)
-                header_h = header.height() if header else 0
+                frame = self._dock_frame_width(dock)
+                header_h = (header.height() if header else 0) + frame
                 corner = QRect(
-                    r.width() - self.CORNER_REGION,
+                    r.width() - self.CORNER_REGION - frame,
                     header_h,
                     self.CORNER_REGION,
                     self.CORNER_REGION,
