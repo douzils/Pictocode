@@ -115,7 +115,7 @@ class CornerTabs(QWidget):
         if self._handle:
             self._handle.move(
                 self.width() - self._handle.width(),
-                self.height() - self._handle.height(),
+                0,
             )
 
 
