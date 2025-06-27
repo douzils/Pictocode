@@ -58,7 +58,7 @@ class MainWindow(QMainWindow):
     EDGE_MARGIN = 6
     CORNER_REGION = 20
     # minimum dock dimension when collapsed/expanded
-    MIN_DOCK_SIZE = 1
+    MIN_DOCK_SIZE = 0
 
     def _dock_frame_width(self, dock):
         """Return the frame width of ``dock`` using the current style."""
@@ -70,10 +70,11 @@ class MainWindow(QMainWindow):
         frame = self._dock_frame_width(dock) * 2
         if not header:
             return self.MIN_DOCK_SIZE + frame
+        hint = header.sizeHint()
         if orientation == Qt.Horizontal:
-            base = header.width()
+            base = hint.width()
         else:
-            base = header.height()
+            base = hint.height()
         return base + frame
     # ensure drag related attributes exist before __init__ runs
     _corner_current_dock = None
@@ -333,10 +334,10 @@ class MainWindow(QMainWindow):
         container.setLayout(lay)
 
         combo_size = header.selector.sizeHint()
-        dock.setMinimumHeight(combo_size.height() + frame)
-        dock.setMinimumWidth(combo_size.width() + frame)
+        dock.setMinimumHeight(self.MIN_DOCK_SIZE)
+        dock.setMinimumWidth(self.MIN_DOCK_SIZE)
 
-        handle = CornerHandle(header)
+        handle = CornerHandle(dock)
         handle.installEventFilter(self)
         header.set_handle(handle)
         dock.setWidget(container)
@@ -1234,29 +1235,41 @@ class MainWindow(QMainWindow):
 
                 QTimer.singleShot(0, restore)
             elif event.type() == QEvent.Resize and obj is dock:
-                area = self.dockWidgetArea(dock)
-                if area in (Qt.LeftDockWidgetArea, Qt.RightDockWidgetArea):
-                    orient = Qt.Horizontal
-                    size = dock.width()
+                # Always evaluate against the vertical size so docks can
+                # collapse down to just the header regardless of placement
+                size = dock.height()
+                header_size = self._header_min_size(dock, Qt.Vertical)
+                header = self.dock_headers.get(dock)
+
+                if size <= header_size and not getattr(dock, "_collapsed", False):
+                    self._collapse_dock(dock, Qt.Vertical)
+                elif size > header_size and getattr(dock, "_collapsed", False):
+                    self._expand_dock(dock)
                 else:
-                    orient = Qt.Vertical
-                    size = dock.height()
-                header_size = self._header_min_size(dock, orient)
-                content = dock.widget()
-                if content and not getattr(dock, "_collapsed", False):
-                    if size <= header_size:
-                        content.hide()
-                    else:
-                        content.show()
+                    content = dock.widget()
+                    if content and not getattr(dock, "_collapsed", False):
+                        if size <= header_size:
+                            content.hide()
+                        else:
+                            content.show()
+                    if header:
+                        if size <= header_size:
+                            header.show_handle(False)
+                        else:
+                            header.show_handle(True)
+                        header._position_handle()
             elif event.type() == QEvent.MouseButtonPress and event.button() == Qt.LeftButton:
                 if obj is dock:
                     pos = event.pos()
                 else:
                     pos = obj.mapTo(dock, event.pos())
                 r = dock.rect()
+                header = self.dock_headers.get(dock)
+                frame = self._dock_frame_width(dock)
+                header_h = (header.height() if header else 0) + frame
                 corner = QRect(
-                    r.width() - self.CORNER_REGION,
-                    0,
+                    r.width() - self.CORNER_REGION - frame,
+                    header_h - self.CORNER_REGION,
                     self.CORNER_REGION,
                     self.CORNER_REGION,
                 )
@@ -1422,34 +1435,38 @@ class MainWindow(QMainWindow):
             dock.setMinimumHeight(size)
             dock.setMaximumHeight(size)
             dock.resize(dock.width(), size)
+        header = self.dock_headers.get(dock)
+        if header:
+            header.show_handle(False)
+            header._position_handle()
 
     def _expand_dock(self, dock):
         orientation = getattr(dock, "_collapse_orientation", Qt.Horizontal)
         min_size = self._header_min_size(dock, orientation)
         if orientation == Qt.Horizontal:
-            dock.setMinimumWidth(min_size)
+            dock.setMinimumWidth(self.MIN_DOCK_SIZE)
             dock.setMaximumWidth(QWIDGETSIZE_MAX)
             restore = max(min_size, getattr(dock, "_restore_size", self.default_dock_size))
             dock.resize(restore, dock.height())
         else:
-            dock.setMinimumHeight(min_size)
+            dock.setMinimumHeight(self.MIN_DOCK_SIZE)
             dock.setMaximumHeight(QWIDGETSIZE_MAX)
             restore = max(min_size, getattr(dock, "_restore_size", self.default_dock_size))
             dock.resize(dock.width(), restore)
         if dock.widget():
             dock.widget().show()
         dock._collapsed = False
+        header = self.dock_headers.get(dock)
+        if header:
+            header.show_handle(True)
+            header._position_handle()
 
     def _toggle_dock(self, dock):
         if getattr(dock, "_collapsed", False):
             self._expand_dock(dock)
         else:
-            area = self.dockWidgetArea(dock)
-            if area in (Qt.LeftDockWidgetArea, Qt.RightDockWidgetArea):
-                orientation = Qt.Horizontal
-            else:
-                orientation = Qt.Vertical
-            self._collapse_dock(dock, orientation)
+            # Always collapse vertically so only the header remains visible
+            self._collapse_dock(dock, Qt.Vertical)
 
     def show_corner_tabs(self):
         """Display a floating tab selector near the cursor."""
