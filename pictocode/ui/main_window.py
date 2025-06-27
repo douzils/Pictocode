@@ -66,16 +66,8 @@ class MainWindow(QMainWindow):
 
     def _header_min_size(self, dock, orientation):
         """Return dock header size including frame."""
-        header = self.dock_headers.get(dock)
         frame = self._dock_frame_width(dock) * 2
-        if not header:
-            return self.MIN_DOCK_SIZE + frame
-        hint = header.sizeHint()
-        if orientation == Qt.Horizontal:
-            base = hint.width()
-        else:
-            base = hint.height()
-        return base + frame
+        return self.MIN_DOCK_SIZE + frame
     # ensure drag related attributes exist before __init__ runs
     _corner_current_dock = None
     _split_current_dock = None  # backward compatibility with older versions

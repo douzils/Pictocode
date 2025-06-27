@@ -103,7 +103,6 @@ class CornerTabs(QWidget):
         """Hide or show the selector so the dock can fully collapse."""
         self.selector.setVisible(not collapsed)
         self.updateGeometry()
-
     def set_color(self, color: QColor):
         """Apply a background color to the tab bar."""
         self._color = QColor(color)
