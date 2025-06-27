@@ -103,6 +103,7 @@ class CornerTabs(QWidget):
             handle.setParent(dock)
         handle.show()
         handle.raise_()
+        handle.show()
         self._position_handle()
 
     def resizeEvent(self, event):
@@ -110,6 +111,20 @@ class CornerTabs(QWidget):
         self._position_handle()
 
     def _position_handle(self):
+        if not self._handle:
+            return
+        dock = self.parent()
+        if isinstance(dock, QDockWidget):
+            frame = dock.style().pixelMetric(QStyle.PM_DockWidgetFrameWidth, None, dock)
+            x = self.width() - self._handle.width()
+            y = frame + (self.height() - self._handle.height()) // 2
+        else:
+            x = self.width() - self._handle.width()
+            y = (self.height() - self._handle.height()) // 2
+        self._handle.move(x, y)
+        self._handle.raise_()
+
+    def show_handle(self, visible: bool = True):
         if self._handle:
             dock = self.parent()
             frame = dock.style().pixelMetric(QStyle.PM_DockWidgetFrameWidth, None, dock)
