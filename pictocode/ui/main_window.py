@@ -58,7 +58,7 @@ class MainWindow(QMainWindow):
     EDGE_MARGIN = 6
     CORNER_REGION = 20
     # minimum dock dimension when collapsed/expanded
-    MIN_DOCK_SIZE = 1
+    MIN_DOCK_SIZE = 0
 
     def _dock_frame_width(self, dock):
         """Return the frame width of ``dock`` using the current style."""
@@ -70,10 +70,11 @@ class MainWindow(QMainWindow):
         frame = self._dock_frame_width(dock) * 2
         if not header:
             return self.MIN_DOCK_SIZE + frame
+        hint = header.sizeHint()
         if orientation == Qt.Horizontal:
-            base = header.selector.sizeHint().width()
+            base = hint.width()
         else:
-            base = header.selector.sizeHint().height()
+            base = hint.height()
         return base + frame
     # ensure drag related attributes exist before __init__ runs
     _corner_current_dock = None
