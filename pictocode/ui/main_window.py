@@ -1462,12 +1462,8 @@ class MainWindow(QMainWindow):
         if getattr(dock, "_collapsed", False):
             self._expand_dock(dock)
         else:
-            area = self.dockWidgetArea(dock)
-            if area in (Qt.LeftDockWidgetArea, Qt.RightDockWidgetArea):
-                orientation = Qt.Horizontal
-            else:
-                orientation = Qt.Vertical
-            self._collapse_dock(dock, orientation)
+            # Always collapse vertically so only the header remains visible
+            self._collapse_dock(dock, Qt.Vertical)
 
     def show_corner_tabs(self):
         """Display a floating tab selector near the cursor."""
