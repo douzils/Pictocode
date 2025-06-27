@@ -105,7 +105,7 @@ class CornerTabs(QWidget):
             if dock is not None:
                 self._handle.move(
                     dock.width() - self._handle.width(),
-                    dock.height() - self._handle.height(),
+                    self.height(),
                 )
 
 
