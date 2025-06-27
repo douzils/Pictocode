@@ -98,7 +98,11 @@ class CornerTabs(QWidget):
     def set_handle(self, handle: QWidget):
         """Attach ``handle`` and keep it aligned just below the title bar."""
         self._handle = handle
-        handle.setParent(self)
+        dock = self.parent()
+        if isinstance(dock, QDockWidget):
+            handle.setParent(dock)
+        else:
+            handle.setParent(self)
         handle.raise_()
         handle.show()
         self._position_handle()
