@@ -336,7 +336,7 @@ class MainWindow(QMainWindow):
         dock.setMinimumHeight(combo_size.height() + frame)
         dock.setMinimumWidth(combo_size.width() + frame)
 
-        handle = CornerHandle(header)
+        handle = CornerHandle(dock)
         handle.installEventFilter(self)
         header.set_handle(handle)
         dock.setWidget(container)
@@ -1248,15 +1248,21 @@ class MainWindow(QMainWindow):
                         content.hide()
                     else:
                         content.show()
+                header = self.dock_headers.get(dock)
+                if header:
+                    header._position_handle()
             elif event.type() == QEvent.MouseButtonPress and event.button() == Qt.LeftButton:
                 if obj is dock:
                     pos = event.pos()
                 else:
                     pos = obj.mapTo(dock, event.pos())
                 r = dock.rect()
+                header = self.dock_headers.get(dock)
+                frame = self._dock_frame_width(dock)
+                header_h = (header.height() if header else 0) + frame
                 corner = QRect(
-                    r.width() - self.CORNER_REGION,
-                    0,
+                    r.width() - self.CORNER_REGION - frame,
+                    header_h,
                     self.CORNER_REGION,
                     self.CORNER_REGION,
                 )
@@ -1422,6 +1428,9 @@ class MainWindow(QMainWindow):
             dock.setMinimumHeight(size)
             dock.setMaximumHeight(size)
             dock.resize(dock.width(), size)
+        header = self.dock_headers.get(dock)
+        if header:
+            header._position_handle()
 
     def _expand_dock(self, dock):
         orientation = getattr(dock, "_collapse_orientation", Qt.Horizontal)
@@ -1439,6 +1448,9 @@ class MainWindow(QMainWindow):
         if dock.widget():
             dock.widget().show()
         dock._collapsed = False
+        header = self.dock_headers.get(dock)
+        if header:
+            header._position_handle()
 
     def _toggle_dock(self, dock):
         if getattr(dock, "_collapsed", False):
