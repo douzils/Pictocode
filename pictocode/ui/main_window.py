@@ -1310,22 +1310,17 @@ class MainWindow(QMainWindow):
                     size = new_dock.width() if self._split_orientation == Qt.Horizontal else new_dock.height()
                     header = self.dock_headers.get(new_dock)
                     min_size = self.MIN_DOCK_SIZE
-                    if header:
-                        if self._split_orientation == Qt.Horizontal:
-                            min_size = header.selector.sizeHint().width() + 2 * self._dock_frame_width(new_dock)
-                        else:
-                            min_size = header.selector.sizeHint().height() + 2 * self._dock_frame_width(new_dock)
                     if size <= min_size:
                         self._collapse_dock(new_dock, self._split_orientation)
                     else:
                         if self._split_orientation == Qt.Horizontal:
                             dock_header = self.dock_headers.get(dock)
                             if dock_header:
-                                dock.setMinimumWidth(dock_header.selector.sizeHint().width() + 2 * self._dock_frame_width(dock))
+                                dock.setMinimumWidth(self.MIN_DOCK_SIZE)
                         else:
                             dock_header = self.dock_headers.get(dock)
                             if dock_header:
-                                dock.setMinimumHeight(dock_header.selector.sizeHint().height() + 2 * self._dock_frame_width(dock))
+                                dock.setMinimumHeight(self.MIN_DOCK_SIZE)
                 elif self._split_preview:
                     func = getattr(self, "_update_split_preview", None)
                     if func:
@@ -1426,7 +1421,7 @@ class MainWindow(QMainWindow):
             dock._restore_size = dock.height()
         if dock.widget():
             dock.widget().hide()
-        size = self._header_min_size(dock, orientation)
+        size = self.MIN_DOCK_SIZE
         if orientation == Qt.Horizontal:
             dock.setMinimumWidth(size)
             dock.setMaximumWidth(size)
@@ -1442,7 +1437,7 @@ class MainWindow(QMainWindow):
 
     def _expand_dock(self, dock):
         orientation = getattr(dock, "_collapse_orientation", Qt.Horizontal)
-        min_size = self._header_min_size(dock, orientation)
+        min_size = self.MIN_DOCK_SIZE
         if orientation == Qt.Horizontal:
             dock.setMinimumWidth(self.MIN_DOCK_SIZE)
             dock.setMaximumWidth(QWIDGETSIZE_MAX)
@@ -1517,12 +1512,7 @@ class MainWindow(QMainWindow):
         # record the size before inserting the new dock so limits stay stable
         start_size = dock.width() if self._split_orientation == Qt.Horizontal else dock.height()
         header = self.dock_headers.get(dock)
-        header_size = 0
-        if header:
-            if self._split_orientation == Qt.Horizontal:
-                header_size = header.selector.sizeHint().width() + 2 * self._dock_frame_width(dock)
-            else:
-                header_size = header.selector.sizeHint().height() + 2 * self._dock_frame_width(dock)
+        header_size = self.MIN_DOCK_SIZE
         new_dock = self._create_dock(label, area)
         new_dock.hide()
         if self._split_orientation == Qt.Horizontal:
@@ -1559,7 +1549,7 @@ class MainWindow(QMainWindow):
         # size constraints are based on the original dock header
         header = self.dock_headers.get(dock)
         if self._split_orientation == Qt.Horizontal:
-            header_size = header.selector.sizeHint().width() + 2 * self._dock_frame_width(dock)
+            header_size = self.MIN_DOCK_SIZE
             min_size = header_size
             total = self._split_start_size
             max_size = total - header_size
@@ -1569,7 +1559,7 @@ class MainWindow(QMainWindow):
             else:
                 self.resizeDocks([new_dock, dock], [size, total - size], Qt.Horizontal)
         else:
-            header_size = header.selector.sizeHint().height() + 2 * self._dock_frame_width(dock)
+            header_size = self.MIN_DOCK_SIZE
             min_size = header_size
             total = self._split_start_size
             max_size = total - header_size
@@ -1598,7 +1588,7 @@ class MainWindow(QMainWindow):
         header = self.dock_headers.get(dock)
         try:
             if self._split_orientation == Qt.Horizontal:
-                min_size = header.selector.sizeHint().width() + 2 * self._dock_frame_width(dock)
+                min_size = self.MIN_DOCK_SIZE
                 size = max(min_size, min(abs(delta.x()), dock.width() - min_size))
                 if delta.x() >= 0:
                     self.splitDockWidget(dock, new_dock, Qt.Horizontal)
@@ -1607,7 +1597,7 @@ class MainWindow(QMainWindow):
                     self.splitDockWidget(new_dock, dock, Qt.Horizontal)
                     self.resizeDocks([new_dock, dock], [size, dock.width() - size], Qt.Horizontal)
             else:
-                min_size = header.selector.sizeHint().height() + 2 * self._dock_frame_width(dock)
+                min_size = self.MIN_DOCK_SIZE
                 size = max(min_size, min(abs(delta.y()), dock.height() - min_size))
                 if delta.y() >= 0:
                     self.splitDockWidget(dock, new_dock, Qt.Vertical)
@@ -1620,11 +1610,6 @@ class MainWindow(QMainWindow):
         self._animate_new_dock(new_dock, self._split_orientation, delta)
         header_new = self.dock_headers.get(new_dock)
         min_size = self.MIN_DOCK_SIZE
-        if header_new:
-            if self._split_orientation == Qt.Horizontal:
-                min_size = header_new.sizeHint().width() + 2 * self._dock_frame_width(new_dock)
-            else:
-                min_size = header_new.sizeHint().height() + 2 * self._dock_frame_width(new_dock)
         if size <= min_size:
             self._collapse_dock(new_dock, self._split_orientation)
 
