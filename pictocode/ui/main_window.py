@@ -1234,14 +1234,10 @@ class MainWindow(QMainWindow):
 
                 QTimer.singleShot(0, restore)
             elif event.type() == QEvent.Resize and obj is dock:
-                area = self.dockWidgetArea(dock)
-                if area in (Qt.LeftDockWidgetArea, Qt.RightDockWidgetArea):
-                    orient = Qt.Horizontal
-                    size = dock.width()
-                else:
-                    orient = Qt.Vertical
-                    size = dock.height()
-                header_size = self._header_min_size(dock, orient)
+                # Always evaluate against the vertical size so docks can
+                # collapse down to just the header regardless of placement
+                size = dock.height()
+                header_size = self._header_min_size(dock, Qt.Vertical)
                 content = dock.widget()
                 if content and not getattr(dock, "_collapsed", False):
                     if size <= header_size:
