@@ -4,7 +4,6 @@ from PyQt5.QtWidgets import (
     QComboBox,
     QMenu,
     QDockWidget,
-    QStyle,
 )
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QColor
@@ -96,7 +95,7 @@ class CornerTabs(QWidget):
     # ------------------------------------------------------------------
     # Resize handle support
     def set_handle(self, handle: QWidget):
-        """Attach ``handle`` and keep it aligned just below the title bar."""
+        """Attach ``handle`` and keep it aligned to the bottom-right."""
         self._handle = handle
         dock = self.parent()
         if isinstance(dock, QDockWidget):
@@ -124,6 +123,14 @@ class CornerTabs(QWidget):
             y = (self.height() - self._handle.height()) // 2
         self._handle.move(x, y)
         self._handle.raise_()
+
+    def show_handle(self, visible: bool = True):
+        if self._handle:
+            self._handle.move(
+                self.width() - self._handle.width(),
+                self.height() - self._handle.height(),
+            )
+            self._handle.raise_()
 
     def show_handle(self, visible: bool = True):
         if self._handle:

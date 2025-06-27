@@ -1262,7 +1262,7 @@ class MainWindow(QMainWindow):
                 header_h = (header.height() if header else 0) + frame
                 corner = QRect(
                     r.width() - self.CORNER_REGION - frame,
-                    header_h,
+                    header_h - self.CORNER_REGION,
                     self.CORNER_REGION,
                     self.CORNER_REGION,
                 )
