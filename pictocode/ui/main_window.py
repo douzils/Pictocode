@@ -336,15 +336,10 @@ class MainWindow(QMainWindow):
         dock.setMinimumHeight(combo_size.height() + frame)
         dock.setMinimumWidth(combo_size.width() + frame)
 
-        handle = CornerHandle()
+        handle = CornerHandle(header)
         handle.installEventFilter(self)
         header.set_handle(handle)
         dock.setWidget(container)
-
-        handle = CornerHandle(header)
-        handle.installEventFilter(self)
-        header.layout().addWidget(handle)
-        header.layout().setAlignment(handle, Qt.AlignRight | Qt.AlignBottom)
         if self.float_docks:
             dock.setAllowedAreas(Qt.NoDockWidgetArea)
         else:
