@@ -36,6 +36,12 @@ class ProjectTile(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
+        self.title_label = QLabel(title, self)
+        self.title_label.setObjectName("tile_title")
+        self.title_label.setAlignment(Qt.AlignCenter)
+        self.title_label.hide()
+        layout.addWidget(self.title_label)
+
         self.preview = QLabel(self)
         self.preview.setObjectName("tile_preview")
         self.preview.setFixedSize(self._width, self._height)
@@ -43,21 +49,17 @@ class ProjectTile(QWidget):
         self.preview.setAlignment(Qt.AlignCenter)
         self.preview.setScaledContents(True)
         layout.addWidget(self.preview)
-
         self.title_label = QLabel(title, self)
         self.title_label.setObjectName("tile_title")
         self.title_label.setAlignment(Qt.AlignCenter)
         self.title_label.hide()
-
         self.overlay = QLabel(self.preview)
         self.overlay.setObjectName("tile_overlay")
         self.overlay.setGeometry(self.preview.rect())
         self.overlay.raise_()
         self.overlay.show()
-
         # apply rounded clipping after overlay is created
         self._update_clip()
-
         self.setStyleSheet(
             """
             #project_tile {
@@ -95,7 +97,6 @@ class ProjectTile(QWidget):
         self.fade_title.setDuration(150)
         self.fade_title.setEasingCurve(QEasingCurve.OutCubic)
         self.fade_title.finished.connect(self._on_title_anim_finished)
-
         # Positionne correctement le titre au-dessus de la preview
         self._update_title_pos()
     def set_item(self, item: QListWidgetItem):
