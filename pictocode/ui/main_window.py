@@ -18,6 +18,7 @@ from PyQt5.QtWidgets import (
     QToolBar,
     QWIDGETSIZE_MAX,
     QStyle,
+    QTabWidget,
 )
 from PyQt5.QtCore import (
     Qt,
@@ -146,10 +147,8 @@ class MainWindow(QMainWindow):
         self.home = HomePage(self)
         self.stack.addWidget(self.home)
 
-        # Page canvas
+        # Page projet avec interface à onglets
         self.canvas = CanvasWidget(self)
-        container = self.canvas
-        self.stack.addWidget(container)
 
         # Toolbar & inspecteur (cachés par défaut)
         self.toolbar = Toolbar(self)
@@ -169,6 +168,17 @@ class MainWindow(QMainWindow):
             "Objets": self.layout,
             "Logs": self.logs_widget,
         }
+
+        # Interface par onglets contenant toutes les sections
+        self.tabs = QTabWidget(self)
+        self.tabs.setDocumentMode(True)
+        self.tabs.setMovable(True)
+        self.tabs.setStyleSheet(
+            "QTabBar::tab { padding: 6px 12px; }"
+        )
+        for label, widget in self.category_widgets.items():
+            self.tabs.addTab(widget, label)
+        self.stack.addWidget(self.tabs)
         self.widget_docks = {}
         self.dock_headers = {}
         self.dock_current_widget = {}
@@ -217,31 +227,19 @@ class MainWindow(QMainWindow):
         self.layers = LayersWidget(self)
         self.toolbar.addWidget(self.layers)
 
+        # plus de panneaux flottants, tout est dans les onglets
+        self.inspector_dock = None
+        self.imports_dock = None
+        self.layout_dock = None
+        self.logs_dock = None
         self.docks = []
-
-        self.inspector_dock = self._create_dock("Propriétés", Qt.RightDockWidgetArea)
-        self.imports_dock = self._create_dock("Imports", Qt.LeftDockWidgetArea)
-        self.layout_dock = self._create_dock("Objets", Qt.LeftDockWidgetArea)
-        self.logs_dock = self._create_dock("Logs", Qt.BottomDockWidgetArea)
         self.corner_tabs = None
 
-        # Small square shown during corner drag
+        # Indicateur de glissement pour les anciennes fonctionnalités
         self.drag_indicator = QWidget(self)
         self.drag_indicator.setObjectName("drag_indicator")
         self.drag_indicator.setFixedSize(10, 10)
         self.drag_indicator.hide()
-
-        for dock in (
-            self.inspector_dock,
-            self.imports_dock,
-            self.layout_dock,
-            self.logs_dock,
-        ):
-            dock.installEventFilter(self)
-            if dock.widget():
-                dock.widget().installEventFilter(self)
-
-        self._apply_float_docks()
 
         # Dialog nouveau projet
         self.new_proj_dlg = NewProjectDialog(self)
@@ -297,11 +295,7 @@ class MainWindow(QMainWindow):
         self._load_shortcuts()
         self._set_project_actions_enabled(False)
 
-        # hide docks while on the home page
-        self.inspector_dock.hide()
-        self.imports_dock.hide()
-        self.layout_dock.hide()
-        self.logs_dock.hide()
+        # page par défaut : accueil, les onglets restent cachés
 
     def _create_dock(self, label, area):
         dock = QDockWidget(label, self)
@@ -572,16 +566,13 @@ class MainWindow(QMainWindow):
 
         self.layout.populate()
 
-        # affiche toolbar et docks
+        # affiche la barre d'outils et l'interface à onglets
         self.toolbar.setVisible(True)
-        self.inspector_dock.setVisible(False)
-        self.imports_dock.setVisible(True)
-        self.layout_dock.setVisible(True)
-        self.logs_dock.setVisible(True)
+        self.tabs.setCurrentWidget(self.canvas)
 
         self._set_project_actions_enabled(True)
-        # bascule sur le canvas
-        self._switch_page(self.canvas)
+        # bascule sur l'interface à onglets
+        self._switch_page(self.tabs)
         self.current_project_path = None
         self.set_dirty(False)
 
@@ -649,13 +640,10 @@ class MainWindow(QMainWindow):
         self.canvas.load_shapes(shapes or [])
         # bascule UI
         self.toolbar.setVisible(True)
-        self.inspector_dock.setVisible(False)
-        self.imports_dock.setVisible(True)
-        self.layout_dock.setVisible(True)
-        self.logs_dock.setVisible(True)
+        self.tabs.setCurrentWidget(self.canvas)
 
         self._set_project_actions_enabled(True)
-        self._switch_page(self.canvas)
+        self._switch_page(self.tabs)
         self.setWindowTitle(f"Pictocode — {params.get('name', '')}")
         self.set_dirty(False)
         self.add_recent_project(path)
@@ -786,10 +774,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Pictocode")
         self._switch_page(self.home)
         self.toolbar.setVisible(False)
-        self.inspector_dock.setVisible(False)
-        self.imports_dock.setVisible(False)
-        self.layout_dock.setVisible(False)
-        self.logs_dock.setVisible(False)
+        # les onglets sont masqués en revenant à l'accueil
         self._set_project_actions_enabled(False)
 
     # --- Edit actions -------------------------------------------------
@@ -935,7 +920,8 @@ class MainWindow(QMainWindow):
                     self.settings.setValue(f"shortcut_{name}", seq)
             if self.auto_show_inspector:
                 items = self.canvas.scene.selectedItems()
-                self.inspector_dock.setVisible(bool(items))
+                if items:
+                    self.tabs.setCurrentWidget(self.inspector)
             self._apply_float_docks()
             self.apply_theme(
                 theme,
