@@ -153,13 +153,14 @@ au bord de l'écran).
 ### Disposition d'onglets inspirée de Blender
 
 L'interface peut être divisée en zones réorganisables. Chaque zone dispose d'un
-petit coin servant à la scinder horizontalement ou verticalement. Lorsque la
-souris survole une zone, une icône en forme de croix apparaît pour indiquer que
-le fractionnement est possible. Un menu contextuel permet également de fusionner
-la zone courante avec ses voisines. Le contenu d'une zone (éditeur, vue ou
-outil) se déplace simplement par glisser‑déposer d'une zone à l'autre. Les
-dispositions peuvent être sauvegardées au format JSON puis restaurées
-ultérieurement.
+petit coin servant à la scinder horizontalement ou verticalement. Un carré rouge
+placé dans ce coin signale l'endroit où démarrer la création d'un nouvel onglet.
+Lorsque la souris survole une zone, une icône en forme de croix apparaît pour
+indiquer que le fractionnement est possible. Un menu contextuel permet
+également de fusionner la zone courante avec ses voisines. Le contenu d'une zone
+(éditeur, vue ou outil) se déplace simplement par glisser‑déposer d'une zone à
+l'autre. Les dispositions peuvent être sauvegardées au format JSON puis
+restaurées ultérieurement.
 
 ### Rapport de bugs
 

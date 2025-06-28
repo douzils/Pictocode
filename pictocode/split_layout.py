@@ -1,6 +1,6 @@
 import json
 from PyQt5.QtCore import Qt, QPoint
-from PyQt5.QtGui import QPixmap, QPainter
+from PyQt5.QtGui import QPixmap, QPainter, QColor
 from PyQt5.QtWidgets import (
     QApplication,
     QMainWindow,
@@ -24,6 +24,7 @@ class SplitHandle(QWidget):
         super().__init__(zone)
         self.zone = zone
         self.setFixedSize(14, 14)
+        self.square_size = 8
         self.start = None
         # Default cursor remains the arrow but we change it when hovering
         self.setCursor(Qt.ArrowCursor)
@@ -36,6 +37,17 @@ class SplitHandle(QWidget):
     def leaveEvent(self, event):
         self.setCursor(Qt.ArrowCursor)
         super().leaveEvent(event)
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.fillRect(
+            (self.width() - self.square_size) // 2,
+            (self.height() - self.square_size) // 2,
+            self.square_size,
+            self.square_size,
+            QColor("red"),
+        )
+        painter.end()
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
@@ -138,44 +150,6 @@ class ZoneWidget(QWidget):
         self.hover_icon.hide()
         self.setCursor(Qt.ArrowCursor)
         super().leaveEvent(event)
-
-    def dropEvent(self, event):
-        text = event.mimeData().text()
-        if text in self.editors:
-            source = event.source()
-            self.selector.setCurrentText(text)
-            if isinstance(source, ZoneWidget) and source is not self:
-                source.selector.setCurrentIndex(0)
-            event.acceptProposedAction()
-        else:
-            event.ignore()
-
-    # ------------------------------------------------------------------
-    # Drag & drop support
-    def mousePressEvent(self, event):
-        if event.button() == Qt.LeftButton and self.selector.geometry().contains(event.pos()):
-            self._drag_start = event.pos()
-        super().mousePressEvent(event)
-
-    def mouseMoveEvent(self, event):
-        if self._drag_start and (event.pos() - self._drag_start).manhattanLength() > QApplication.startDragDistance():
-            drag = QDrag(self)
-            mime = QMimeData()
-            mime.setText(self.selector.currentText())
-            drag.setMimeData(mime)
-            drag.exec_(Qt.MoveAction)
-            self._drag_start = None
-        super().mouseMoveEvent(event)
-
-    def mouseReleaseEvent(self, event):
-        self._drag_start = None
-        super().mouseReleaseEvent(event)
-
-    def dragEnterEvent(self, event):
-        if event.mimeData().hasText():
-            event.acceptProposedAction()
-        else:
-            event.ignore()
 
     def dropEvent(self, event):
         text = event.mimeData().text()
