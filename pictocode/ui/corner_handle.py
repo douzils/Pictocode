@@ -10,7 +10,9 @@ class CornerHandle(QWidget):
         super().__init__(parent)
         self.setObjectName("corner_handle")
         self.setFixedSize(12, 12)
-        self.setCursor(Qt.ArrowCursor)
+        # Use a diagonal resize cursor so users know the handle creates
+        # or resizes a dock when dragged from the corner.
+        self.setCursor(Qt.SizeFDiagCursor)
 
     def paintEvent(self, event):
         painter = QPainter(self)
