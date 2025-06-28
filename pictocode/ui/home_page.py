@@ -75,15 +75,7 @@ class HomePage(QWidget):
         # Layout principal
         vbox = QVBoxLayout(self)
 
-        title = QLabel("🎨 Bienvenue sur Pictocode")
-        title.setObjectName("title_label")
-        title.setAlignment(Qt.AlignCenter)
-        vbox.addWidget(title)
-
-        subtitle = QLabel("Créez et gérez vos projets graphiques")
-        subtitle.setAlignment(Qt.AlignCenter)
-        subtitle.setObjectName("subtitle_label")
-        vbox.addWidget(subtitle)
+        # Titre et sous-titre supprimes pour un affichage epure
 
         body = QHBoxLayout()
         vbox.addLayout(body)
@@ -142,26 +134,14 @@ class HomePage(QWidget):
         self.setStyleSheet(
             """
             QWidget#home {
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-                    stop:0 #374ABE, stop:1 #64B6FF);
-            }
-            QLabel#title_label {
-                font-size: 26px;
-                font-weight: bold;
-                color: white;
-                padding: 20px;
-            }
-            QLabel#subtitle_label {
-                font-size: 16px;
-                color: white;
-                padding-bottom: 16px;
+                background: #1b1b1b;
             }
             QListWidget#favorites_list,
             QListWidget#recent_list,
             QListWidget#template_list {
-                background: rgba(255, 255, 255, 0.9);
-                border-radius: 10px;
-                padding: 8px;
+                background: transparent;
+                border: none;
+                padding: 4px;
                 outline: none;
             }
             QListWidget#template_list {
@@ -232,7 +212,7 @@ class HomePage(QWidget):
                 ratio_w = int(128 * w / h)
                 tile = ProjectTile(thumb, display, ratio_w, 128)
             item = QListWidgetItem()
-            item.setSizeHint(tile.sizeHint())
+            tile.set_item(item)
             item.setData(Qt.UserRole, path)
             widget.addItem(item)
             widget.setItemWidget(item, tile)
