@@ -57,7 +57,6 @@ class ProjectTile(QWidget):
         self.overlay.setGeometry(self.preview.rect())
         self.overlay.raise_()
         self.overlay.show()
-
         self.setStyleSheet(
             """
             #project_tile {
