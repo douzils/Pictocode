@@ -24,7 +24,17 @@ class SplitHandle(QWidget):
         self.zone = zone
         self.setFixedSize(14, 14)
         self.start = None
+        # Default cursor remains the arrow but we change it when hovering
+        self.setCursor(Qt.ArrowCursor)
+
+    def enterEvent(self, event):
+        """Show a cross cursor when hovering the handle."""
         self.setCursor(Qt.SizeAllCursor)
+        super().enterEvent(event)
+
+    def leaveEvent(self, event):
+        self.setCursor(Qt.ArrowCursor)
+        super().leaveEvent(event)
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
