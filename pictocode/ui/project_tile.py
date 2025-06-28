@@ -49,7 +49,6 @@ class ProjectTile(QWidget):
         self.preview.setAlignment(Qt.AlignCenter)
         self.preview.setScaledContents(True)
         layout.addWidget(self.preview)
-
         self.overlay = QLabel(self.preview)
         self.overlay.setObjectName("tile_overlay")
         self.overlay.setGeometry(self.preview.rect())
@@ -96,7 +95,6 @@ class ProjectTile(QWidget):
         self.fade_title.setDuration(150)
         self.fade_title.setEasingCurve(QEasingCurve.OutCubic)
         self.fade_title.finished.connect(self._on_title_anim_finished)
-
     def set_item(self, item: QListWidgetItem):
         """Assure que la taille de l'item suit celle du widget."""
         self._item = item
