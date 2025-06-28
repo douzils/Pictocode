@@ -1251,14 +1251,16 @@ class MainWindow(QMainWindow):
                     self.CORNER_REGION,
                     self.CORNER_REGION,
                 )
-                if corner.contains(pos):
-                    self._corner_dragging = True
-                    self._corner_dragging_dock = dock
-                    self._corner_start = event.globalPos()
-                    self._show_drag_indicator(event.globalPos())
-                    return True
+            if corner.contains(pos):
+                self._corner_dragging = True
+                self._corner_dragging_dock = dock
+                self._corner_start = event.globalPos()
+                dock.setCursor(Qt.SizeFDiagCursor)
+                self._show_drag_indicator(event.globalPos())
+                return True
             elif event.type() == QEvent.MouseMove and self._corner_dragging and dock is self._corner_dragging_dock:
                 delta = event.globalPos() - self._corner_start
+                dock.setCursor(Qt.SizeFDiagCursor)
                 if getattr(self, "_corner_current_dock", None) is None:
                     self._update_drag_indicator(event.globalPos())
                     if abs(delta.x()) > 5 or abs(delta.y()) > 5:
@@ -1316,6 +1318,7 @@ class MainWindow(QMainWindow):
                 self._corner_dragging = False
                 self._corner_dragging_dock = None
                 self._hide_drag_indicator()
+                dock.unsetCursor()
                 return True
         return super().eventFilter(obj, event)
 
@@ -1679,23 +1682,57 @@ class MainWindow(QMainWindow):
             ):
                 self._corner_dragging = True
                 self._corner_start = event.pos()
+                # Indicate that dragging the corner will affect layout
+                self.setCursor(Qt.SizeFDiagCursor)
                 return
             if edges:
                 handle = self.windowHandle()
                 if handle and hasattr(handle, "startSystemResize"):
                     handle.startSystemResize(edges)
                     self._resizing = True
+                    # show the cursor used by the system resize so the user
+                    # knows resizing has started
+                    if edges == (Qt.LeftEdge | Qt.TopEdge) or edges == (
+                        Qt.RightEdge | Qt.BottomEdge
+                    ):
+                        cursor = Qt.SizeFDiagCursor
+                    elif edges == (Qt.RightEdge | Qt.TopEdge) or edges == (
+                        Qt.LeftEdge | Qt.BottomEdge
+                    ):
+                        cursor = Qt.SizeBDiagCursor
+                    elif edges & (Qt.LeftEdge | Qt.RightEdge):
+                        cursor = Qt.SizeHorCursor
+                    else:
+                        cursor = Qt.SizeVerCursor
+                    self.setCursor(cursor)
                     return
                 self._resizing = True
                 self._resize_edges = edges
                 self._start_pos = event.globalPos()
                 self._start_geom = self.geometry()
+                # Apply a resize cursor immediately
+                if edges == (Qt.LeftEdge | Qt.TopEdge) or edges == (
+                    Qt.RightEdge | Qt.BottomEdge
+                ):
+                    cursor = Qt.SizeFDiagCursor
+                elif edges == (Qt.RightEdge | Qt.TopEdge) or edges == (
+                    Qt.LeftEdge | Qt.BottomEdge
+                ):
+                    cursor = Qt.SizeBDiagCursor
+                elif edges & (Qt.LeftEdge | Qt.RightEdge):
+                    cursor = Qt.SizeHorCursor
+                else:
+                    cursor = Qt.SizeVerCursor
+                self.setCursor(cursor)
                 return
         super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event):
         if self._corner_dragging:
             delta = event.pos() - self._corner_start
+            # Keep a diagonal resize cursor during the drag so the user
+            # knows the action will modify the layout.
+            self.setCursor(Qt.SizeFDiagCursor)
             if abs(delta.x()) > 5 or abs(delta.y()) > 5:
                 self.show_corner_tabs()
                 self._corner_dragging = False
@@ -1737,6 +1774,7 @@ class MainWindow(QMainWindow):
             if abs(delta.x()) > 5 or abs(delta.y()) > 5:
                 self.show_corner_tabs()
             self._corner_dragging = False
+            self.setCursor(Qt.ArrowCursor)
             return
         self._resizing = False
         self.setCursor(Qt.ArrowCursor)
