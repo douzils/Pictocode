@@ -150,6 +150,17 @@ La barre de titre personnalisée prend désormais en charge le déplacement syst
 pour profiter des raccourcis de redimensionnement Windows (snap et agrandissement
 au bord de l'écran).
 
+### Disposition d'onglets inspirée de Blender
+
+L'interface peut être divisée en zones réorganisables. Chaque zone dispose d'un
+petit coin servant à la scinder horizontalement ou verticalement. Lorsque la
+souris survole une zone, une icône en forme de croix apparaît pour indiquer que
+le fractionnement est possible. Un menu contextuel permet également de fusionner
+la zone courante avec ses voisines. Le contenu d'une zone (éditeur, vue ou
+outil) se déplace simplement par glisser‑déposer d'une zone à l'autre. Les
+dispositions peuvent être sauvegardées au format JSON puis restaurées
+ultérieurement.
+
 ### Rapport de bugs
 
 En cas d'erreur inattendue, Pictocode enregistre automatiquement la trace dans `~/pictocode_logs/pictocode.log`. Ce fichier peut être joint pour signaler un problème.
