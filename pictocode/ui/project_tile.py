@@ -1,6 +1,19 @@
-from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QListWidgetItem
-from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import Qt, QSize
+from PyQt5.QtWidgets import (
+    QWidget,
+    QLabel,
+    QVBoxLayout,
+    QListWidgetItem,
+    QGraphicsOpacityEffect,
+)
+from PyQt5.QtGui import QIcon, QPainterPath
+from PyQt5.QtCore import (
+    Qt,
+    QSize,
+    QPropertyAnimation,
+    QEasingCurve,
+    QRegion,
+    QRectF,
+)
 
 class ProjectTile(QWidget):
     """Widget affichant une miniature de projet avec overlay et titre au survol."""
@@ -37,13 +50,13 @@ class ProjectTile(QWidget):
         self.preview.setAlignment(Qt.AlignCenter)
         self.preview.setScaledContents(True)
         layout.addWidget(self.preview)
+        self._update_clip()
 
         self.overlay = QLabel(self.preview)
         self.overlay.setObjectName("tile_overlay")
         self.overlay.setGeometry(self.preview.rect())
-        self.overlay.show()
         self.overlay.raise_()
-
+        self.overlay.show()
         self.setStyleSheet(
             """
             #project_tile {
@@ -63,6 +76,24 @@ class ProjectTile(QWidget):
             }
             """
         )
+
+        # Effets d'opacite pour l'overlay et le titre
+        self.overlay_effect = QGraphicsOpacityEffect(self.overlay)
+        self.overlay.setGraphicsEffect(self.overlay_effect)
+        self.overlay_effect.setOpacity(1.0)
+
+        self.title_effect = QGraphicsOpacityEffect(self.title_label)
+        self.title_label.setGraphicsEffect(self.title_effect)
+        self.title_effect.setOpacity(0.0)
+
+        self.fade_overlay = QPropertyAnimation(self.overlay_effect, b"opacity", self)
+        self.fade_overlay.setDuration(150)
+        self.fade_overlay.setEasingCurve(QEasingCurve.OutCubic)
+
+        self.fade_title = QPropertyAnimation(self.title_effect, b"opacity", self)
+        self.fade_title.setDuration(150)
+        self.fade_title.setEasingCurve(QEasingCurve.OutCubic)
+        self.fade_title.finished.connect(self._on_title_anim_finished)
     def set_item(self, item: QListWidgetItem):
         """Assure que la taille de l'item suit celle du widget."""
         self._item = item
@@ -71,19 +102,34 @@ class ProjectTile(QWidget):
     # ------------------------------------------------------------------
     # Events
     def enterEvent(self, event):
-        self.overlay.hide()
         self.title_label.show()
+        self.fade_title.stop()
+        self.fade_title.setStartValue(self.title_effect.opacity())
+        self.fade_title.setEndValue(1.0)
+        self.fade_title.start()
+
+        self.fade_overlay.stop()
+        self.fade_overlay.setStartValue(self.overlay_effect.opacity())
+        self.fade_overlay.setEndValue(0.0)
+        self.fade_overlay.start()
         self._update_item_size()
         super().enterEvent(event)
 
     def leaveEvent(self, event):
-        self.overlay.show()
-        self.title_label.hide()
-        self._update_item_size()
+        self.fade_title.stop()
+        self.fade_title.setStartValue(self.title_effect.opacity())
+        self.fade_title.setEndValue(0.0)
+        self.fade_title.start()
+
+        self.fade_overlay.stop()
+        self.fade_overlay.setStartValue(self.overlay_effect.opacity())
+        self.fade_overlay.setEndValue(1.0)
+        self.fade_overlay.start()
         super().leaveEvent(event)
 
     def resizeEvent(self, event):
         self.overlay.setGeometry(self.preview.rect())
+        self._update_clip()
         super().resizeEvent(event)
 
     # ------------------------------------------------------------------
@@ -96,3 +142,16 @@ class ProjectTile(QWidget):
     def _update_item_size(self):
         if self._item is not None:
             self._item.setSizeHint(self.sizeHint())
+
+    def _on_title_anim_finished(self):
+        if self.title_effect.opacity() == 0:
+            self.title_label.hide()
+        self._update_item_size()
+
+    def _update_clip(self):
+        path = QPainterPath()
+        rect = QRectF(self.preview.rect())
+        path.addRoundedRect(rect, 18, 18)
+        region = QRegion(path.toFillPolygon().toPolygon())
+        self.preview.setMask(region)
+        self.overlay.setMask(region)

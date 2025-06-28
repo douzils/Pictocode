@@ -75,15 +75,7 @@ class HomePage(QWidget):
         # Layout principal
         vbox = QVBoxLayout(self)
 
-        title = QLabel("🎨 Bienvenue sur Pictocode")
-        title.setObjectName("title_label")
-        title.setAlignment(Qt.AlignCenter)
-        vbox.addWidget(title)
-
-        subtitle = QLabel("Créez et gérez vos projets graphiques")
-        subtitle.setAlignment(Qt.AlignCenter)
-        subtitle.setObjectName("subtitle_label")
-        vbox.addWidget(subtitle)
+        # Titre et sous-titre supprimes pour un affichage epure
 
         body = QHBoxLayout()
         vbox.addLayout(body)
@@ -143,17 +135,6 @@ class HomePage(QWidget):
             """
             QWidget#home {
                 background: #1b1b1b;
-            }
-            QLabel#title_label {
-                font-size: 26px;
-                font-weight: bold;
-                color: white;
-                padding: 20px;
-            }
-            QLabel#subtitle_label {
-                font-size: 16px;
-                color: white;
-                padding-bottom: 16px;
             }
             QListWidget#favorites_list,
             QListWidget#recent_list,
