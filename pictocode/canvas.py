@@ -12,6 +12,7 @@ from PyQt5.QtWidgets import (
     QGraphicsObject,
 )
 from .ui.animated_menu import AnimatedMenu
+from PyQt5 import sip
 from PyQt5.QtCore import Qt, QRectF, QPointF, QSizeF, pyqtSignal, QTimer
 from PyQt5.QtGui import (
     QPainter,
@@ -347,14 +348,25 @@ class CanvasWidget(QGraphicsView):
             if data:
                 shapes.append(data)
         meta = getattr(self, "current_meta", {})
-        layers = [
-            {
-                "name": name,
-                "visible": layer.isVisible(),
-                "locked": getattr(layer, "locked", False),
-            }
-            for name, layer in self.layers.items()
-        ]
+        layers = []
+        for name, layer in list(self.layers.items()):
+            if sip.isdeleted(layer):
+                logger.warning("Layer %s was deleted", name)
+                self.layers.pop(name, None)
+                continue
+            try:
+                visible = layer.isVisible()
+            except RuntimeError:
+                logger.warning("Layer %s became invalid", name)
+                self.layers.pop(name, None)
+                continue
+            layers.append(
+                {
+                    "name": name,
+                    "visible": visible,
+                    "locked": getattr(layer, "locked", False),
+                }
+            )
         return {**meta, "shapes": shapes, "layers": layers}
 
     def export_image(self, path: str, img_format: str = "PNG"):
@@ -1649,11 +1661,19 @@ class CanvasWidget(QGraphicsView):
         lines.append("")
 
         lines.append("== Layers ==")
-        for name, layer in self.layers.items():
+        for name, layer in list(self.layers.items()):
+            if sip.isdeleted(layer):
+                self.layers.pop(name, None)
+                continue
+            try:
+                visible = layer.isVisible()
+            except RuntimeError:
+                self.layers.pop(name, None)
+                continue
             locked = getattr(layer, "locked", False)
             count = len(layer.childItems())
             lines.append(
-                f"{name}: visible={layer.isVisible()} locked={locked} "
+                f"{name}: visible={visible} locked={locked} "
                 f"enabled={layer.isEnabled()} items={count}"
             )
         lines.append("")
