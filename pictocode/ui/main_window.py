@@ -1774,10 +1774,10 @@ class MainWindow(QMainWindow):
             if abs(delta.x()) > 5 or abs(delta.y()) > 5:
                 self.show_corner_tabs()
             self._corner_dragging = False
-            self.setCursor(Qt.ArrowCursor)
+            self.unsetCursor()
             return
         self._resizing = False
-        self.setCursor(Qt.ArrowCursor)
+        self.unsetCursor()
         super().mouseReleaseEvent(event)
 
     def leaveEvent(self, event):
