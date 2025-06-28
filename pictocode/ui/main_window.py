@@ -1780,6 +1780,12 @@ class MainWindow(QMainWindow):
         self.setCursor(Qt.ArrowCursor)
         super().mouseReleaseEvent(event)
 
+    def leaveEvent(self, event):
+        """Reset cursor when leaving the window."""
+        if not self._resizing and not self._corner_dragging:
+            self.unsetCursor()
+        super().leaveEvent(event)
+
     def resizeEvent(self, event):
         super().resizeEvent(event)
 
