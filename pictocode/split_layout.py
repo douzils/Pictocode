@@ -150,6 +150,44 @@ class ZoneWidget(QWidget):
         else:
             event.ignore()
 
+    # ------------------------------------------------------------------
+    # Drag & drop support
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton and self.selector.geometry().contains(event.pos()):
+            self._drag_start = event.pos()
+        super().mousePressEvent(event)
+
+    def mouseMoveEvent(self, event):
+        if self._drag_start and (event.pos() - self._drag_start).manhattanLength() > QApplication.startDragDistance():
+            drag = QDrag(self)
+            mime = QMimeData()
+            mime.setText(self.selector.currentText())
+            drag.setMimeData(mime)
+            drag.exec_(Qt.MoveAction)
+            self._drag_start = None
+        super().mouseMoveEvent(event)
+
+    def mouseReleaseEvent(self, event):
+        self._drag_start = None
+        super().mouseReleaseEvent(event)
+
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasText():
+            event.acceptProposedAction()
+        else:
+            event.ignore()
+
+    def dropEvent(self, event):
+        text = event.mimeData().text()
+        if text in self.editors:
+            source = event.source()
+            self.selector.setCurrentText(text)
+            if isinstance(source, ZoneWidget) and source is not self:
+                source.selector.setCurrentIndex(0)
+            event.acceptProposedAction()
+        else:
+            event.ignore()
+
     def resizeEvent(self, event):
         self.handle.move(self.width() - self.handle.width(), 0)
         self.hover_icon.move(self.width() // 2 - 8, self.height() // 2 - 8)
