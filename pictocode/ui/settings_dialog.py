@@ -1,9 +1,11 @@
 from PyQt5.QtWidgets import (
     QDialog,
     QVBoxLayout,
+    QHBoxLayout,
     QFormLayout,
     QDialogButtonBox,
-    QTabWidget,
+    QListWidget,
+    QStackedWidget,
     QWidget,
     QLineEdit,
     QColorDialog,
@@ -53,8 +55,18 @@ class SettingsDialog(QDialog):
         }
 
         layout = QVBoxLayout(self)
-        self.tabs = QTabWidget(self)
-        layout.addWidget(self.tabs)
+
+        content_layout = QHBoxLayout()
+        layout.addLayout(content_layout)
+
+        self.category_list = QListWidget()
+        self.category_list.setFixedWidth(150)
+        self.category_list.setFrameShape(QListWidget.NoFrame)
+        self.category_list.setSpacing(2)
+        content_layout.addWidget(self.category_list)
+
+        self.pages = QStackedWidget(self)
+        content_layout.addWidget(self.pages, 1)
 
         # --- General tab -------------------------------------------------
         gen = QWidget()
@@ -80,7 +92,8 @@ class SettingsDialog(QDialog):
         self.float_docks_chk.setChecked(bool(float_docks))
         gen_form.addRow("Fenêtres flottantes :", self.float_docks_chk)
 
-        self.tabs.addTab(gen, "Général")
+        self.pages.addWidget(gen)
+        self.category_list.addItem("Général")
 
         # --- Appearance tab ---------------------------------------------
         app = QWidget()
@@ -147,7 +160,8 @@ class SettingsDialog(QDialog):
             app_form.addRow(f"Couleur {name} :", edit)
             self._dock_color_edits[name] = edit
 
-        self.tabs.addTab(app, "Apparence")
+        self.pages.addWidget(app)
+        self.category_list.addItem("Apparence")
 
         # --- Shortcuts tab ----------------------------------------------
         sh = QWidget()
@@ -157,7 +171,8 @@ class SettingsDialog(QDialog):
             edit = QKeySequenceEdit(seq, self)
             sh_form.addRow(name + " :", edit)
             self._short_edits[name] = edit
-        self.tabs.addTab(sh, "Raccourcis")
+        self.pages.addWidget(sh)
+        self.category_list.addItem("Raccourcis")
 
         # --- Credits tab -------------------------------------------------
         cr = QWidget()
@@ -166,7 +181,11 @@ class SettingsDialog(QDialog):
         cr_label.setAlignment(Qt.AlignCenter)
         cr_layout.addWidget(cr_label)
         cr_layout.addStretch()
-        self.tabs.addTab(cr, "Crédits")
+        self.pages.addWidget(cr)
+        self.category_list.addItem("Crédits")
+
+        self.category_list.currentRowChanged.connect(self.pages.setCurrentIndex)
+        self.category_list.setCurrentRow(0)
 
         buttons = QDialogButtonBox(
             QDialogButtonBox.Ok | QDialogButtonBox.Cancel, Qt.Horizontal, self
