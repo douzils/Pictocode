@@ -5,13 +5,12 @@ from PyQt5.QtWidgets import (
     QListWidgetItem,
     QGraphicsOpacityEffect,
 )
-from PyQt5.QtGui import QIcon, QPainterPath
+from PyQt5.QtGui import QIcon, QPainterPath, QRegion
 from PyQt5.QtCore import (
     Qt,
     QSize,
     QPropertyAnimation,
     QEasingCurve,
-    QRegion,
     QRectF,
 )
 
@@ -51,7 +50,6 @@ class ProjectTile(QWidget):
         self.preview.setScaledContents(True)
         layout.addWidget(self.preview)
         self._update_clip()
-
         self.overlay = QLabel(self.preview)
         self.overlay.setObjectName("tile_overlay")
         self.overlay.setGeometry(self.preview.rect())
