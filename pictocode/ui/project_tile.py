@@ -49,12 +49,12 @@ class ProjectTile(QWidget):
         self.preview.setAlignment(Qt.AlignCenter)
         self.preview.setScaledContents(True)
         layout.addWidget(self.preview)
-        self._update_clip()
         self.overlay = QLabel(self.preview)
         self.overlay.setObjectName("tile_overlay")
         self.overlay.setGeometry(self.preview.rect())
         self.overlay.raise_()
         self.overlay.show()
+        self._update_clip()
         self.setStyleSheet(
             """
             #project_tile {
