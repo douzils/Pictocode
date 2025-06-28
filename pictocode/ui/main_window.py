@@ -29,6 +29,7 @@ from PyQt5.QtCore import (
     QPointF,
     QPoint,
     QRect,
+    QObject,
 )
 from .corner_tabs import CornerTabs
 from PyQt5.QtGui import QPalette, QColor, QKeySequence, QCursor
@@ -53,6 +54,20 @@ from .debug_dialog import DebugDialog
 logger = logging.getLogger(__name__)
 PROJECTS_DIR = os.path.join(os.path.dirname(
     os.path.abspath(__file__)), "Projects")
+
+
+class _ReleaseFilter(QObject):
+    """Global filter to reset the cursor after resizing."""
+
+    def __init__(self, window):
+        super().__init__(window)
+        self._window = window
+
+    def eventFilter(self, obj, event):
+        if event.type() == QEvent.MouseButtonRelease and self._window._resizing:
+            self._window._resizing = False
+            self._window.unsetCursor()
+        return False
 
 
 class MainWindow(QMainWindow):
@@ -118,6 +133,10 @@ class MainWindow(QMainWindow):
         self._split_orientation = Qt.Horizontal
         self._split_preview = None
         self._split_start_size = 0
+
+        # Global filter to ensure cursor resets after window resizing
+        self._release_filter = _ReleaseFilter(self)
+        QApplication.instance().installEventFilter(self._release_filter)
 
         # Paramètres de l'application
         self.settings = QSettings("pictocode", "pictocode")
@@ -864,6 +883,7 @@ class MainWindow(QMainWindow):
     # ------------------------------------------------------------------
     def closeEvent(self, event):
         if self.maybe_save():
+            QApplication.instance().removeEventFilter(self._release_filter)
             event.accept()
         else:
             event.ignore()
