@@ -1014,12 +1014,10 @@ class CanvasWidget(QGraphicsView):
             auto_show = getattr(window, "auto_show_inspector", True)
             if items:
                 window.inspector.set_target(items[0])
-                if auto_show and hasattr(window, "inspector_dock"):
-                    window.inspector_dock.setVisible(True)
+                if auto_show and hasattr(window, "tabs"):
+                    window.tabs.setCurrentWidget(window.inspector)
             else:
                 window.inspector.set_target(None)
-                if auto_show and hasattr(window, "inspector_dock"):
-                    window.inspector_dock.setVisible(False)
 
 
     def _mark_dirty(self):
